@@ -25,9 +25,11 @@
   },
   "home": {
     "hero": {
-      "title": "Enclave 节点 NFT 平台",
-      "subtitle": "拥有、赚取并交易节点份额，保证收益",
-      "cta": "立即开始"
+      "title": "去中心化节点 NFT 平台",
+      "subtitle": "拥有网络的一部分。通过 ECLV 代币分发和交易手续费赚取被动收益。加入去中心化基础设施的未来。",
+      "mintButton": "铸造节点 NFT",
+      "viewNftsButton": "查看我的 NFT",
+      "connectWallet": "连接您的钱包以开始"
     },
     "stats": {
       "myNfts": "我的 NFT",
@@ -36,6 +38,7 @@
     },
     "howItWorks": {
       "title": "运作方式",
+      "subtitle": "简单、透明且有利可图。加入去中心化节点网络。",
       "step1": {
         "title": "铸造 NFT",
         "description": "支付 USDT 并锁定 ECLV 代币购买节点 NFT"
@@ -55,25 +58,45 @@
     },
     "nftTypes": {
       "title": "选择您的节点类型",
+      "subtitle": "选择适合您投资策略的节点",
       "standard": {
         "name": "标准节点",
         "price": "10,000 USDT",
-        "lock": "20,000 ECLV",
-        "shares": "10 份额",
-        "weight": "1 倍奖励"
+        "lock": "获得 {amount} ECLV 额度",
+        "shares": "每个 NFT 10 份额",
+        "weight": "1倍奖励权重",
+        "unlock": "25个月解锁计划",
+        "mintButton": "铸造标准节点",
+        "features": {
+          "quota": "获得 {amount} ECLV 额度",
+          "shares": "{count} 份额每个 NFT",
+          "weight": "1倍奖励权重",
+          "unlock": "25个月解锁计划"
+        }
       },
       "premium": {
         "name": "高级节点",
         "price": "50,000 USDT",
-        "lock": "100,000 ECLV",
-        "shares": "10 份额",
-        "weight": "6 倍奖励",
-        "badge": "最佳价值"
+        "lock": "获得 {amount} ECLV 额度",
+        "shares": "每个 NFT 10 份额",
+        "weight": "6倍奖励权重（是标准的1.2倍权重）",
+        "unlock": "25个月解锁计划",
+        "mintButton": "铸造高级节点",
+        "badge": "最佳价值",
+        "features": {
+          "quota": "获得 {amount} ECLV 额度",
+          "shares": "{count} 份额每个 NFT",
+          "weight": "6倍奖励权重",
+          "unlock": "25个月解锁计划"
+        }
       }
     },
     "footer": {
-      "description": "去中心化节点 NFT 平台，保证收益",
-      "rights": "版权所有"
+      "title": "Enclave 节点 NFT",
+      "description": "去中心化基础设施，透明奖励",
+      "github": "GitHub",
+      "twitter": "Twitter",
+      "rights": "© 2025 Enclave. 版权所有"
     }
   },
   "mint": {

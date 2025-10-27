@@ -8,8 +8,12 @@ import { NFT_CONFIG, NFTType, NFTStatus, UNLOCK_CONFIG, CONTRACT_ADDRESSES } fro
 import { Shield, TrendingUp, Lock, Unlock, Share2, Loader2, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "@/lib/i18n/provider";
 
 function NFTCard({ nftId }: { nftId: number }) {
+  const t = useTranslations('myNfts.nftCard');
+  const tStatus = useTranslations('status');
+  const tTypes = useTranslations('nftTypes');
   const { account } = useWallet();
   const { data: pool } = useNFTPool(nftId);
   const { data: userShare } = useUserShare(nftId);
@@ -72,20 +76,20 @@ function NFTCard({ nftId }: { nftId: number }) {
             ? "bg-green-100 text-green-700"
             : "bg-gray-100 text-gray-700"
         )}>
-          {isLive ? "Live" : "Dissolved"}
+          {isLive ? tStatus('live') : tStatus('dissolved')}
         </span>
       </div>
 
       {/* Stats */}
       <div className="mt-6 grid grid-cols-2 gap-4">
         <div className="rounded-lg bg-gray-50 p-3">
-          <p className="text-xs text-gray-500">Locked ECLV</p>
+          <p className="text-xs text-gray-500">{t('lockedEclv')}</p>
           <p className="mt-1 text-lg font-semibold text-gray-900">
             {formatTokenAmount(pool.totalEclvLocked, 18, 0)}
           </p>
         </div>
         <div className="rounded-lg bg-gray-50 p-3">
-          <p className="text-xs text-gray-500">Unlocked</p>
+          <p className="text-xs text-gray-500">{t('unlocked')}</p>
           <p className="mt-1 text-lg font-semibold text-gray-900">
             {unlockedPercentage.toFixed(0)}%
           </p>
@@ -96,7 +100,7 @@ function NFTCard({ nftId }: { nftId: number }) {
       <div className="mt-4 space-y-2">
         <div className="flex items-center justify-between rounded-lg bg-purple-50 p-3">
           <div>
-            <p className="text-xs text-purple-600">Pending ECLV</p>
+            <p className="text-xs text-purple-600">{t('pendingEclv')}</p>
             <p className="mt-1 text-lg font-semibold text-purple-900">
               {pendingProduced ? formatTokenAmount(pendingProduced, 18, 4) : "0"}
             </p>
@@ -114,14 +118,14 @@ function NFTCard({ nftId }: { nftId: number }) {
             {claimProduced.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Claim"
+              t('claim')
             )}
           </button>
         </div>
 
         <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
           <div>
-            <p className="text-xs text-green-600">Pending USDT</p>
+            <p className="text-xs text-green-600">{t('pendingUsdt')}</p>
             <p className="mt-1 text-lg font-semibold text-green-900">
               {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 4) : "0"}
             </p>
@@ -139,7 +143,7 @@ function NFTCard({ nftId }: { nftId: number }) {
             {claimReward.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Claim"
+              t('claim')
             )}
           </button>
         </div>
@@ -172,6 +176,8 @@ function NFTCard({ nftId }: { nftId: number }) {
 }
 
 export default function MyNFTsPage() {
+  const t = useTranslations('myNfts');
+  const tCommon = useTranslations('common');
   const { isConnected } = useWallet();
   const { data: nftIds, isLoading } = useUserNFTs();
   const batchClaim = useBatchClaimProduced();
@@ -196,9 +202,9 @@ export default function MyNFTsPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My NFTs</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
           <p className="mt-2 text-gray-600">
-            Manage your Node NFTs and claim rewards
+            {t('subtitle')}
           </p>
         </div>
 
@@ -207,10 +213,10 @@ export default function MyNFTsPage() {
           <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
             <Shield className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Connect Your Wallet
+              {t('connectWallet.title')}
             </h3>
             <p className="mt-2 text-sm text-gray-500">
-              Please connect your wallet to view your NFTs
+              {t('connectWallet.description')}
             </p>
           </div>
         ) : isLoading ? (
@@ -223,16 +229,16 @@ export default function MyNFTsPage() {
           <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
             <Shield className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">
-              No NFTs Yet
+              {t('empty.title')}
             </h3>
             <p className="mt-2 text-sm text-gray-500">
-              Get started by minting your first Node NFT
+              {t('empty.description')}
             </p>
             <Link
               href="/mint"
               className="mt-6 inline-flex items-center space-x-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:from-blue-600 hover:to-purple-700"
             >
-              <span>Mint NFT</span>
+              <span>{t('empty.cta')}</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -244,10 +250,10 @@ export default function MyNFTsPage() {
               <div className="mb-6 flex items-center justify-between rounded-lg bg-white p-4 shadow-sm">
                 <div>
                   <p className="text-sm font-medium text-gray-900">
-                    {nftIds.length} NFTs found
+                    {t('batchActions.nftsFound', { count: nftIds.length })}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Claim all pending rewards at once
+                    {t('batchActions.claimAll')}
                   </p>
                 </div>
                 <button
@@ -258,12 +264,12 @@ export default function MyNFTsPage() {
                   {isBatchClaiming ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Claiming...</span>
+                      <span>{t('batchActions.claiming')}</span>
                     </>
                   ) : (
                     <>
                       <TrendingUp className="h-4 w-4" />
-                      <span>Batch Claim ECLV</span>
+                      <span>{t('batchActions.batchClaim')}</span>
                     </>
                   )}
                 </button>

@@ -22,8 +22,13 @@ function NFTTypeCard({
   onSelect: () => void;
   disabled: boolean;
 }) {
+  const t = useTranslations('mint');
+  const tHome = useTranslations('home');
   const config = NFT_CONFIG[nftType];
   const isPremium = nftType === NFTType.Premium;
+  
+  // Convert NFTType enum to string key for translations
+  const typeKey = nftType === NFTType.Standard ? 'standard' : 'premium';
 
   return (
     <button
@@ -53,7 +58,7 @@ function NFTTypeCard({
       {isPremium && (
         <div className="absolute left-4 top-4">
           <span className="rounded-full bg-gradient-to-r from-purple-600 to-purple-700 px-3 py-1 text-xs font-semibold text-white">
-            BEST VALUE
+            {t('bestValue')}
           </span>
         </div>
       )}
@@ -87,7 +92,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            Get {formatTokenAmount(config.eclvLockAmount, 0, 0)} ECLV quota
+            {tHome(`nftTypes.${typeKey}.features.quota`, { amount: formatTokenAmount(config.eclvLockAmount, 0, 0) })}
           </span>
         </li>
         <li className="flex gap-x-3 text-sm">
@@ -96,7 +101,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {config.sharesPerNFT} shares per NFT
+            {tHome(`nftTypes.${typeKey}.features.shares`, { count: config.sharesPerNFT })}
           </span>
         </li>
         <li className="flex gap-x-3 text-sm">
@@ -105,8 +110,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {config.shareWeight}x reward weight
-            {isPremium && " (6x more rewards!)"}
+            {tHome(`nftTypes.${typeKey}.weight`)}
           </span>
         </li>
         <li className="flex gap-x-3 text-sm">
@@ -115,7 +119,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {UNLOCK_CONFIG.unlockPeriods}-month unlock schedule
+            {tHome(`nftTypes.${typeKey}.unlock`)}
           </span>
         </li>
       </ul>
@@ -165,9 +169,9 @@ function MintContent() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mint Node NFT</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
           <p className="mt-2 text-gray-600">
-            Choose your node type and start earning rewards
+            {t('subtitle')}
           </p>
         </div>
 
@@ -176,10 +180,10 @@ function MintContent() {
           <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
             <Shield className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Connect Your Wallet
+              {t('connectWallet.title')}
             </h3>
             <p className="mt-2 text-sm text-gray-500">
-              Please connect your wallet to mint an NFT
+              {t('connectWallet.description')}
             </p>
           </div>
         ) : (
@@ -187,7 +191,7 @@ function MintContent() {
             {/* NFT Type Selection */}
             <div className="lg:col-span-2">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Select Node Type
+                {t('selectType')}
               </h2>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <NFTTypeCard
@@ -253,13 +257,13 @@ function MintContent() {
             <div className="lg:col-span-1">
               <div className="sticky top-8 rounded-lg bg-white p-6 shadow-lg ring-1 ring-gray-900/5">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Mint Summary
+                  {t('summary.title')}
                 </h3>
 
                 {/* Requirements */}
                 <div className="mt-6 space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Required Payment</p>
+                    <p className="text-sm font-medium text-gray-700">{t('summary.requiredPayment')}</p>
                     <div className="mt-2 space-y-2">
                       <div className={cn(
                         "flex items-center justify-between rounded-lg p-3",
@@ -280,7 +284,7 @@ function MintContent() {
                   {/* Your Balance */}
                   {balances && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Your Balance</p>
+                      <p className="text-sm font-medium text-gray-700">{t('summary.yourBalance')}</p>
                       <div className="mt-2 space-y-1 text-sm text-gray-600">
                         <div className="flex justify-between">
                           <span>USDT:</span>
@@ -290,7 +294,7 @@ function MintContent() {
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-gray-500">
-                        Note: You only need USDT. The NFT will receive {formatTokenAmount(config.eclvLockAmount, 0, 0)} ECLV production quota.
+                        {t('summary.note', { amount: formatTokenAmount(config.eclvLockAmount, 0, 0) })}
                       </p>
                     </div>
                   )}
@@ -302,9 +306,9 @@ function MintContent() {
                     <div className="flex gap-x-2">
                       <AlertCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
                       <div className="text-sm text-yellow-800">
-                        <p className="font-medium">Insufficient Balance</p>
+                        <p className="font-medium">{t('summary.insufficientBalance')}</p>
                         <p className="mt-1">
-                          You need {formatTokenAmount(config.mintPrice, 0, 0)} USDT to mint this NFT.
+                          {t('summary.needAmount', { amount: formatTokenAmount(config.mintPrice, 0, 0) })}
                         </p>
                       </div>
                     </div>
@@ -325,11 +329,11 @@ function MintContent() {
                   {mintNFT.isPending ? (
                     <span className="flex items-center justify-center">
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Minting...
+                      {t('minting')}
                     </span>
                   ) : (
                     <span className="flex items-center justify-center">
-                      Mint {config.name}
+                      {t('mintButton', { type: config.name })}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </span>
                   )}
@@ -337,7 +341,7 @@ function MintContent() {
 
                 {mintNFT.isPending && (
                   <p className="mt-2 text-center text-xs text-gray-500">
-                    Please confirm the transaction in your wallet
+                    {t('confirmTransaction')}
                   </p>
                 )}
               </div>

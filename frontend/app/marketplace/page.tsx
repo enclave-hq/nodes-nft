@@ -8,6 +8,7 @@ import { formatTokenAmount, formatAddress, formatDateTime, cn, parseTokenAmount 
 import { NFT_CONFIG, NFTType, NFTStatus } from "@/lib/contracts/config";
 import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "@/lib/i18n/provider";
 
 function SellOrderCard({ 
   order, 
@@ -16,6 +17,8 @@ function SellOrderCard({
   order: any;
   onBuy: (orderId: number) => void;
 }) {
+  const t = useTranslations('marketplace.orderCard');
+  const tTypes = useTranslations('nftTypes');
   const { account } = useWallet();
   const { data: pool } = useNFTPool(order.nftId);
   const buyShares = useBuyShares();
@@ -49,7 +52,7 @@ function SellOrderCard({
             {config.name} #{order.nftId}
           </h3>
           <p className="text-sm text-gray-500">
-            {order.shares} shares available
+            {t('sharesAvailable', { count: order.shares })}
           </p>
         </div>
         <span className={cn(
@@ -58,24 +61,24 @@ function SellOrderCard({
             ? "bg-purple-100 text-purple-700"
             : "bg-blue-100 text-blue-700"
         )}>
-          {pool.nftType === NFTType.Premium ? "Premium" : "Standard"}
+          {tTypes(`${pool.nftType}.name`)}
         </span>
       </div>
 
       {/* Price */}
       <div className="mt-4 rounded-lg bg-gray-50 p-3">
-        <p className="text-xs text-gray-500">Price per Share</p>
+        <p className="text-xs text-gray-500">{t('pricePerShare')}</p>
         <p className="mt-1 text-2xl font-bold text-gray-900">
           {formatTokenAmount(order.pricePerShare, 18, 2)} USDT
         </p>
         <p className="mt-1 text-xs text-gray-500">
-          Total: {formatTokenAmount(totalPrice, 18, 2)} USDT
+          {t('total', { amount: formatTokenAmount(totalPrice, 18, 2) })}
         </p>
       </div>
 
       {/* Seller Info */}
       <div className="mt-4 flex items-center justify-between text-sm">
-        <span className="text-gray-500">Seller:</span>
+        <span className="text-gray-500">{t('seller')}:</span>
         <span className="font-medium text-gray-900">
           {isOwnOrder ? "You" : formatAddress(order.seller)}
         </span>
@@ -83,7 +86,7 @@ function SellOrderCard({
 
       {/* Listed Date */}
       <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-gray-500">Listed:</span>
+        <span className="text-gray-500">{t('listed')}:</span>
         <span className="text-gray-900">
           {formatDateTime(order.createdAt)}
         </span>
@@ -100,12 +103,12 @@ function SellOrderCard({
             {cancelOrder.isPending ? (
               <span className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Cancelling...
+                {t('cancelling')}
               </span>
             ) : (
               <span className="flex items-center justify-center">
                 <X className="mr-2 h-4 w-4" />
-                Cancel Order
+                {t('cancelOrder')}
               </span>
             )}
           </button>
@@ -118,12 +121,12 @@ function SellOrderCard({
             {buyShares.isPending ? (
               <span className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Buying...
+                {t('buying')}
               </span>
             ) : (
               <span className="flex items-center justify-center">
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                Buy Shares
+                {t('buyShares')}
               </span>
             )}
           </button>
@@ -142,6 +145,7 @@ function CreateOrderModal({
   maxShares: number;
   onClose: () => void;
 }) {
+  const t = useTranslations('marketplace.createOrder');
   const [shares, setShares] = useState("1");
   const [pricePerShare, setPricePerShare] = useState("");
   const createOrder = useCreateSellOrder();
@@ -169,7 +173,7 @@ function CreateOrderModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-900">Create Sell Order</h3>
+          <h3 className="text-xl font-bold text-gray-900">{t('title')}</h3>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
@@ -182,7 +186,7 @@ function CreateOrderModal({
           {/* Shares Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Number of Shares
+              {t('sharesLabel')}
             </label>
             <input
               type="number"
@@ -191,17 +195,17 @@ function CreateOrderModal({
               value={shares}
               onChange={(e) => setShares(e.target.value)}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Enter number of shares"
+              placeholder={t('sharesPlaceholder')}
             />
             <p className="mt-1 text-xs text-gray-500">
-              You own {maxShares} shares
+              {t('youOwn', { count: maxShares })}
             </p>
           </div>
 
           {/* Price Input */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Price per Share (USDT)
+              {t('priceLabel')}
             </label>
             <input
               type="number"
@@ -210,14 +214,14 @@ function CreateOrderModal({
               value={pricePerShare}
               onChange={(e) => setPricePerShare(e.target.value)}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Enter price per share"
+              placeholder={t('pricePlaceholder')}
             />
           </div>
 
           {/* Total Price Display */}
           {shares && pricePerShare && (
             <div className="rounded-lg bg-blue-50 p-3">
-              <p className="text-sm text-blue-600">Total Value</p>
+              <p className="text-sm text-blue-600">{t('totalValue')}</p>
               <p className="mt-1 text-xl font-bold text-blue-900">
                 {(parseFloat(shares) * parseFloat(pricePerShare)).toFixed(2)} USDT
               </p>
@@ -231,7 +235,7 @@ function CreateOrderModal({
             onClick={onClose}
             className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={handleCreate}
@@ -241,10 +245,10 @@ function CreateOrderModal({
             {createOrder.isPending ? (
               <span className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
+                {t('creating')}
               </span>
             ) : (
-              "Create Order"
+              t('createButton')
             )}
           </button>
         </div>
@@ -254,6 +258,8 @@ function CreateOrderModal({
 }
 
 export default function MarketplacePage() {
+  const t = useTranslations('marketplace');
+  const tCommon = useTranslations('common');
   const { isConnected } = useWallet();
   const { data: userNFTs } = useUserNFTs();
   const buyShares = useBuyShares();
@@ -284,9 +290,9 @@ export default function MarketplacePage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Marketplace</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
           <p className="mt-2 text-gray-600">
-            Buy and sell NFT shares with other users
+            {t('subtitle')}
           </p>
         </div>
 
@@ -295,10 +301,10 @@ export default function MarketplacePage() {
           <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
             <Store className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-4 text-lg font-medium text-gray-900">
-              Connect Your Wallet
+              {t('connectWallet.title')}
             </h3>
             <p className="mt-2 text-sm text-gray-500">
-              Please connect your wallet to access the marketplace
+              {t('connectWallet.description')}
             </p>
           </div>
         ) : (
@@ -306,16 +312,16 @@ export default function MarketplacePage() {
             {/* Sidebar - My NFTs */}
             <div className="lg:col-span-1">
               <div className="rounded-lg bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900">My NFTs</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('sidebar.title')}</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Create sell orders for your shares
+                  {t('sidebar.subtitle')}
                 </p>
 
                 {!userNFTs || userNFTs.length === 0 ? (
                   <div className="mt-4 rounded-lg border-2 border-dashed border-gray-200 p-6 text-center">
                     <Tag className="mx-auto h-8 w-8 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-500">
-                      No NFTs to list
+                      {t('sidebar.empty')}
                     </p>
                   </div>
                 ) : (
@@ -336,13 +342,13 @@ export default function MarketplacePage() {
             <div className="lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Active Orders
+                  {t('orders.title')}
                 </h2>
                 <button
                   onClick={() => setSelectedNFT(null)}
                   className="text-sm text-blue-600 hover:text-blue-700"
                 >
-                  View All
+                  {t('orders.viewAll')}
                 </button>
               </div>
 
@@ -362,10 +368,10 @@ export default function MarketplacePage() {
                 <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center">
                   <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-4 text-lg font-medium text-gray-900">
-                    No Orders Found
+                    {t('orders.empty.title')}
                   </h3>
                   <p className="mt-2 text-sm text-gray-500">
-                    Be the first to create a sell order!
+                    {t('orders.empty.description')}
                   </p>
                 </div>
               )}
@@ -396,6 +402,7 @@ function NFTListItem({
   nftId: number;
   onCreateOrder: (nftId: number, maxShares: number) => void;
 }) {
+  const t = useTranslations('marketplace.nftList');
   const { data: pool } = useNFTPool(nftId);
   const { data: userShare } = useUserShare(nftId);
 
@@ -411,7 +418,7 @@ function NFTListItem({
             {config.name} #{nftId}
           </p>
           <p className="text-xs text-gray-500">
-            {userShare.shares} shares
+            {t('shares', { count: userShare.shares })}
           </p>
         </div>
         <button

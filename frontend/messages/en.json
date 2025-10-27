@@ -25,9 +25,11 @@
   },
   "home": {
     "hero": {
-      "title": "Enclave Node NFT Platform",
-      "subtitle": "Own, earn, and trade node shares with guaranteed returns",
-      "cta": "Get Started"
+      "title": "Decentralized Node NFT Platform",
+      "subtitle": "Own a piece of the network. Earn passive rewards through ECLV token distribution and transaction fees. Join the future of decentralized infrastructure.",
+      "mintButton": "Mint Node NFT",
+      "viewNftsButton": "View My NFTs",
+      "connectWallet": "Connect your wallet to get started"
     },
     "stats": {
       "myNfts": "My NFTs",
@@ -36,6 +38,7 @@
     },
     "howItWorks": {
       "title": "How It Works",
+      "subtitle": "Simple, transparent, and profitable. Join the decentralized node network.",
       "step1": {
         "title": "Mint NFT",
         "description": "Purchase a Node NFT by paying USDT and locking ECLV tokens"
@@ -55,25 +58,45 @@
     },
     "nftTypes": {
       "title": "Choose Your Node Type",
+      "subtitle": "Choose the node that fits your investment strategy",
       "standard": {
         "name": "Standard Node",
         "price": "10,000 USDT",
-        "lock": "20,000 ECLV",
-        "shares": "10 shares",
-        "weight": "1x rewards"
+        "lock": "Get {amount} ECLV quota",
+        "shares": "10 shares per NFT",
+        "weight": "1x reward weight",
+        "unlock": "25-month unlock schedule",
+        "mintButton": "Mint Standard",
+        "features": {
+          "quota": "Get {amount} ECLV quota",
+          "shares": "{count} shares per NFT",
+          "weight": "1x reward weight",
+          "unlock": "25-month unlock schedule"
+        }
       },
       "premium": {
         "name": "Premium Node",
         "price": "50,000 USDT",
-        "lock": "100,000 ECLV",
-        "shares": "10 shares",
-        "weight": "6x rewards",
-        "badge": "BEST VALUE"
+        "lock": "Get {amount} ECLV quota",
+        "shares": "10 shares per NFT",
+        "weight": "6x reward weight (1.2x weight than standard)",
+        "unlock": "25-month unlock schedule",
+        "mintButton": "Mint Premium",
+        "badge": "BEST VALUE",
+        "features": {
+          "quota": "Get {amount} ECLV quota",
+          "shares": "{count} shares per NFT",
+          "weight": "6x reward weight",
+          "unlock": "25-month unlock schedule"
+        }
       }
     },
     "footer": {
-      "description": "Decentralized Node NFT platform with guaranteed returns",
-      "rights": "All rights reserved"
+      "title": "Enclave Node NFT",
+      "description": "Decentralized infrastructure, transparent rewards",
+      "github": "GitHub",
+      "twitter": "Twitter",
+      "rights": "© 2025 Enclave. All rights reserved"
     }
   },
   "mint": {

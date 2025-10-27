@@ -25,9 +25,11 @@
   },
   "home": {
     "hero": {
-      "title": "Enclave ノード NFT プラットフォーム",
-      "subtitle": "ノードシェアを所有、獲得、取引し、確実なリターンを得る",
-      "cta": "今すぐ始める"
+      "title": "分散型ノード NFT プラットフォーム",
+      "subtitle": "ネットワークの一部を所有。ECLV トークン配布と取引手数料を通じて受動的報酬を獲得。分散型インフラの未来に参加。",
+      "mintButton": "ノード NFT をミント",
+      "viewNftsButton": "マイ NFT を表示",
+      "connectWallet": "ウォレットを接続して開始"
     },
     "stats": {
       "myNfts": "マイ NFT",
@@ -36,6 +38,7 @@
     },
     "howItWorks": {
       "title": "仕組み",
+      "subtitle": "シンプル、透明、収益性あり。分散型ノードネットワークに参加。",
       "step1": {
         "title": "NFT をミント",
         "description": "USDT を支払い、ECLV トークンをロックしてノード NFT を購入"
@@ -55,25 +58,45 @@
     },
     "nftTypes": {
       "title": "ノードタイプを選択",
+      "subtitle": "投資戦略に合ったノードを選択",
       "standard": {
         "name": "スタンダードノード",
         "price": "10,000 USDT",
-        "lock": "20,000 ECLV",
-        "shares": "10 シェア",
-        "weight": "1 倍報酬"
+        "lock": "{amount} ECLV クォータを取得",
+        "shares": "NFT あたり 10 シェア",
+        "weight": "1倍報酬ウェイト",
+        "unlock": "25ヶ月アンロックスケジュール",
+        "mintButton": "スタンダードをミント",
+        "features": {
+          "quota": "{amount} ECLV クォータを取得",
+          "shares": "NFT あたり {count} シェア",
+          "weight": "1倍報酬ウェイト",
+          "unlock": "25ヶ月アンロックスケジュール"
+        }
       },
       "premium": {
         "name": "プレミアムノード",
         "price": "50,000 USDT",
-        "lock": "100,000 ECLV",
-        "shares": "10 シェア",
-        "weight": "6 倍報酬",
-        "badge": "最高価値"
+        "lock": "{amount} ECLV クォータを取得",
+        "shares": "NFT あたり 10 シェア",
+        "weight": "6倍報酬ウェイト（スタンダードの1.2倍ウェイト）",
+        "unlock": "25ヶ月アンロックスケジュール",
+        "mintButton": "プレミアムをミント",
+        "badge": "最高価値",
+        "features": {
+          "quota": "{amount} ECLV クォータを取得",
+          "shares": "NFT あたり {count} シェア",
+          "weight": "6倍報酬ウェイト",
+          "unlock": "25ヶ月アンロックスケジュール"
+        }
       }
     },
     "footer": {
-      "description": "分散型ノード NFT プラットフォーム、確実なリターン付き",
-      "rights": "全著作権所有"
+      "title": "Enclave ノード NFT",
+      "description": "分散型インフラストラクチャ、透明な報酬",
+      "github": "GitHub",
+      "twitter": "Twitter",
+      "rights": "© 2025 Enclave. 全著作権所有"
     }
   },
   "mint": {

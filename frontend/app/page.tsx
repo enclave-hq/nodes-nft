@@ -25,14 +25,10 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="text-center">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-            <span className="block">Decentralized Node</span>
-            <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              NFT Platform
-            </span>
+            {t('hero.title')}
           </h1>
           <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
-            Own a piece of the network. Earn passive rewards through ECLV token distribution
-            and transaction fees. Join the future of decentralized infrastructure.
+            {t('hero.subtitle')}
           </p>
 
           <div className="mt-10 flex items-center justify-center gap-x-6">
@@ -42,18 +38,18 @@ export default function Home() {
                   href="/mint"
                   className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:from-blue-600 hover:to-purple-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
                 >
-                  Mint Node NFT
+                  {t('hero.mintButton')}
                 </Link>
                 <Link
                   href="/my-nfts"
                   className="text-sm font-semibold leading-6 text-gray-900 hover:text-gray-700"
                 >
-                  View My NFTs <span aria-hidden="true">→</span>
+                  {t('hero.viewNftsButton')} <span aria-hidden="true">→</span>
                 </Link>
               </>
             ) : (
               <div className="text-sm text-gray-500">
-                Connect your wallet to get started
+                {t('hero.connectWallet')}
               </div>
             )}
           </div>
@@ -65,7 +61,7 @@ export default function Home() {
             <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">My NFTs</p>
+                  <p className="text-sm font-medium text-gray-600">{t('stats.myNfts')}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">
                     {nftIds?.length || 0}
                   </p>
@@ -79,7 +75,7 @@ export default function Home() {
             <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">ECLV Balance</p>
+                  <p className="text-sm font-medium text-gray-600">{t('stats.eclvBalance')}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">
                     {balances ? formatTokenAmount(balances.eclv, 18, 2) : "0"}
                   </p>
@@ -93,7 +89,7 @@ export default function Home() {
             <div className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">USDT Balance</p>
+                  <p className="text-sm font-medium text-gray-600">{t('stats.usdtBalance')}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">
                     {balances ? formatTokenAmount(balances.usdt, 18, 2) : "0"}
                   </p>
@@ -111,60 +107,66 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 bg-white">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            How It Works
+            {t('howItWorks.title')}
           </h2>
           <p className="mt-6 text-lg leading-8 text-gray-600">
-            Simple, transparent, and profitable. Join the decentralized node network.
+            {t('howItWorks.subtitle')}
           </p>
         </div>
 
-        <div className="mx-auto mt-16 max-w-5xl">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-            {/* Step 1 */}
-            <div className="relative flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white text-2xl font-bold">
+        <div className="mx-auto mt-16 max-w-6xl">
+          {/* Step 1 - Top Row */}
+          <div className="flex flex-col items-center mb-12">
+            <div className="flex flex-col items-center text-center max-w-md">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-600 text-white text-3xl font-bold shadow-lg">
                 1
               </div>
-              <h3 className="mt-6 text-lg font-semibold text-gray-900">Mint NFT</h3>
-              <p className="mt-2 text-sm text-gray-600">
-                Purchase a Standard or Premium node NFT with USDT and lock ECLV tokens
+              <h3 className="mt-6 text-xl font-semibold text-gray-900">{t('howItWorks.step1.title')}</h3>
+              <p className="mt-3 text-base text-gray-600">
+                {t('howItWorks.step1.description')}
               </p>
-              {/* Arrow */}
-              <ArrowRight className="hidden lg:block absolute -right-4 top-6 h-8 w-8 text-gray-300" />
             </div>
+            
+            {/* Down Arrow */}
+            <div className="mt-8 mb-4">
+              <svg className="h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
 
+          {/* Steps 2, 3, 4 - Bottom Row (Parallel) */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
             {/* Step 2 */}
-            <div className="relative flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-600 text-white text-2xl font-bold">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-purple-50 border-2 border-purple-200">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-purple-600 text-white text-2xl font-bold shadow-md">
                 2
               </div>
-              <h3 className="mt-6 text-lg font-semibold text-gray-900">Earn Rewards</h3>
+              <h3 className="mt-6 text-lg font-semibold text-gray-900">{t('howItWorks.step2.title')}</h3>
               <p className="mt-2 text-sm text-gray-600">
-                Receive daily ECLV production and USDT rewards distributed by the oracle
+                {t('howItWorks.step2.description')}
               </p>
-              <ArrowRight className="hidden lg:block absolute -right-4 top-6 h-8 w-8 text-gray-300" />
             </div>
 
             {/* Step 3 */}
-            <div className="relative flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-600 text-white text-2xl font-bold">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-green-50 border-2 border-green-200">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-600 text-white text-2xl font-bold shadow-md">
                 3
               </div>
-              <h3 className="mt-6 text-lg font-semibold text-gray-900">Claim & Unlock</h3>
+              <h3 className="mt-6 text-lg font-semibold text-gray-900">{t('howItWorks.step3.title')}</h3>
               <p className="mt-2 text-sm text-gray-600">
-                Claim rewards anytime. After 1 year, 4% of locked ECLV unlocks monthly
+                {t('howItWorks.step3.description')}
               </p>
-              <ArrowRight className="hidden lg:block absolute -right-4 top-6 h-8 w-8 text-gray-300" />
             </div>
 
             {/* Step 4 */}
-            <div className="flex flex-col items-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-600 text-white text-2xl font-bold">
+            <div className="flex flex-col items-center text-center p-6 rounded-xl bg-orange-50 border-2 border-orange-200">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-600 text-white text-2xl font-bold shadow-md">
                 4
               </div>
-              <h3 className="mt-6 text-lg font-semibold text-gray-900">Trade Shares</h3>
+              <h3 className="mt-6 text-lg font-semibold text-gray-900">{t('howItWorks.step4.title')}</h3>
               <p className="mt-2 text-sm text-gray-600">
-                Transfer shares P2P or list on the marketplace for other users to buy
+                {t('howItWorks.step4.description')}
               </p>
             </div>
           </div>
@@ -175,10 +177,10 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            Node NFT Types
+            {t('nftTypes.title')}
           </h2>
           <p className="mt-6 text-lg leading-8 text-gray-600">
-            Choose the node that fits your investment strategy
+            {t('nftTypes.subtitle')}
           </p>
         </div>
 
@@ -186,7 +188,7 @@ export default function Home() {
           {/* Standard NFT */}
           <div className="rounded-2xl bg-white p-8 shadow-xl ring-1 ring-gray-900/5">
             <h3 className="text-2xl font-bold text-gray-900">
-              {NFT_CONFIG[NFTType.Standard].name}
+              {t('nftTypes.standard.name')}
             </h3>
             <p className="mt-4 flex items-baseline gap-x-2">
               <span className="text-5xl font-bold tracking-tight text-gray-900">
@@ -197,26 +199,26 @@ export default function Home() {
             <ul className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
               <li className="flex gap-x-3">
                 <span className="text-blue-600">✓</span>
-                Lock {formatTokenAmount(NFT_CONFIG[NFTType.Standard].eclvLockAmount, 0, 0)} ECLV
+                {t('nftTypes.standard.lock', { amount: formatTokenAmount(NFT_CONFIG[NFTType.Standard].eclvLockAmount, 0, 0) })}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-blue-600">✓</span>
-                10 shares per NFT
+                {t('nftTypes.standard.shares')}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-blue-600">✓</span>
-                1x reward weight
+                {t('nftTypes.standard.weight')}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-blue-600">✓</span>
-                25-month unlock schedule
+                {t('nftTypes.standard.unlock')}
               </li>
             </ul>
             <Link
               href="/mint?type=standard"
               className="mt-8 block rounded-lg bg-blue-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
             >
-              Mint Standard
+              {t('nftTypes.standard.mintButton')}
             </Link>
           </div>
 
@@ -224,10 +226,10 @@ export default function Home() {
           <div className="rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 p-8 shadow-xl ring-1 ring-gray-900/5">
             <div className="flex items-center justify-between">
               <h3 className="text-2xl font-bold text-white">
-                {NFT_CONFIG[NFTType.Premium].name}
+                {t('nftTypes.premium.name')}
               </h3>
               <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">
-                BEST VALUE
+                {t('nftTypes.premium.badge')}
               </span>
             </div>
             <p className="mt-4 flex items-baseline gap-x-2">
@@ -239,26 +241,26 @@ export default function Home() {
             <ul className="mt-8 space-y-3 text-sm leading-6 text-purple-100">
               <li className="flex gap-x-3">
                 <span className="text-white">✓</span>
-                Lock {formatTokenAmount(NFT_CONFIG[NFTType.Premium].eclvLockAmount, 0, 0)} ECLV
+                {t('nftTypes.premium.lock', { amount: formatTokenAmount(NFT_CONFIG[NFTType.Premium].eclvLockAmount, 0, 0) })}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-white">✓</span>
-                10 shares per NFT
+                {t('nftTypes.premium.shares')}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-white">✓</span>
-                6x reward weight (6x more rewards!)
+                {t('nftTypes.premium.weight')}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-white">✓</span>
-                25-month unlock schedule
+                {t('nftTypes.premium.unlock')}
               </li>
             </ul>
             <Link
               href="/mint?type=premium"
               className="mt-8 block rounded-lg bg-white px-3 py-2 text-center text-sm font-semibold text-purple-600 shadow-sm hover:bg-purple-50"
             >
-              Mint Premium
+              {t('nftTypes.premium.mintButton')}
             </Link>
           </div>
         </div>
@@ -268,21 +270,31 @@ export default function Home() {
       <footer className="bg-gray-900 text-white py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h3 className="text-lg font-semibold">Enclave Node NFT</h3>
+            <h3 className="text-lg font-semibold">{t('footer.title')}</h3>
             <p className="mt-2 text-sm text-gray-400">
-              Decentralized infrastructure, transparent rewards
+              {t('footer.description')}
             </p>
             <div className="mt-6 flex justify-center space-x-6">
-              <a href="#" className="text-gray-400 hover:text-white text-sm">
-                Docs
+              <a 
+                href="https://github.com/enclave-hq/nodes-nft" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                {t('footer.github')}
               </a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm">
-                GitHub
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white text-sm">
-                Twitter
+              <a 
+                href="https://x.com/favorlabs" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                {t('footer.twitter')}
               </a>
             </div>
+            <p className="mt-6 text-xs text-gray-500">
+              {t('footer.rights')}
+            </p>
           </div>
         </div>
       </footer>

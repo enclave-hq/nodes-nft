@@ -25,9 +25,11 @@
   },
   "home": {
     "hero": {
-      "title": "Enclave 노드 NFT 플랫폼",
-      "subtitle": "노드 지분을 소유하고 수익을 얻으며 거래하세요",
-      "cta": "시작하기"
+      "title": "탈중앙화 노드 NFT 플랫폼",
+      "subtitle": "네트워크의 일부를 소유하세요. ECLV 토큰 분배와 거래 수수료를 통해 수동적 보상을 획득하세요. 탈중앙화 인프라의 미래에 참여하세요.",
+      "mintButton": "노드 NFT 민팅",
+      "viewNftsButton": "내 NFT 보기",
+      "connectWallet": "지갑을 연결하여 시작하세요"
     },
     "stats": {
       "myNfts": "내 NFT",
@@ -36,6 +38,7 @@
     },
     "howItWorks": {
       "title": "작동 방식",
+      "subtitle": "간단하고 투명하며 수익성이 높습니다. 탈중앙화 노드 네트워크에 참여하세요.",
       "step1": {
         "title": "NFT 민팅",
         "description": "USDT를 지불하고 ECLV 토큰을 잠금하여 노드 NFT 구매"
@@ -55,25 +58,45 @@
     },
     "nftTypes": {
       "title": "노드 유형 선택",
+      "subtitle": "투자 전략에 맞는 노드를 선택하세요",
       "standard": {
         "name": "스탠다드 노드",
         "price": "10,000 USDT",
-        "lock": "20,000 ECLV",
-        "shares": "10 지분",
-        "weight": "1배 보상"
+        "lock": "{amount} ECLV 할당량 획득",
+        "shares": "NFT당 10 지분",
+        "weight": "1배 보상 가중치",
+        "unlock": "25개월 잠금 해제 일정",
+        "mintButton": "스탠다드 민팅",
+        "features": {
+          "quota": "{amount} ECLV 할당량 획득",
+          "shares": "NFT당 {count} 지분",
+          "weight": "1배 보상 가중치",
+          "unlock": "25개월 잠금 해제 일정"
+        }
       },
       "premium": {
         "name": "프리미엄 노드",
         "price": "50,000 USDT",
-        "lock": "100,000 ECLV",
-        "shares": "10 지분",
-        "weight": "6배 보상",
-        "badge": "최고 가치"
+        "lock": "{amount} ECLV 할당량 획득",
+        "shares": "NFT당 10 지분",
+        "weight": "6배 보상 가중치（스탠다드의 1.2배 가중치）",
+        "unlock": "25개월 잠금 해제 일정",
+        "mintButton": "프리미엄 민팅",
+        "badge": "최고 가치",
+        "features": {
+          "quota": "{amount} ECLV 할당량 획득",
+          "shares": "NFT당 {count} 지분",
+          "weight": "6배 보상 가중치",
+          "unlock": "25개월 잠금 해제 일정"
+        }
       }
     },
     "footer": {
-      "description": "보장된 수익이 있는 탈중앙화 노드 NFT 플랫폼",
-      "rights": "모든 권리 보유"
+      "title": "Enclave 노드 NFT",
+      "description": "탈중앙화 인프라, 투명한 보상",
+      "github": "GitHub",
+      "twitter": "Twitter",
+      "rights": "© 2025 Enclave. 모든 권리 보유"
     }
   },
   "mint": {
