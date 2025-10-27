@@ -10,3 +10,4 @@ export const localeNames: Record<Locale, string> = {
 
 export const defaultLocale: Locale = 'en';
 
+

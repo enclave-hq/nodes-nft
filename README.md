@@ -154,7 +154,9 @@ npm run dev
 - [Frontend README](./FRONTEND_COMPLETE.md)
 
 ### For Testing & Deployment
-- 🚀 **[Quick Start Guide](./QUICK_START.md)** - Fast deployment in 5 steps
+- 🏠 **[Local Testing Guide](./LOCAL_TESTING_GUIDE.md)** - ⭐ Start here! Free & fast local testing
+- 🔄 **[Testing Comparison](./TESTING_COMPARISON.md)** - Local vs Testnet comparison
+- 🚀 **[Quick Start Guide](./QUICK_START.md)** - Fast testnet deployment in 5 steps
 - 📖 **[Complete Testing Guide](./TESTNET_DEPLOYMENT_GUIDE.md)** - Full deployment & testing plan
 - 📋 **[Test Report Template](./TEST_REPORT_TEMPLATE.md)** - Standardized test reporting
 - ✅ **[Testing System Overview](./TESTING_COMPLETE.md)** - All testing resources
