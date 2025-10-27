@@ -1,0 +1,201 @@
+{
+  "common": {
+    "connectWallet": "连接钱包",
+    "disconnect": "断开连接",
+    "loading": "加载中...",
+    "confirm": "确认",
+    "cancel": "取消",
+    "close": "关闭",
+    "buy": "购买",
+    "sell": "出售",
+    "claim": "领取",
+    "mint": "铸造",
+    "transfer": "转让",
+    "details": "详情",
+    "create": "创建",
+    "viewAll": "查看全部",
+    "shares": "份额",
+    "share": "份额"
+  },
+  "navbar": {
+    "home": "首页",
+    "mint": "铸造",
+    "myNfts": "我的 NFT",
+    "marketplace": "市场"
+  },
+  "home": {
+    "hero": {
+      "title": "Enclave 节点 NFT 平台",
+      "subtitle": "拥有、赚取并交易节点份额，保证收益",
+      "cta": "立即开始"
+    },
+    "stats": {
+      "myNfts": "我的 NFT",
+      "eclvBalance": "ECLV 余额",
+      "usdtBalance": "USDT 余额"
+    },
+    "howItWorks": {
+      "title": "运作方式",
+      "step1": {
+        "title": "铸造 NFT",
+        "description": "支付 USDT 并锁定 ECLV 代币购买节点 NFT"
+      },
+      "step2": {
+        "title": "赚取奖励",
+        "description": "每日自动接收 ECLV 产出和 USDT 奖励"
+      },
+      "step3": {
+        "title": "解锁代币",
+        "description": "一年后，锁定的 ECLV 每月解锁 4%，持续 25 个月"
+      },
+      "step4": {
+        "title": "交易份额",
+        "description": "随时在市场上买卖 NFT 份额"
+      }
+    },
+    "nftTypes": {
+      "title": "选择您的节点类型",
+      "standard": {
+        "name": "标准节点",
+        "price": "10,000 USDT",
+        "lock": "20,000 ECLV",
+        "shares": "10 份额",
+        "weight": "1 倍奖励"
+      },
+      "premium": {
+        "name": "高级节点",
+        "price": "50,000 USDT",
+        "lock": "100,000 ECLV",
+        "shares": "10 份额",
+        "weight": "6 倍奖励",
+        "badge": "最佳价值"
+      }
+    },
+    "footer": {
+      "description": "去中心化节点 NFT 平台，保证收益",
+      "rights": "版权所有"
+    }
+  },
+  "mint": {
+    "title": "铸造节点 NFT",
+    "subtitle": "选择您的节点类型并开始赚取奖励",
+    "connectWallet": {
+      "title": "连接您的钱包",
+      "description": "请连接钱包以铸造 NFT"
+    },
+    "selectType": "选择节点类型",
+    "howItWorks": {
+      "title": "运作方式",
+      "step0": "自动连接到零知识证明的 PoW 节点作为收益者",
+      "step1": "支付 {price} USDT 并获得 {amount} ECLV 产出额度",
+      "step2": "每日接收 ECLV 产出和 USDT 奖励",
+      "step3": "一年后，ECLV 额度每月解锁 4%，持续 25 个月"
+    },
+    "summary": {
+      "title": "铸造摘要",
+      "requiredPayment": "所需支付",
+      "yourBalance": "您的余额",
+      "insufficientBalance": "余额不足",
+      "needMoreUsdt": "您需要更多 USDT。",
+      "needMoreEclv": "您需要更多 ECLV。",
+      "confirmTransaction": "请在钱包中确认交易"
+    },
+    "nftCard": {
+      "lockAmount": "锁定 {amount} ECLV",
+      "sharesPerNft": "每个 NFT {count} 份额",
+      "rewardWeight": "{weight} 倍奖励权重",
+      "premiumBonus": "6 倍更多奖励！",
+      "unlockSchedule": "{months} 个月解锁计划"
+    },
+    "minting": "铸造中...",
+    "mintButton": "铸造 {type}"
+  },
+  "myNfts": {
+    "title": "我的 NFT",
+    "subtitle": "管理您的节点 NFT 并领取奖励",
+    "connectWallet": {
+      "title": "连接您的钱包",
+      "description": "请连接钱包以查看您的 NFT"
+    },
+    "empty": {
+      "title": "暂无 NFT",
+      "description": "立即铸造您的第一个节点 NFT",
+      "cta": "铸造 NFT"
+    },
+    "batchActions": {
+      "nftsFound": "找到 {count} 个 NFT",
+      "claimAll": "一次性领取所有待领取奖励",
+      "batchClaim": "批量领取 ECLV",
+      "claiming": "领取中..."
+    },
+    "nftCard": {
+      "standard": "标准",
+      "premium": "高级",
+      "live": "活跃",
+      "dissolved": "已解散",
+      "lockedEclv": "锁定 ECLV",
+      "unlocked": "已解锁",
+      "pendingEclv": "待领取 ECLV",
+      "pendingUsdt": "待领取 USDT",
+      "created": "创建时间：{date}"
+    }
+  },
+  "marketplace": {
+    "title": "市场",
+    "subtitle": "与其他用户买卖 NFT 份额",
+    "connectWallet": {
+      "title": "连接您的钱包",
+      "description": "请连接钱包以访问市场"
+    },
+    "sidebar": {
+      "title": "我的 NFT",
+      "subtitle": "为您的份额创建出售订单",
+      "empty": "没有可出售的 NFT"
+    },
+    "orders": {
+      "title": "活跃订单",
+      "empty": {
+        "title": "未找到订单",
+        "description": "成为第一个创建出售订单的人！"
+      }
+    },
+    "orderCard": {
+      "sharesAvailable": "{count} 份额可购买",
+      "pricePerShare": "每份额价格",
+      "total": "总计：{amount} USDT",
+      "seller": "卖家：",
+      "you": "您",
+      "listed": "上架时间：{time}",
+      "cancelOrder": "取消订单",
+      "cancelling": "取消中...",
+      "buyShares": "购买份额",
+      "buying": "购买中..."
+    },
+    "createOrder": {
+      "title": "创建出售订单",
+      "sharesLabel": "份额数量",
+      "sharesPlaceholder": "输入份额数量",
+      "youOwn": "您拥有 {count} 份额",
+      "priceLabel": "每份额价格（USDT）",
+      "pricePlaceholder": "输入每份额价格",
+      "totalValue": "总价值",
+      "creating": "创建中...",
+      "createButton": "创建订单"
+    }
+  },
+  "nftTypes": {
+    "standard": "标准",
+    "premium": "高级"
+  },
+  "status": {
+    "live": "活跃",
+    "dissolved": "已解散"
+  },
+  "errors": {
+    "connectWallet": "请连接钱包",
+    "insufficientBalance": "余额不足",
+    "transactionFailed": "交易失败",
+    "tryAgain": "请重试"
+  }
+}
+

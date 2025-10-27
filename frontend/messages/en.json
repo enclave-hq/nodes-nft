@@ -1,0 +1,201 @@
+{
+  "common": {
+    "connectWallet": "Connect Wallet",
+    "disconnect": "Disconnect",
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close",
+    "buy": "Buy",
+    "sell": "Sell",
+    "claim": "Claim",
+    "mint": "Mint",
+    "transfer": "Transfer",
+    "details": "Details",
+    "create": "Create",
+    "viewAll": "View All",
+    "shares": "shares",
+    "share": "share"
+  },
+  "navbar": {
+    "home": "Home",
+    "mint": "Mint",
+    "myNfts": "My NFTs",
+    "marketplace": "Marketplace"
+  },
+  "home": {
+    "hero": {
+      "title": "Enclave Node NFT Platform",
+      "subtitle": "Own, earn, and trade node shares with guaranteed returns",
+      "cta": "Get Started"
+    },
+    "stats": {
+      "myNfts": "My NFTs",
+      "eclvBalance": "ECLV Balance",
+      "usdtBalance": "USDT Balance"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Mint NFT",
+        "description": "Purchase a Node NFT by paying USDT and locking ECLV tokens"
+      },
+      "step2": {
+        "title": "Earn Rewards",
+        "description": "Receive daily ECLV production and USDT rewards automatically"
+      },
+      "step3": {
+        "title": "Unlock Tokens",
+        "description": "After 1 year, 4% of locked ECLV unlocks monthly for 25 months"
+      },
+      "step4": {
+        "title": "Trade Shares",
+        "description": "Buy and sell NFT shares on our marketplace at any time"
+      }
+    },
+    "nftTypes": {
+      "title": "Choose Your Node Type",
+      "standard": {
+        "name": "Standard Node",
+        "price": "10,000 USDT",
+        "lock": "20,000 ECLV",
+        "shares": "10 shares",
+        "weight": "1x rewards"
+      },
+      "premium": {
+        "name": "Premium Node",
+        "price": "50,000 USDT",
+        "lock": "100,000 ECLV",
+        "shares": "10 shares",
+        "weight": "6x rewards",
+        "badge": "BEST VALUE"
+      }
+    },
+    "footer": {
+      "description": "Decentralized Node NFT platform with guaranteed returns",
+      "rights": "All rights reserved"
+    }
+  },
+  "mint": {
+    "title": "Mint Node NFT",
+    "subtitle": "Choose your node type and start earning rewards",
+    "connectWallet": {
+      "title": "Connect Your Wallet",
+      "description": "Please connect your wallet to mint an NFT"
+    },
+    "selectType": "Select Node Type",
+    "howItWorks": {
+      "title": "How It Works",
+      "step0": "Automatically connect to zero-knowledge proof PoW node as beneficiary",
+      "step1": "Pay {price} USDT and get {amount} ECLV production quota",
+      "step2": "Receive daily ECLV production and USDT rewards",
+      "step3": "After 1 year, 4% of ECLV quota unlocks monthly for 25 months"
+    },
+    "summary": {
+      "title": "Mint Summary",
+      "requiredPayment": "Required Payment",
+      "yourBalance": "Your Balance",
+      "insufficientBalance": "Insufficient Balance",
+      "needMoreUsdt": "You need more USDT.",
+      "needMoreEclv": "You need more ECLV.",
+      "confirmTransaction": "Please confirm the transaction in your wallet"
+    },
+    "nftCard": {
+      "lockAmount": "Lock {amount} ECLV",
+      "sharesPerNft": "{count} shares per NFT",
+      "rewardWeight": "{weight}x reward weight",
+      "premiumBonus": "6x more rewards!",
+      "unlockSchedule": "{months}-month unlock schedule"
+    },
+    "minting": "Minting...",
+    "mintButton": "Mint {type}"
+  },
+  "myNfts": {
+    "title": "My NFTs",
+    "subtitle": "Manage your Node NFTs and claim rewards",
+    "connectWallet": {
+      "title": "Connect Your Wallet",
+      "description": "Please connect your wallet to view your NFTs"
+    },
+    "empty": {
+      "title": "No NFTs Yet",
+      "description": "Get started by minting your first Node NFT",
+      "cta": "Mint NFT"
+    },
+    "batchActions": {
+      "nftsFound": "{count} NFTs found",
+      "claimAll": "Claim all pending rewards at once",
+      "batchClaim": "Batch Claim ECLV",
+      "claiming": "Claiming..."
+    },
+    "nftCard": {
+      "standard": "Standard",
+      "premium": "Premium",
+      "live": "Live",
+      "dissolved": "Dissolved",
+      "lockedEclv": "Locked ECLV",
+      "unlocked": "Unlocked",
+      "pendingEclv": "Pending ECLV",
+      "pendingUsdt": "Pending USDT",
+      "created": "Created: {date}"
+    }
+  },
+  "marketplace": {
+    "title": "Marketplace",
+    "subtitle": "Buy and sell NFT shares with other users",
+    "connectWallet": {
+      "title": "Connect Your Wallet",
+      "description": "Please connect your wallet to access the marketplace"
+    },
+    "sidebar": {
+      "title": "My NFTs",
+      "subtitle": "Create sell orders for your shares",
+      "empty": "No NFTs to list"
+    },
+    "orders": {
+      "title": "Active Orders",
+      "empty": {
+        "title": "No Orders Found",
+        "description": "Be the first to create a sell order!"
+      }
+    },
+    "orderCard": {
+      "sharesAvailable": "{count} shares available",
+      "pricePerShare": "Price per Share",
+      "total": "Total: {amount} USDT",
+      "seller": "Seller:",
+      "you": "You",
+      "listed": "Listed: {time}",
+      "cancelOrder": "Cancel Order",
+      "cancelling": "Cancelling...",
+      "buyShares": "Buy Shares",
+      "buying": "Buying..."
+    },
+    "createOrder": {
+      "title": "Create Sell Order",
+      "sharesLabel": "Number of Shares",
+      "sharesPlaceholder": "Enter number of shares",
+      "youOwn": "You own {count} shares",
+      "priceLabel": "Price per Share (USDT)",
+      "pricePlaceholder": "Enter price per share",
+      "totalValue": "Total Value",
+      "creating": "Creating...",
+      "createButton": "Create Order"
+    }
+  },
+  "nftTypes": {
+    "standard": "Standard",
+    "premium": "Premium"
+  },
+  "status": {
+    "live": "Live",
+    "dissolved": "Dissolved"
+  },
+  "errors": {
+    "connectWallet": "Please connect your wallet",
+    "insufficientBalance": "Insufficient balance",
+    "transactionFailed": "Transaction failed",
+    "tryAgain": "Please try again"
+  }
+}
+

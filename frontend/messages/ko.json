@@ -1,0 +1,201 @@
+{
+  "common": {
+    "connectWallet": "지갑 연결",
+    "disconnect": "연결 해제",
+    "loading": "로딩 중...",
+    "confirm": "확인",
+    "cancel": "취소",
+    "close": "닫기",
+    "buy": "구매",
+    "sell": "판매",
+    "claim": "청구",
+    "mint": "민팅",
+    "transfer": "전송",
+    "details": "상세",
+    "create": "생성",
+    "viewAll": "전체 보기",
+    "shares": "지분",
+    "share": "지분"
+  },
+  "navbar": {
+    "home": "홈",
+    "mint": "민팅",
+    "myNfts": "내 NFT",
+    "marketplace": "마켓플레이스"
+  },
+  "home": {
+    "hero": {
+      "title": "Enclave 노드 NFT 플랫폼",
+      "subtitle": "노드 지분을 소유하고 수익을 얻으며 거래하세요",
+      "cta": "시작하기"
+    },
+    "stats": {
+      "myNfts": "내 NFT",
+      "eclvBalance": "ECLV 잔액",
+      "usdtBalance": "USDT 잔액"
+    },
+    "howItWorks": {
+      "title": "작동 방식",
+      "step1": {
+        "title": "NFT 민팅",
+        "description": "USDT를 지불하고 ECLV 토큰을 잠금하여 노드 NFT 구매"
+      },
+      "step2": {
+        "title": "보상 획득",
+        "description": "매일 자동으로 ECLV 생산과 USDT 보상 수령"
+      },
+      "step3": {
+        "title": "토큰 잠금 해제",
+        "description": "1년 후, 잠긴 ECLV가 25개월 동안 매월 4%씩 잠금 해제"
+      },
+      "step4": {
+        "title": "지분 거래",
+        "description": "언제든지 마켓플레이스에서 NFT 지분 매매"
+      }
+    },
+    "nftTypes": {
+      "title": "노드 유형 선택",
+      "standard": {
+        "name": "스탠다드 노드",
+        "price": "10,000 USDT",
+        "lock": "20,000 ECLV",
+        "shares": "10 지분",
+        "weight": "1배 보상"
+      },
+      "premium": {
+        "name": "프리미엄 노드",
+        "price": "50,000 USDT",
+        "lock": "100,000 ECLV",
+        "shares": "10 지분",
+        "weight": "6배 보상",
+        "badge": "최고 가치"
+      }
+    },
+    "footer": {
+      "description": "보장된 수익이 있는 탈중앙화 노드 NFT 플랫폼",
+      "rights": "모든 권리 보유"
+    }
+  },
+  "mint": {
+    "title": "노드 NFT 민팅",
+    "subtitle": "노드 유형을 선택하고 보상 획득 시작",
+    "connectWallet": {
+      "title": "지갑을 연결하세요",
+      "description": "NFT를 민팅하려면 지갑을 연결해주세요"
+    },
+    "selectType": "노드 유형 선택",
+    "howItWorks": {
+      "title": "작동 방식",
+      "step0": "영지식 증명 PoW 노드에 수혜자로 자동 연결",
+      "step1": "{price} USDT 지불 및 {amount} ECLV 생산 할당량 획득",
+      "step2": "매일 ECLV 생산과 USDT 보상 수령",
+      "step3": "1년 후, ECLV 할당량이 25개월 동안 매월 4%씩 잠금 해제"
+    },
+    "summary": {
+      "title": "민팅 요약",
+      "requiredPayment": "필요한 지불",
+      "yourBalance": "잔액",
+      "insufficientBalance": "잔액 부족",
+      "needMoreUsdt": "USDT가 더 필요합니다.",
+      "needMoreEclv": "ECLV가 더 필요합니다.",
+      "confirmTransaction": "지갑에서 트랜잭션을 확인해주세요"
+    },
+    "nftCard": {
+      "lockAmount": "{amount} ECLV 잠금",
+      "sharesPerNft": "NFT당 {count} 지분",
+      "rewardWeight": "{weight}배 보상 가중치",
+      "premiumBonus": "6배 더 많은 보상!",
+      "unlockSchedule": "{months}개월 잠금 해제 일정"
+    },
+    "minting": "민팅 중...",
+    "mintButton": "{type} 민팅"
+  },
+  "myNfts": {
+    "title": "내 NFT",
+    "subtitle": "노드 NFT를 관리하고 보상 청구",
+    "connectWallet": {
+      "title": "지갑을 연결하세요",
+      "description": "NFT를 보려면 지갑을 연결해주세요"
+    },
+    "empty": {
+      "title": "NFT가 없습니다",
+      "description": "첫 번째 노드 NFT를 민팅하여 시작하세요",
+      "cta": "NFT 민팅"
+    },
+    "batchActions": {
+      "nftsFound": "{count}개의 NFT 발견",
+      "claimAll": "모든 대기 중인 보상을 한 번에 청구",
+      "batchClaim": "ECLV 일괄 청구",
+      "claiming": "청구 중..."
+    },
+    "nftCard": {
+      "standard": "스탠다드",
+      "premium": "프리미엄",
+      "live": "활성",
+      "dissolved": "해산됨",
+      "lockedEclv": "잠긴 ECLV",
+      "unlocked": "잠금 해제됨",
+      "pendingEclv": "대기 중 ECLV",
+      "pendingUsdt": "대기 중 USDT",
+      "created": "생성일: {date}"
+    }
+  },
+  "marketplace": {
+    "title": "마켓플레이스",
+    "subtitle": "다른 사용자와 NFT 지분 거래",
+    "connectWallet": {
+      "title": "지갑을 연결하세요",
+      "description": "마켓플레이스에 접근하려면 지갑을 연결해주세요"
+    },
+    "sidebar": {
+      "title": "내 NFT",
+      "subtitle": "지분 판매 주문 생성",
+      "empty": "목록에 올릴 NFT 없음"
+    },
+    "orders": {
+      "title": "활성 주문",
+      "empty": {
+        "title": "주문을 찾을 수 없습니다",
+        "description": "첫 번째 판매 주문을 생성하세요!"
+      }
+    },
+    "orderCard": {
+      "sharesAvailable": "{count} 지분 구매 가능",
+      "pricePerShare": "지분당 가격",
+      "total": "총액: {amount} USDT",
+      "seller": "판매자:",
+      "you": "나",
+      "listed": "등록일: {time}",
+      "cancelOrder": "주문 취소",
+      "cancelling": "취소 중...",
+      "buyShares": "지분 구매",
+      "buying": "구매 중..."
+    },
+    "createOrder": {
+      "title": "판매 주문 생성",
+      "sharesLabel": "지분 수",
+      "sharesPlaceholder": "지분 수 입력",
+      "youOwn": "{count} 지분 소유",
+      "priceLabel": "지분당 가격 (USDT)",
+      "pricePlaceholder": "지분당 가격 입력",
+      "totalValue": "총 가치",
+      "creating": "생성 중...",
+      "createButton": "주문 생성"
+    }
+  },
+  "nftTypes": {
+    "standard": "스탠다드",
+    "premium": "프리미엄"
+  },
+  "status": {
+    "live": "활성",
+    "dissolved": "해산됨"
+  },
+  "errors": {
+    "connectWallet": "지갑을 연결해주세요",
+    "insufficientBalance": "잔액 부족",
+    "transactionFailed": "트랜잭션 실패",
+    "tryAgain": "다시 시도해주세요"
+  }
+}
+

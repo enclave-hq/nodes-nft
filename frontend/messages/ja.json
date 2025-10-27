@@ -1,0 +1,201 @@
+{
+  "common": {
+    "connectWallet": "ウォレット接続",
+    "disconnect": "切断",
+    "loading": "読み込み中...",
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "buy": "購入",
+    "sell": "売却",
+    "claim": "請求",
+    "mint": "ミント",
+    "transfer": "転送",
+    "details": "詳細",
+    "create": "作成",
+    "viewAll": "すべて表示",
+    "shares": "シェア",
+    "share": "シェア"
+  },
+  "navbar": {
+    "home": "ホーム",
+    "mint": "ミント",
+    "myNfts": "マイ NFT",
+    "marketplace": "マーケット"
+  },
+  "home": {
+    "hero": {
+      "title": "Enclave ノード NFT プラットフォーム",
+      "subtitle": "ノードシェアを所有、獲得、取引し、確実なリターンを得る",
+      "cta": "今すぐ始める"
+    },
+    "stats": {
+      "myNfts": "マイ NFT",
+      "eclvBalance": "ECLV 残高",
+      "usdtBalance": "USDT 残高"
+    },
+    "howItWorks": {
+      "title": "仕組み",
+      "step1": {
+        "title": "NFT をミント",
+        "description": "USDT を支払い、ECLV トークンをロックしてノード NFT を購入"
+      },
+      "step2": {
+        "title": "報酬を獲得",
+        "description": "毎日自動的に ECLV 生成と USDT 報酬を受け取る"
+      },
+      "step3": {
+        "title": "トークンのアンロック",
+        "description": "1年後、ロックされた ECLV が毎月 4% ずつ 25 ヶ月間アンロック"
+      },
+      "step4": {
+        "title": "シェアを取引",
+        "description": "いつでもマーケットプレイスで NFT シェアを売買"
+      }
+    },
+    "nftTypes": {
+      "title": "ノードタイプを選択",
+      "standard": {
+        "name": "スタンダードノード",
+        "price": "10,000 USDT",
+        "lock": "20,000 ECLV",
+        "shares": "10 シェア",
+        "weight": "1 倍報酬"
+      },
+      "premium": {
+        "name": "プレミアムノード",
+        "price": "50,000 USDT",
+        "lock": "100,000 ECLV",
+        "shares": "10 シェア",
+        "weight": "6 倍報酬",
+        "badge": "最高価値"
+      }
+    },
+    "footer": {
+      "description": "分散型ノード NFT プラットフォーム、確実なリターン付き",
+      "rights": "全著作権所有"
+    }
+  },
+  "mint": {
+    "title": "ノード NFT をミント",
+    "subtitle": "ノードタイプを選択して報酬を獲得開始",
+    "connectWallet": {
+      "title": "ウォレットを接続",
+      "description": "NFT をミントするにはウォレットを接続してください"
+    },
+    "selectType": "ノードタイプを選択",
+    "howItWorks": {
+      "title": "仕組み",
+      "step0": "ゼロ知識証明 PoW ノードに受益者として自動接続",
+      "step1": "{price} USDT を支払い、{amount} ECLV 生産クォータを取得",
+      "step2": "毎日 ECLV 生成と USDT 報酬を受け取る",
+      "step3": "1年後、ECLV クォータが毎月 4% ずつ 25 ヶ月間アンロック"
+    },
+    "summary": {
+      "title": "ミント概要",
+      "requiredPayment": "必要な支払い",
+      "yourBalance": "あなたの残高",
+      "insufficientBalance": "残高不足",
+      "needMoreUsdt": "USDT が不足しています。",
+      "needMoreEclv": "ECLV が不足しています。",
+      "confirmTransaction": "ウォレットでトランザクションを確認してください"
+    },
+    "nftCard": {
+      "lockAmount": "{amount} ECLV をロック",
+      "sharesPerNft": "NFT あたり {count} シェア",
+      "rewardWeight": "{weight} 倍報酬ウェイト",
+      "premiumBonus": "6倍の報酬！",
+      "unlockSchedule": "{months} ヶ月アンロックスケジュール"
+    },
+    "minting": "ミント中...",
+    "mintButton": "{type} をミント"
+  },
+  "myNfts": {
+    "title": "マイ NFT",
+    "subtitle": "ノード NFT を管理して報酬を請求",
+    "connectWallet": {
+      "title": "ウォレットを接続",
+      "description": "NFT を表示するにはウォレットを接続してください"
+    },
+    "empty": {
+      "title": "NFT がありません",
+      "description": "最初のノード NFT をミントして始めましょう",
+      "cta": "NFT をミント"
+    },
+    "batchActions": {
+      "nftsFound": "{count} 個の NFT が見つかりました",
+      "claimAll": "すべての保留中の報酬を一度に請求",
+      "batchClaim": "ECLV を一括請求",
+      "claiming": "請求中..."
+    },
+    "nftCard": {
+      "standard": "スタンダード",
+      "premium": "プレミアム",
+      "live": "アクティブ",
+      "dissolved": "解散済み",
+      "lockedEclv": "ロック ECLV",
+      "unlocked": "アンロック済み",
+      "pendingEclv": "保留中 ECLV",
+      "pendingUsdt": "保留中 USDT",
+      "created": "作成日：{date}"
+    }
+  },
+  "marketplace": {
+    "title": "マーケットプレイス",
+    "subtitle": "他のユーザーと NFT シェアを売買",
+    "connectWallet": {
+      "title": "ウォレットを接続",
+      "description": "マーケットプレイスにアクセスするにはウォレットを接続してください"
+    },
+    "sidebar": {
+      "title": "マイ NFT",
+      "subtitle": "シェアの売却注文を作成",
+      "empty": "リストする NFT がありません"
+    },
+    "orders": {
+      "title": "アクティブな注文",
+      "empty": {
+        "title": "注文が見つかりません",
+        "description": "最初の売却注文を作成しましょう！"
+      }
+    },
+    "orderCard": {
+      "sharesAvailable": "{count} シェア購入可能",
+      "pricePerShare": "シェアあたりの価格",
+      "total": "合計：{amount} USDT",
+      "seller": "売り手：",
+      "you": "あなた",
+      "listed": "出品日時：{time}",
+      "cancelOrder": "注文をキャンセル",
+      "cancelling": "キャンセル中...",
+      "buyShares": "シェアを購入",
+      "buying": "購入中..."
+    },
+    "createOrder": {
+      "title": "売却注文を作成",
+      "sharesLabel": "シェア数",
+      "sharesPlaceholder": "シェア数を入力",
+      "youOwn": "{count} シェアを所有",
+      "priceLabel": "シェアあたりの価格（USDT）",
+      "pricePlaceholder": "シェアあたりの価格を入力",
+      "totalValue": "合計価値",
+      "creating": "作成中...",
+      "createButton": "注文を作成"
+    }
+  },
+  "nftTypes": {
+    "standard": "スタンダード",
+    "premium": "プレミアム"
+  },
+  "status": {
+    "live": "アクティブ",
+    "dissolved": "解散済み"
+  },
+  "errors": {
+    "connectWallet": "ウォレットを接続してください",
+    "insufficientBalance": "残高不足",
+    "transactionFailed": "トランザクション失敗",
+    "tryAgain": "もう一度お試しください"
+  }
+}
+
