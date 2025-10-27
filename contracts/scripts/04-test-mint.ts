@@ -41,12 +41,12 @@ async function main() {
   console.log("─".repeat(60));
   console.log("Standard NFT:");
   console.log("  Mint Price:    ", ethers.formatUnits(standardConfig.mintPrice, 18), "USDT");
-  console.log("  ECLV Quota:    ", ethers.formatUnits(standardConfig.eclvQuota, 18), "ECLV");
+  console.log("  $E Quota:    ", ethers.formatUnits(standardConfig.eclvQuota, 18), "$E");
   console.log("  Total Shares:  ", standardConfig.totalShares.toString());
   console.log("  Weight/Share:  ", standardConfig.weightPerShare.toString());
   console.log("\nPremium NFT:");
   console.log("  Mint Price:    ", ethers.formatUnits(premiumConfig.mintPrice, 18), "USDT");
-  console.log("  ECLV Quota:    ", ethers.formatUnits(premiumConfig.eclvQuota, 18), "ECLV");
+  console.log("  $E Quota:    ", ethers.formatUnits(premiumConfig.eclvQuota, 18), "$E");
   console.log("  Total Shares:  ", premiumConfig.totalShares.toString());
   console.log("  Weight/Share:  ", premiumConfig.weightPerShare.toString());
   console.log();
@@ -90,7 +90,7 @@ async function main() {
     console.log("     NFT Type:             ", pool.nftType.toString());
     console.log("     State:                ", pool.state === 0 ? "Live" : "Dissolved");
     console.log("     Total Weighted Shares:", pool.totalWeightedShares.toString());
-    console.log("     Remaining ECLV Quota: ", ethers.formatUnits(pool.remainingECLVQuota, 18));
+    console.log("     Remaining $E Quota: ", ethers.formatUnits(pool.remaining$EQuota, 18));
     console.log();
   } catch (error: any) {
     console.error("❌ Failed to mint Standard NFT:");
@@ -137,7 +137,7 @@ async function main() {
     console.log("     NFT Type:             ", pool.nftType.toString());
     console.log("     State:                ", pool.state === 0 ? "Live" : "Dissolved");
     console.log("     Total Weighted Shares:", pool.totalWeightedShares.toString());
-    console.log("     Remaining ECLV Quota: ", ethers.formatUnits(pool.remainingECLVQuota, 18));
+    console.log("     Remaining $E Quota: ", ethers.formatUnits(pool.remaining$EQuota, 18));
     console.log();
   } catch (error: any) {
     console.error("❌ Failed to mint Premium NFT:");

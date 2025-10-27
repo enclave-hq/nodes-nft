@@ -5,18 +5,18 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
- * @title EnclaveToken (ECLV)
+ * @title EnclaveToken ($E)
  * @dev Enclave project token contract (ERC-20)
- * Name: Enclave
- * Symbol: ECLV
+ * Name: $E
+ * Symbol: $E
  * Decimals: 18
- * Initial Supply: 100,000,000 ECLV
+ * Initial Supply: 100,000,000 $E
  */
 contract EnclaveToken is ERC20, Ownable {
-    /// @notice Initial token supply: 100 million ECLV
+    /// @notice Initial token supply: 100 million $E
     uint256 public constant INITIAL_SUPPLY = 100_000_000 * 10**18;
 
-    constructor() ERC20("Enclave", "ECLV") Ownable(msg.sender) {
+    constructor() ERC20("$E", "$E") Ownable(msg.sender) {
         _mint(msg.sender, INITIAL_SUPPLY);
     }
 

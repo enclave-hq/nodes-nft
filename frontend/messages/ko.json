@@ -26,14 +26,14 @@
   "home": {
     "hero": {
       "title": "탈중앙화 노드 NFT 플랫폼",
-      "subtitle": "네트워크의 일부를 소유하세요. ECLV 토큰 분배와 거래 수수료를 통해 수동적 보상을 획득하세요. 탈중앙화 인프라의 미래에 참여하세요.",
+      "subtitle": "네트워크의 일부를 소유하세요. $E 토큰 분배와 거래 수수료를 통해 수동적 보상을 획득하세요. 탈중앙화 인프라의 미래에 참여하세요.",
       "mintButton": "노드 NFT 민팅",
       "viewNftsButton": "내 NFT 보기",
       "connectWallet": "지갑을 연결하여 시작하세요"
     },
     "stats": {
       "myNfts": "내 NFT",
-      "eclvBalance": "ECLV 잔액",
+      "eclvBalance": "$E 잔액",
       "usdtBalance": "USDT 잔액"
     },
     "howItWorks": {
@@ -41,15 +41,15 @@
       "subtitle": "간단하고 투명하며 수익성이 높습니다. 탈중앙화 노드 네트워크에 참여하세요.",
       "step1": {
         "title": "NFT 민팅",
-        "description": "USDT를 지불하고 ECLV 토큰을 잠금하여 노드 NFT 구매"
+        "description": "USDT를 지불하고 $E 토큰을 잠금하여 노드 NFT 구매"
       },
       "step2": {
         "title": "보상 획득",
-        "description": "매일 자동으로 ECLV 생산과 USDT 보상 수령"
+        "description": "매일 자동으로 $E 생산과 USDT 보상 수령"
       },
       "step3": {
         "title": "토큰 잠금 해제",
-        "description": "1년 후, 잠긴 ECLV가 25개월 동안 매월 4%씩 잠금 해제"
+        "description": "1년 후, 잠긴 $E가 25개월 동안 매월 4%씩 잠금 해제"
       },
       "step4": {
         "title": "지분 거래",
@@ -62,13 +62,13 @@
       "standard": {
         "name": "스탠다드 노드",
         "price": "10,000 USDT",
-        "lock": "{amount} ECLV 할당량 획득",
+        "lock": "{amount} $E 할당량 획득",
         "shares": "NFT당 10 지분",
         "weight": "1배 보상 가중치",
         "unlock": "25개월 잠금 해제 일정",
         "mintButton": "스탠다드 민팅",
         "features": {
-          "quota": "{amount} ECLV 할당량 획득",
+          "quota": "{amount} $E 할당량 획득",
           "shares": "NFT당 {count} 지분",
           "weight": "1배 보상 가중치",
           "unlock": "25개월 잠금 해제 일정"
@@ -77,14 +77,14 @@
       "premium": {
         "name": "프리미엄 노드",
         "price": "50,000 USDT",
-        "lock": "{amount} ECLV 할당량 획득",
+        "lock": "{amount} $E 할당량 획득",
         "shares": "NFT당 10 지분",
         "weight": "6배 보상 가중치（스탠다드의 1.2배 가중치）",
         "unlock": "25개월 잠금 해제 일정",
         "mintButton": "프리미엄 민팅",
         "badge": "최고 가치",
         "features": {
-          "quota": "{amount} ECLV 할당량 획득",
+          "quota": "{amount} $E 할당량 획득",
           "shares": "NFT당 {count} 지분",
           "weight": "6배 보상 가중치",
           "unlock": "25개월 잠금 해제 일정"
@@ -110,9 +110,9 @@
     "howItWorks": {
       "title": "작동 방식",
       "step0": "영지식 증명 PoW 노드에 수혜자로 자동 연결",
-      "step1": "{price} USDT 지불 및 {amount} ECLV 생산 할당량 획득",
-      "step2": "매일 ECLV 생산과 USDT 보상 수령",
-      "step3": "1년 후, ECLV 할당량이 25개월 동안 매월 4%씩 잠금 해제"
+      "step1": "{price} USDT 지불 및 {amount} $E 생산 할당량 획득",
+      "step2": "매일 $E 생산과 USDT 보상 수령",
+      "step3": "1년 후, $E 할당량이 25개월 동안 매월 4%씩 잠금 해제"
     },
     "summary": {
       "title": "민팅 요약",
@@ -120,11 +120,11 @@
       "yourBalance": "잔액",
       "insufficientBalance": "잔액 부족",
       "needMoreUsdt": "USDT가 더 필요합니다.",
-      "needMoreEclv": "ECLV가 더 필요합니다.",
+      "needMoreEclv": "$E가 더 필요합니다.",
       "confirmTransaction": "지갑에서 트랜잭션을 확인해주세요"
     },
     "nftCard": {
-      "lockAmount": "{amount} ECLV 잠금",
+      "lockAmount": "{amount} $E 잠금",
       "sharesPerNft": "NFT당 {count} 지분",
       "rewardWeight": "{weight}배 보상 가중치",
       "premiumBonus": "6배 더 많은 보상!",
@@ -148,7 +148,7 @@
     "batchActions": {
       "nftsFound": "{count}개의 NFT 발견",
       "claimAll": "모든 대기 중인 보상을 한 번에 청구",
-      "batchClaim": "ECLV 일괄 청구",
+      "batchClaim": "$E 일괄 청구",
       "claiming": "청구 중..."
     },
     "nftCard": {
@@ -156,9 +156,9 @@
       "premium": "프리미엄",
       "live": "활성",
       "dissolved": "해산됨",
-      "lockedEclv": "잠긴 ECLV",
+      "lockedEclv": "잠긴 $E",
       "unlocked": "잠금 해제됨",
-      "pendingEclv": "대기 중 ECLV",
+      "pendingEclv": "대기 중 $E",
       "pendingUsdt": "대기 중 USDT",
       "created": "생성일: {date}"
     }

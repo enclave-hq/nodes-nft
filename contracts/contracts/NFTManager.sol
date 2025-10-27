@@ -17,7 +17,7 @@ import "./EnclaveToken.sol";
  * Key Features:
  * - Mint NFTs with USDT payment
  * - O(1) global index reward distribution
- * - Dual reward system (ECLV production + multi-token rewards)
+ * - Dual reward system ($E production + multi-token rewards)
  * - 25-month linear unlock schedule (4% per month after 1 year)
  * - Share transfer within NFTs
  * - NFT state management (Live/Dissolved)
@@ -67,7 +67,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
      * @dev Uses O(1) global index model for scalability
      */
     struct GlobalState {
-        /// @notice Accumulated ECLV produced per unit of weighted share
+        /// @notice Accumulated $E produced per unit of weighted share
         uint256 accProducedPerWeight;
         
         /// @notice Accumulated reward per unit of weighted share for each token
@@ -87,15 +87,15 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     struct NFTConfig {
         NFTType nftType;          // Type of NFT
         uint256 mintPrice;        // Mint price in USDT (user pays this)
-        uint256 eclvLockAmount;   // ECLV production quota (accounting only, no actual lock)
+        uint256 eclvLockAmount;   // $E production quota (accounting only, no actual lock)
         uint256 shareWeight;      // Weight per share for reward distribution
     }
     
     /**
      * @notice NFT pool data
      * @dev Contains all data for a specific NFT
-     * Important: "Locked" ECLV is just accounting - no actual tokens are locked
-     * User pays USDT, NFT receives ECLV production quota that unlocks over time
+     * Important: "Locked" $E is just accounting - no actual tokens are locked
+     * User pays USDT, NFT receives $E production quota that unlocks over time
      */
     struct NFTPool {
         uint256 nftId;                    // NFT token ID
@@ -105,7 +105,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         uint256 dissolvedAt;              // Dissolution timestamp (0 if not dissolved)
         
         // Unlock tracking (accounting only, no actual token lock)
-        uint256 totalEclvLocked;          // Total ECLV production quota
+        uint256 totalEclvLocked;          // Total $E production quota
         uint256 remainingMintQuota;       // R: Remaining quota (not yet unlocked)
         uint256 unlockedNotWithdrawn;     // U: Unlocked but not withdrawn
         uint256 lastUnlockTime;           // Last unlock timestamp
@@ -114,6 +114,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         // Share tracking
         uint256 totalShares;              // Total shares (always 10)
         uint256 shareWeight;              // Weight per share
+        address[] shareholders;           // List of addresses holding shares
         
         // Frozen indices (set at dissolution)
         uint256 dissolvedAccProducedPerWeight;           // Frozen produced index
@@ -126,7 +127,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
      */
     struct UserShare {
         uint256 shares;                   // Number of shares owned
-        uint256 producedDebt;             // ECLV production debt
+        uint256 producedDebt;             // $E production debt
         mapping(address => uint256) rewardDebt;  // Reward debt per token
         uint256 withdrawnAfterDissolve;   // Amount withdrawn after dissolution
     }
@@ -166,7 +167,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     /// @notice NFT contract reference
     NodeNFT public nodeNFT;
     
-    /// @notice ECLV token contract reference
+    /// @notice $E token contract reference
     EnclaveToken public eclvToken;
     
     /// @notice USDT token contract reference
@@ -312,7 +313,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         address treasury_
     ) external initializer {
         require(nodeNFT_ != address(0), "Invalid NodeNFT address");
-        require(eclvToken_ != address(0), "Invalid ECLV address");
+        require(eclvToken_ != address(0), "Invalid $E address");
         require(usdtToken_ != address(0), "Invalid USDT address");
         require(oracle_ != address(0), "Invalid oracle address");
         require(treasury_ != address(0), "Invalid treasury address");
@@ -328,19 +329,19 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         treasury = treasury_;
         
         // Initialize NFT configurations
-        // Standard NFT: 10,000 USDT, 20,000 ECLV, weight = 1
+        // Standard NFT: 10,000 USDT, 20,000 $E, weight = 1
         nftConfigs[NFTType.Standard] = NFTConfig({
             nftType: NFTType.Standard,
             mintPrice: 10_000 * 10**18,      // 10,000 USDT (assuming 18 decimals)
-            eclvLockAmount: 20_000 * 10**18, // 20,000 ECLV
+            eclvLockAmount: 20_000 * 10**18, // 20,000 $E
             shareWeight: 1                    // Weight per share
         });
         
-        // Premium NFT: 50,000 USDT, 100,000 ECLV, weight = 6
+        // Premium NFT: 50,000 USDT, 100,000 $E, weight = 6
         nftConfigs[NFTType.Premium] = NFTConfig({
             nftType: NFTType.Premium,
             mintPrice: 50_000 * 10**18,       // 50,000 USDT
-            eclvLockAmount: 100_000 * 10**18, // 100,000 ECLV
+            eclvLockAmount: 100_000 * 10**18, // 100,000 $E
             shareWeight: 6                     // Weight per share
         });
         
@@ -366,7 +367,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     
     /**
      * @notice Mint a new NFT
-     * @dev User pays USDT, NFT gets ECLV production quota (no actual ECLV transfer)
+     * @dev User pays USDT, NFT gets $E production quota (no actual $E transfer)
      * @param nftType_ Type of NFT to mint
      * @return nftId Minted NFT ID
      */
@@ -376,21 +377,21 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         // Transfer USDT from user to treasury
         usdtToken.safeTransferFrom(msg.sender, treasury, config.mintPrice);
         
-        // Note: No ECLV transfer needed
-        // The NFT will receive ECLV production quota that unlocks over time
+        // Note: No $E transfer needed
+        // The NFT will receive $E production quota that unlocks over time
         
         // Mint NFT to user
         uint256 nftId = nodeNFT.mint(msg.sender);
         
         // Create NFT pool
-        // Note: totalEclvLocked is the ECLV production quota (not actual locked tokens)
+        // Note: totalEclvLocked is the $E production quota (not actual locked tokens)
         // This quota will unlock gradually over time
         NFTPool storage pool = nftPools[nftId];
         pool.nftId = nftId;
         pool.nftType = nftType_;
         pool.status = NFTStatus.Live;
         pool.createdAt = block.timestamp;
-        pool.totalEclvLocked = config.eclvLockAmount;      // Total ECLV quota
+        pool.totalEclvLocked = config.eclvLockAmount;      // Total $E quota
         pool.remainingMintQuota = config.eclvLockAmount;   // Initially all quota is "locked" (not yet unlocked)
         pool.totalShares = SHARES_PER_NFT;
         pool.shareWeight = config.shareWeight;
@@ -410,6 +411,9 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         // Add to user's NFT list
         userNFTList[msg.sender].push(nftId);
         
+        // Add minter to shareholders list
+        pool.shareholders.push(msg.sender);
+        
         // Update global weighted shares (NFT is now Live)
         globalState.totalWeightedShares += SHARES_PER_NFT * config.shareWeight;
         
@@ -421,15 +425,15 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     /* ========== REWARD DISTRIBUTION FUNCTIONS (ORACLE) ========== */
     
     /**
-     * @notice Distribute ECLV production to all Live NFTs (O(1) operation)
+     * @notice Distribute $E production to all Live NFTs (O(1) operation)
      * @dev Only oracle can call. Updates global index, users claim individually
-     * @param amount Amount of ECLV to distribute
+     * @param amount Amount of $E to distribute
      */
     function distributeProduced(uint256 amount) external onlyOracle nonReentrant {
         require(amount > 0, "Amount must be positive");
         require(globalState.totalWeightedShares > 0, "No active NFTs");
         
-        // Transfer ECLV from oracle to this contract
+        // Transfer $E from oracle to this contract
         eclvToken.transferFrom(msg.sender, address(this), amount);
         
         // Update global index (O(1) operation)
@@ -463,7 +467,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     /* ========== CLAIM FUNCTIONS ========== */
     
     /**
-     * @notice Claim ECLV production for a specific NFT
+     * @notice Claim $E production for a specific NFT
      * @param nftId NFT ID
      * @return amount Claimed amount
      */
@@ -486,7 +490,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
             
             userShare.producedDebt = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
             
-            // Transfer ECLV to user
+            // Transfer $E to user
             eclvToken.transfer(msg.sender, amount);
             
             emit ProducedClaimed(nftId, msg.sender, amount);
@@ -529,7 +533,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     }
     
     /**
-     * @notice Batch claim ECLV production for multiple NFTs
+     * @notice Batch claim $E production for multiple NFTs
      * @param nftIds Array of NFT IDs
      * @return totalAmount Total claimed amount
      */
@@ -612,6 +616,10 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
             toShare.rewardDebt[token] = (toShare.shares * pool.shareWeight * accReward) / PRECISION;
         }
         
+        // Update shareholders list
+        _addShareholder(nftId, to);
+        _removeShareholder(nftId, msg.sender);
+        
         // Add to recipient's NFT list if first time
         if (toShare.shares == shares) {
             userNFTList[to].push(nftId);
@@ -668,7 +676,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     }
     
     /**
-     * @notice Withdraw unlocked ECLV (only in Dissolved state)
+     * @notice Withdraw unlocked $E (only in Dissolved state)
      * @param nftId NFT ID
      * @param amount Amount to withdraw
      */
@@ -691,7 +699,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         pool.unlockedNotWithdrawn -= amount;
         userShare.withdrawnAfterDissolve += amount;
         
-        // Transfer ECLV to user
+        // Transfer $E to user
         eclvToken.transfer(msg.sender, amount);
     }
 
@@ -924,6 +932,10 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
             toShare.rewardDebt[token] = (toShare.shares * pool.shareWeight * accReward) / PRECISION;
         }
         
+        // Update shareholders list
+        _addShareholder(nftId, to);
+        _removeShareholder(nftId, from);
+        
         // Add to recipient's NFT list if first time
         if (toShare.shares == shares) {
             userNFTList[to].push(nftId);
@@ -989,7 +1001,63 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     /* ========== VIEW FUNCTIONS ========== */
     
     /**
-     * @notice Get pending ECLV production for a user
+     * @notice Get user share count for an NFT
+     * @param nftId NFT ID
+     * @param user User address
+     * @return shares Number of shares owned by user
+     */
+    function getUserShareCount(uint256 nftId, address user) external view returns (uint256) {
+        return userShares[nftId][user].shares;
+    }
+    
+    /**
+     * @notice Get list of shareholders for an NFT
+     * @param nftId NFT ID
+     * @return List of addresses holding shares
+     */
+    function getShareholders(uint256 nftId) external view returns (address[] memory) {
+        return nftPools[nftId].shareholders;
+    }
+    
+    /**
+     * @notice Add address to shareholders list if not already present
+     * @param nftId NFT ID
+     * @param user User address
+     */
+    function _addShareholder(uint256 nftId, address user) internal {
+        NFTPool storage pool = nftPools[nftId];
+        // Check if user is already in the list
+        for (uint256 i = 0; i < pool.shareholders.length; i++) {
+            if (pool.shareholders[i] == user) {
+                return; // Already in list
+            }
+        }
+        pool.shareholders.push(user);
+    }
+    
+    /**
+     * @notice Remove address from shareholders list if they have zero shares
+     * @param nftId NFT ID
+     * @param user User address
+     */
+    function _removeShareholder(uint256 nftId, address user) internal {
+        if (userShares[nftId][user].shares > 0) {
+            return; // Still has shares
+        }
+        
+        NFTPool storage pool = nftPools[nftId];
+        for (uint256 i = 0; i < pool.shareholders.length; i++) {
+            if (pool.shareholders[i] == user) {
+                // Replace with last element and pop
+                pool.shareholders[i] = pool.shareholders[pool.shareholders.length - 1];
+                pool.shareholders.pop();
+                return;
+            }
+        }
+    }
+    
+    /**
+     * @notice Get pending $E production for a user
      * @param nftId NFT ID
      * @param user User address
      * @return Pending amount
@@ -1126,7 +1194,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
      * @notice Update NFT configuration
      * @param nftType_ NFT type
      * @param mintPrice_ New mint price
-     * @param eclvLockAmount_ New ECLV lock amount
+     * @param eclvLockAmount_ New $E lock amount
      * @param shareWeight_ New share weight
      */
     function updateNFTConfig(

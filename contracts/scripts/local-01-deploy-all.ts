@@ -1,4 +1,5 @@
-import { ethers, upgrades } from "hardhat";
+import { ethers } from "hardhat";
+import { upgrades } from "hardhat";
 
 async function main() {
   console.log("🏠 LOCAL TESTING - Deploying All Contracts\n");
@@ -27,7 +28,7 @@ async function main() {
   // 3. Deploy NodeNFT
   console.log("\n3️⃣  Deploying NodeNFT...");
   const NodeNFT = await ethers.getContractFactory("NodeNFT");
-  const nft = await NodeNFT.deploy();
+  const nft = await NodeNFT.deploy("Enclave Node NFT", "ENFT");
   await nft.waitForDeployment();
   const nftAddress = await nft.getAddress();
   console.log("✅ NodeNFT:", nftAddress);
@@ -37,7 +38,7 @@ async function main() {
   const NFTManager = await ethers.getContractFactory("NFTManager");
   const manager = await upgrades.deployProxy(
     NFTManager,
-    [nftAddress, eclvAddress, usdtAddress],
+    [nftAddress, eclvAddress, usdtAddress, deployer.address, deployer.address], // oracle and treasury = deployer
     { initializer: "initialize", kind: "uups" }
   );
   await manager.waitForDeployment();
@@ -51,18 +52,13 @@ async function main() {
 
   await nft.setBaseURI("https://api.enclave.com/nft/metadata/");
   console.log("✅ Set Base URI");
-
-  await manager.addRewardToken(usdtAddress);
-  console.log("✅ Added USDT as reward token");
-
-  await manager.setOracle(deployer.address);
-  console.log("✅ Set Oracle");
+  console.log("✅ USDT already added as reward token (in initialize)");
 
   // 6. Initialize balances
   console.log("\n6️⃣  Initializing balances...");
-  const initialECLV = ethers.parseEther("10000000"); // 10M ECLV
-  await eclv.transfer(managerAddress, initialECLV);
-  console.log("✅ Transferred 10M ECLV to NFTManager");
+  const initial$E = ethers.parseEther("10000000"); // 10M $E
+  await eclv.transfer(managerAddress, initial$E);
+  console.log("✅ Transferred 10M $E to NFTManager");
 
   // 7. Setup test accounts with USDT
   console.log("\n7️⃣  Setting up test accounts...");
@@ -97,7 +93,7 @@ async function main() {
 
   console.log("\n💰 Balances:");
   console.log("─".repeat(60));
-  console.log("NFTManager ECLV:", ethers.formatEther(await eclv.balanceOf(managerAddress)), "ECLV");
+  console.log("NFTManager $E:", ethers.formatEther(await eclv.balanceOf(managerAddress)), "$E");
   for (let i = 0; i < testAccounts.length; i++) {
     const balance = await usdt.balanceOf(testAccounts[i].address);
     console.log(`Account #${i + 1} USDT: ${ethers.formatUnits(balance, 18)} USDT`);

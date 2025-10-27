@@ -27,7 +27,7 @@ async function main() {
   console.log("✅ EnclaveToken deployed to:", eclvAddress);
   
   const totalSupply = await eclvToken.totalSupply();
-  console.log("   Total supply:", ethers.formatEther(totalSupply), "ECLV");
+  console.log("   Total supply:", ethers.formatEther(totalSupply), "$E");
 
   // 2. Deploy NodeNFT
   console.log("\n2️⃣  Deploying NodeNFT...");
@@ -67,12 +67,12 @@ async function main() {
   await tx3.wait();
   console.log("✅ USDT added as reward token");
 
-  // 7. Transfer some ECLV to NFTManager for production distribution
-  console.log("\n6️⃣  Setting up initial ECLV balance...");
-  const initialECLV = ethers.parseEther("10000000"); // 10M ECLV
-  const tx4 = await eclvToken.transfer(managerAddress, initialECLV);
+  // 7. Transfer some $E to NFTManager for production distribution
+  console.log("\n6️⃣  Setting up initial $E balance...");
+  const initial$E = ethers.parseEther("10000000"); // 10M $E
+  const tx4 = await eclvToken.transfer(managerAddress, initial$E);
   await tx4.wait();
-  console.log("✅ Transferred 10M ECLV to NFTManager");
+  console.log("✅ Transferred 10M $E to NFTManager");
 
   // 8. Set Oracle (using deployer for testing)
   console.log("\n7️⃣  Setting Oracle...");
@@ -87,14 +87,14 @@ async function main() {
   
   console.log("\n📝 Contract Addresses:");
   console.log("─".repeat(70));
-  console.log("EnclaveToken (ECLV): ", eclvAddress);
+  console.log("EnclaveToken ($E): ", eclvAddress);
   console.log("NodeNFT:             ", nftAddress);
   console.log("NFTManager:          ", managerAddress);
   console.log("TestUSDT:            ", USDT_ADDRESS);
   
   console.log("\n💾 Add these to contracts/.env:");
   console.log("─".repeat(70));
-  console.log(`ECLV_ADDRESS=${eclvAddress}`);
+  console.log(`$E_ADDRESS=${eclvAddress}`);
   console.log(`NFT_ADDRESS=${nftAddress}`);
   console.log(`MANAGER_ADDRESS=${managerAddress}`);
 

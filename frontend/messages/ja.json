@@ -26,14 +26,14 @@
   "home": {
     "hero": {
       "title": "分散型ノード NFT プラットフォーム",
-      "subtitle": "ネットワークの一部を所有。ECLV トークン配布と取引手数料を通じて受動的報酬を獲得。分散型インフラの未来に参加。",
+      "subtitle": "ネットワークの一部を所有。$E トークン配布と取引手数料を通じて受動的報酬を獲得。分散型インフラの未来に参加。",
       "mintButton": "ノード NFT をミント",
       "viewNftsButton": "マイ NFT を表示",
       "connectWallet": "ウォレットを接続して開始"
     },
     "stats": {
       "myNfts": "マイ NFT",
-      "eclvBalance": "ECLV 残高",
+      "eclvBalance": "$E 残高",
       "usdtBalance": "USDT 残高"
     },
     "howItWorks": {
@@ -41,15 +41,15 @@
       "subtitle": "シンプル、透明、収益性あり。分散型ノードネットワークに参加。",
       "step1": {
         "title": "NFT をミント",
-        "description": "USDT を支払い、ECLV トークンをロックしてノード NFT を購入"
+        "description": "USDT を支払い、$E トークンをロックしてノード NFT を購入"
       },
       "step2": {
         "title": "報酬を獲得",
-        "description": "毎日自動的に ECLV 生成と USDT 報酬を受け取る"
+        "description": "毎日自動的に $E 生成と USDT 報酬を受け取る"
       },
       "step3": {
         "title": "トークンのアンロック",
-        "description": "1年後、ロックされた ECLV が毎月 4% ずつ 25 ヶ月間アンロック"
+        "description": "1年後、ロックされた $E が毎月 4% ずつ 25 ヶ月間アンロック"
       },
       "step4": {
         "title": "シェアを取引",
@@ -62,13 +62,13 @@
       "standard": {
         "name": "スタンダードノード",
         "price": "10,000 USDT",
-        "lock": "{amount} ECLV クォータを取得",
+        "lock": "{amount} $E クォータを取得",
         "shares": "NFT あたり 10 シェア",
         "weight": "1倍報酬ウェイト",
         "unlock": "25ヶ月アンロックスケジュール",
         "mintButton": "スタンダードをミント",
         "features": {
-          "quota": "{amount} ECLV クォータを取得",
+          "quota": "{amount} $E クォータを取得",
           "shares": "NFT あたり {count} シェア",
           "weight": "1倍報酬ウェイト",
           "unlock": "25ヶ月アンロックスケジュール"
@@ -77,14 +77,14 @@
       "premium": {
         "name": "プレミアムノード",
         "price": "50,000 USDT",
-        "lock": "{amount} ECLV クォータを取得",
+        "lock": "{amount} $E クォータを取得",
         "shares": "NFT あたり 10 シェア",
         "weight": "6倍報酬ウェイト（スタンダードの1.2倍ウェイト）",
         "unlock": "25ヶ月アンロックスケジュール",
         "mintButton": "プレミアムをミント",
         "badge": "最高価値",
         "features": {
-          "quota": "{amount} ECLV クォータを取得",
+          "quota": "{amount} $E クォータを取得",
           "shares": "NFT あたり {count} シェア",
           "weight": "6倍報酬ウェイト",
           "unlock": "25ヶ月アンロックスケジュール"
@@ -110,9 +110,9 @@
     "howItWorks": {
       "title": "仕組み",
       "step0": "ゼロ知識証明 PoW ノードに受益者として自動接続",
-      "step1": "{price} USDT を支払い、{amount} ECLV 生産クォータを取得",
-      "step2": "毎日 ECLV 生成と USDT 報酬を受け取る",
-      "step3": "1年後、ECLV クォータが毎月 4% ずつ 25 ヶ月間アンロック"
+      "step1": "{price} USDT を支払い、{amount} $E 生産クォータを取得",
+      "step2": "毎日 $E 生成と USDT 報酬を受け取る",
+      "step3": "1年後、$E クォータが毎月 4% ずつ 25 ヶ月間アンロック"
     },
     "summary": {
       "title": "ミント概要",
@@ -120,11 +120,11 @@
       "yourBalance": "あなたの残高",
       "insufficientBalance": "残高不足",
       "needMoreUsdt": "USDT が不足しています。",
-      "needMoreEclv": "ECLV が不足しています。",
+      "needMoreEclv": "$E が不足しています。",
       "confirmTransaction": "ウォレットでトランザクションを確認してください"
     },
     "nftCard": {
-      "lockAmount": "{amount} ECLV をロック",
+      "lockAmount": "{amount} $E をロック",
       "sharesPerNft": "NFT あたり {count} シェア",
       "rewardWeight": "{weight} 倍報酬ウェイト",
       "premiumBonus": "6倍の報酬！",
@@ -148,7 +148,7 @@
     "batchActions": {
       "nftsFound": "{count} 個の NFT が見つかりました",
       "claimAll": "すべての保留中の報酬を一度に請求",
-      "batchClaim": "ECLV を一括請求",
+      "batchClaim": "$E を一括請求",
       "claiming": "請求中..."
     },
     "nftCard": {
@@ -156,9 +156,9 @@
       "premium": "プレミアム",
       "live": "アクティブ",
       "dissolved": "解散済み",
-      "lockedEclv": "ロック ECLV",
+      "lockedEclv": "ロック $E",
       "unlocked": "アンロック済み",
-      "pendingEclv": "保留中 ECLV",
+      "pendingEclv": "保留中 $E",
       "pendingUsdt": "保留中 USDT",
       "created": "作成日：{date}"
     }

@@ -26,14 +26,14 @@
   "home": {
     "hero": {
       "title": "去中心化节点 NFT 平台",
-      "subtitle": "拥有网络的一部分。通过 ECLV 代币分发和交易手续费赚取被动收益。加入去中心化基础设施的未来。",
+      "subtitle": "拥有网络的一部分。通过 $E 代币分发和交易手续费赚取被动收益。加入去中心化基础设施的未来。",
       "mintButton": "铸造节点 NFT",
       "viewNftsButton": "查看我的 NFT",
       "connectWallet": "连接您的钱包以开始"
     },
     "stats": {
       "myNfts": "我的 NFT",
-      "eclvBalance": "ECLV 余额",
+      "eclvBalance": "$E 余额",
       "usdtBalance": "USDT 余额"
     },
     "howItWorks": {
@@ -41,15 +41,15 @@
       "subtitle": "简单、透明且有利可图。加入去中心化节点网络。",
       "step1": {
         "title": "铸造 NFT",
-        "description": "支付 USDT 并锁定 ECLV 代币购买节点 NFT"
+        "description": "支付 USDT 并锁定 $E 代币购买节点 NFT"
       },
       "step2": {
         "title": "赚取奖励",
-        "description": "每日自动接收 ECLV 产出和 USDT 奖励"
+        "description": "每日自动接收 $E 产出和 USDT 奖励"
       },
       "step3": {
         "title": "解锁代币",
-        "description": "一年后，锁定的 ECLV 每月解锁 4%，持续 25 个月"
+        "description": "一年后，锁定的 $E 每月解锁 4%，持续 25 个月"
       },
       "step4": {
         "title": "交易份额",
@@ -62,13 +62,13 @@
       "standard": {
         "name": "标准节点",
         "price": "10,000 USDT",
-        "lock": "获得 {amount} ECLV 额度",
+        "lock": "获得 {amount} $E 额度",
         "shares": "每个 NFT 10 份额",
         "weight": "1倍奖励权重",
         "unlock": "25个月解锁计划",
         "mintButton": "铸造标准节点",
         "features": {
-          "quota": "获得 {amount} ECLV 额度",
+          "quota": "获得 {amount} $E 额度",
           "shares": "{count} 份额每个 NFT",
           "weight": "1倍奖励权重",
           "unlock": "25个月解锁计划"
@@ -77,14 +77,14 @@
       "premium": {
         "name": "高级节点",
         "price": "50,000 USDT",
-        "lock": "获得 {amount} ECLV 额度",
+        "lock": "获得 {amount} $E 额度",
         "shares": "每个 NFT 10 份额",
         "weight": "6倍奖励权重（是标准的1.2倍权重）",
         "unlock": "25个月解锁计划",
         "mintButton": "铸造高级节点",
         "badge": "最佳价值",
         "features": {
-          "quota": "获得 {amount} ECLV 额度",
+          "quota": "获得 {amount} $E 额度",
           "shares": "{count} 份额每个 NFT",
           "weight": "6倍奖励权重",
           "unlock": "25个月解锁计划"
@@ -110,9 +110,9 @@
     "howItWorks": {
       "title": "运作方式",
       "step0": "自动连接到零知识证明的 PoW 节点作为收益者",
-      "step1": "支付 {price} USDT 并获得 {amount} ECLV 产出额度",
-      "step2": "每日接收 ECLV 产出和 USDT 奖励",
-      "step3": "一年后，ECLV 额度每月解锁 4%，持续 25 个月"
+      "step1": "支付 {price} USDT 并获得 {amount} $E 产出额度",
+      "step2": "每日接收 $E 产出和 USDT 奖励",
+      "step3": "一年后，$E 额度每月解锁 4%，持续 25 个月"
     },
     "summary": {
       "title": "铸造摘要",
@@ -120,11 +120,11 @@
       "yourBalance": "您的余额",
       "insufficientBalance": "余额不足",
       "needMoreUsdt": "您需要更多 USDT。",
-      "needMoreEclv": "您需要更多 ECLV。",
+      "needMoreEclv": "您需要更多 $E。",
       "confirmTransaction": "请在钱包中确认交易"
     },
     "nftCard": {
-      "lockAmount": "锁定 {amount} ECLV",
+      "lockAmount": "锁定 {amount} $E",
       "sharesPerNft": "每个 NFT {count} 份额",
       "rewardWeight": "{weight} 倍奖励权重",
       "premiumBonus": "6 倍更多奖励！",
@@ -148,7 +148,7 @@
     "batchActions": {
       "nftsFound": "找到 {count} 个 NFT",
       "claimAll": "一次性领取所有待领取奖励",
-      "batchClaim": "批量领取 ECLV",
+      "batchClaim": "批量领取 $E",
       "claiming": "领取中..."
     },
     "nftCard": {
@@ -156,9 +156,9 @@
       "premium": "高级",
       "live": "活跃",
       "dissolved": "已解散",
-      "lockedEclv": "锁定 ECLV",
+      "lockedEclv": "锁定 $E",
       "unlocked": "已解锁",
-      "pendingEclv": "待领取 ECLV",
+      "pendingEclv": "待领取 $E",
       "pendingUsdt": "待领取 USDT",
       "created": "创建时间：{date}"
     }

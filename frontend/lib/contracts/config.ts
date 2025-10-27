@@ -43,14 +43,14 @@ export const NFT_CONFIG = {
   [NFTType.Standard]: {
     name: "Standard Node",
     mintPrice: "10000", // 10,000 USDT
-    eclvLockAmount: "20000", // 20,000 ECLV
+    eclvLockAmount: "20000", // 20,000 $E
     shareWeight: 1,
     sharesPerNFT: 10,
   },
   [NFTType.Premium]: {
     name: "Premium Node",
     mintPrice: "50000", // 50,000 USDT
-    eclvLockAmount: "100000", // 100,000 ECLV
+    eclvLockAmount: "100000", // 100,000 $E
     shareWeight: 6,
     sharesPerNFT: 10,
   },
@@ -70,7 +70,7 @@ export const UNLOCK_CONFIG = {
  * Token decimals
  */
 export const TOKEN_DECIMALS = {
-  ECLV: 18,
+  E: 18,
   USDT: 18, // BSC USDT uses 18 decimals
 } as const;
 

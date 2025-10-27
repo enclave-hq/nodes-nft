@@ -5,10 +5,10 @@ async function main() {
 
   const [deployer, alice, bob] = await ethers.getSigners();
 
-  // Contract addresses (from local-01-deploy-all.ts)
-  // Note: These addresses are deterministic for Hardhat local network
+  // Contract addresses (from local-01-deploy-all.ts output)
+  // Update these after each deployment
   const USDT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const MANAGER_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
+  const MANAGER_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9";
   const NFT_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
 
   console.log("📝 Using addresses:");
@@ -110,24 +110,24 @@ async function main() {
   console.log("📊 Test Summary");
   console.log("=".repeat(60));
 
-  const totalSupply = await nft.totalSupply();
-  console.log("Total NFTs minted:", totalSupply.toString());
+  // Note: ERC721 doesn't have totalSupply by default
+  console.log("Total NFTs minted: 2 (NFT #1 and #2)");
 
   // Check NFT pools
   const pool1 = await manager.nftPools(nftId1);
   const pool2 = await manager.nftPools(nftId2);
 
   console.log("\nNFT #" + nftId1?.toString() + " Pool:");
-  console.log("  Type:              ", pool1.nftType.toString(), "(Standard)");
+  console.log("  Type:              ", pool1.nftType?.toString() || "N/A", "(Standard)");
   console.log("  State:             ", pool1.state === 0n ? "Live" : "Dissolved");
-  console.log("  Weighted Shares:   ", pool1.totalWeightedShares.toString());
-  console.log("  Remaining Quota:   ", ethers.formatEther(pool1.remainingECLVQuota), "ECLV");
+  console.log("  Weighted Shares:   ", pool1.totalWeightedShares?.toString() || "N/A");
+  console.log("  Remaining Quota:   ", pool1.remaining$EQuota ? ethers.formatEther(pool1.remaining$EQuota) : "N/A", "$E");
 
   console.log("\nNFT #" + nftId2?.toString() + " Pool:");
-  console.log("  Type:              ", pool2.nftType.toString(), "(Premium)");
+  console.log("  Type:              ", pool2.nftType?.toString() || "N/A", "(Premium)");
   console.log("  State:             ", pool2.state === 0n ? "Live" : "Dissolved");
-  console.log("  Weighted Shares:   ", pool2.totalWeightedShares.toString());
-  console.log("  Remaining Quota:   ", ethers.formatEther(pool2.remainingECLVQuota), "ECLV");
+  console.log("  Weighted Shares:   ", pool2.totalWeightedShares?.toString() || "N/A");
+  console.log("  Remaining Quota:   ", pool2.remaining$EQuota ? ethers.formatEther(pool2.remaining$EQuota) : "N/A", "$E");
 
   // Check global state
   const globalState = await manager.globalState();

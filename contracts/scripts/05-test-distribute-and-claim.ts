@@ -11,20 +11,20 @@ async function main() {
 
   // Contract addresses
   const USDT_ADDRESS = process.env.USDT_ADDRESS || "";
-  const ECLV_ADDRESS = process.env.ECLV_ADDRESS || "";
+  const $E_ADDRESS = process.env.$E_ADDRESS || "";
   const MANAGER_ADDRESS = process.env.MANAGER_ADDRESS || "";
 
-  if (!USDT_ADDRESS || !ECLV_ADDRESS || !MANAGER_ADDRESS) {
+  if (!USDT_ADDRESS || !$E_ADDRESS || !MANAGER_ADDRESS) {
     throw new Error("❌ Please set contract addresses in .env");
   }
 
   // Connect to contracts
   const usdt = await ethers.getContractAt("TestUSDT", USDT_ADDRESS);
-  const eclv = await ethers.getContractAt("EnclaveToken", ECLV_ADDRESS);
+  const eclv = await ethers.getContractAt("EnclaveToken", $E_ADDRESS);
   const manager = await ethers.getContractAt("NFTManager", MANAGER_ADDRESS);
 
   console.log("Connected to contracts:");
-  console.log("ECLV:       ", ECLV_ADDRESS);
+  console.log("$E:       ", $E_ADDRESS);
   console.log("USDT:       ", USDT_ADDRESS);
   console.log("NFTManager: ", MANAGER_ADDRESS);
   console.log();
@@ -56,23 +56,23 @@ async function main() {
     return;
   }
 
-  // Test 1: Distribute ECLV Production
-  console.log("🎯 Test 1: Distributing ECLV Production...");
+  // Test 1: Distribute $E Production
+  console.log("🎯 Test 1: Distributing $E Production...");
   try {
-    // Distribute 1000 ECLV
+    // Distribute 1000 $E
     const produceAmount = ethers.parseEther("1000");
-    console.log("Distributing", ethers.formatEther(produceAmount), "ECLV...");
+    console.log("Distributing", ethers.formatEther(produceAmount), "$E...");
     
     const tx1 = await manager.distributeProduced(produceAmount);
     await tx1.wait();
-    console.log("✅ ECLV distributed!");
+    console.log("✅ $E distributed!");
 
     // Check updated global state
     const globalStateAfter1 = await manager.globalState();
     console.log("   New Accumulated Per Weight:", ethers.formatUnits(globalStateAfter1.accProducedPerWeight, 18));
     console.log();
   } catch (error: any) {
-    console.error("❌ Failed to distribute ECLV:");
+    console.error("❌ Failed to distribute $E:");
     console.error(error.message || error);
     console.log();
   }
@@ -120,9 +120,9 @@ async function main() {
   try {
     const nftId = 1;
     
-    // Check pending ECLV
-    const pendingECLV = await manager.pendingProduced(nftId);
-    console.log("Pending ECLV:", ethers.formatEther(pendingECLV), "ECLV");
+    // Check pending $E
+    const pending$E = await manager.pendingProduced(nftId);
+    console.log("Pending $E:", ethers.formatEther(pending$E), "$E");
 
     // Check pending USDT
     const pendingUSDT = await manager.pendingReward(nftId, USDT_ADDRESS);
@@ -147,13 +147,13 @@ async function main() {
       console.log("⚠️  You don't own shares in NFT #1");
       console.log();
     } else {
-      // Claim produced ECLV
-      console.log("Claiming ECLV production...");
+      // Claim produced $E
+      console.log("Claiming $E production...");
       const balanceBefore = await eclv.balanceOf(deployer.address);
       const tx3 = await manager.claimProduced(nftId);
       await tx3.wait();
       const balanceAfter = await eclv.balanceOf(deployer.address);
-      console.log("✅ Claimed", ethers.formatEther(balanceAfter - balanceBefore), "ECLV");
+      console.log("✅ Claimed", ethers.formatEther(balanceAfter - balanceBefore), "$E");
 
       // Claim USDT rewards
       console.log("Claiming USDT rewards...");

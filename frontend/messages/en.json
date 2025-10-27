@@ -26,14 +26,14 @@
   "home": {
     "hero": {
       "title": "Decentralized Node NFT Platform",
-      "subtitle": "Own a piece of the network. Earn passive rewards through ECLV token distribution and transaction fees. Join the future of decentralized infrastructure.",
+      "subtitle": "Own a piece of the network. Earn passive rewards through $E token distribution and transaction fees. Join the future of decentralized infrastructure.",
       "mintButton": "Mint Node NFT",
       "viewNftsButton": "View My NFTs",
       "connectWallet": "Connect your wallet to get started"
     },
     "stats": {
       "myNfts": "My NFTs",
-      "eclvBalance": "ECLV Balance",
+      "eclvBalance": "$E Balance",
       "usdtBalance": "USDT Balance"
     },
     "howItWorks": {
@@ -41,15 +41,15 @@
       "subtitle": "Simple, transparent, and profitable. Join the decentralized node network.",
       "step1": {
         "title": "Mint NFT",
-        "description": "Purchase a Node NFT by paying USDT and locking ECLV tokens"
+        "description": "Purchase a Node NFT by paying USDT and locking $E tokens"
       },
       "step2": {
         "title": "Earn Rewards",
-        "description": "Receive daily ECLV production and USDT rewards automatically"
+        "description": "Receive daily $E production and USDT rewards automatically"
       },
       "step3": {
         "title": "Unlock Tokens",
-        "description": "After 1 year, 4% of locked ECLV unlocks monthly for 25 months"
+        "description": "After 1 year, 4% of locked $E unlocks monthly for 25 months"
       },
       "step4": {
         "title": "Trade Shares",
@@ -62,13 +62,13 @@
       "standard": {
         "name": "Standard Node",
         "price": "10,000 USDT",
-        "lock": "Get {amount} ECLV quota",
+        "lock": "Get {amount} $E quota",
         "shares": "10 shares per NFT",
         "weight": "1x reward weight",
         "unlock": "25-month unlock schedule",
         "mintButton": "Mint Standard",
         "features": {
-          "quota": "Get {amount} ECLV quota",
+          "quota": "Get {amount} $E quota",
           "shares": "{count} shares per NFT",
           "weight": "1x reward weight",
           "unlock": "25-month unlock schedule"
@@ -77,14 +77,14 @@
       "premium": {
         "name": "Premium Node",
         "price": "50,000 USDT",
-        "lock": "Get {amount} ECLV quota",
+        "lock": "Get {amount} $E quota",
         "shares": "10 shares per NFT",
         "weight": "6x reward weight (1.2x weight than standard)",
         "unlock": "25-month unlock schedule",
         "mintButton": "Mint Premium",
         "badge": "BEST VALUE",
         "features": {
-          "quota": "Get {amount} ECLV quota",
+          "quota": "Get {amount} $E quota",
           "shares": "{count} shares per NFT",
           "weight": "6x reward weight",
           "unlock": "25-month unlock schedule"
@@ -110,9 +110,9 @@
     "howItWorks": {
       "title": "How It Works",
       "step0": "Automatically connect to zero-knowledge proof PoW node as beneficiary",
-      "step1": "Pay {price} USDT and get {amount} ECLV production quota",
-      "step2": "Receive daily ECLV production and USDT rewards",
-      "step3": "After 1 year, 4% of ECLV quota unlocks monthly for 25 months"
+      "step1": "Pay {price} USDT and get {amount} $E production quota",
+      "step2": "Receive daily $E production and USDT rewards",
+      "step3": "After 1 year, 4% of $E quota unlocks monthly for 25 months"
     },
     "summary": {
       "title": "Mint Summary",
@@ -120,11 +120,11 @@
       "yourBalance": "Your Balance",
       "insufficientBalance": "Insufficient Balance",
       "needMoreUsdt": "You need more USDT.",
-      "needMoreEclv": "You need more ECLV.",
+      "needMoreEclv": "You need more $E.",
       "confirmTransaction": "Please confirm the transaction in your wallet"
     },
     "nftCard": {
-      "lockAmount": "Lock {amount} ECLV",
+      "lockAmount": "Lock {amount} $E",
       "sharesPerNft": "{count} shares per NFT",
       "rewardWeight": "{weight}x reward weight",
       "premiumBonus": "6x more rewards!",
@@ -148,7 +148,7 @@
     "batchActions": {
       "nftsFound": "{count} NFTs found",
       "claimAll": "Claim all pending rewards at once",
-      "batchClaim": "Batch Claim ECLV",
+      "batchClaim": "Batch Claim $E",
       "claiming": "Claiming..."
     },
     "nftCard": {
@@ -156,9 +156,9 @@
       "premium": "Premium",
       "live": "Live",
       "dissolved": "Dissolved",
-      "lockedEclv": "Locked ECLV",
+      "lockedEclv": "Locked $E",
       "unlocked": "Unlocked",
-      "pendingEclv": "Pending ECLV",
+      "pendingEclv": "Pending $E",
       "pendingUsdt": "Pending USDT",
       "created": "Created: {date}"
     }
