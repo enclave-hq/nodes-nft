@@ -2,12 +2,13 @@
 
 import { Navbar } from "@/components/Navbar";
 import { useWallet } from "@/lib/providers/WalletProvider";
-import { useUserNFTs, useNFTPool, useUserShare } from "@/lib/hooks/useNFTManager";
-import { useNFTSellOrders, useCreateSellOrder, useCancelSellOrder, useBuyShares } from "@/lib/hooks/useMarketplace";
-import { formatTokenAmount, formatAddress, formatDateTime, cn, parseTokenAmount } from "@/lib/utils";
+import { useWeb3Data } from "@/lib/stores/web3Store";
+import { useNFTPool, useUserShare, useCreateSellOrder, useUserSharesInfo } from "@/lib/hooks/useNFTManager";
+import { useNFTSellOrders, useAllSellOrders, useCancelSellOrder, useBuyShares } from "@/lib/hooks/useMarketplace";
+import { formatTokenAmount, formatAddress, formatDate, cn, parseTokenAmount } from "@/lib/utils";
 import { NFT_CONFIG, NFTType, NFTStatus } from "@/lib/contracts/config";
-import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp, RefreshCw } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
 
 function SellOrderCard({ 
@@ -32,7 +33,12 @@ function SellOrderCard({
 
   const handleBuy = async () => {
     if (isOwnOrder) return;
-    onBuy(order.orderId);
+    try {
+      await buyShares.mutateAsync({ orderId: order.orderId });
+      onBuy(order.orderId);
+    } catch (error) {
+      console.error("Failed to buy shares:", error);
+    }
   };
 
   const handleCancel = async () => {
@@ -49,7 +55,7 @@ function SellOrderCard({
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            {config.name} #{order.nftId}
+            {tTypes(`${pool.nftType === 0 ? 'standard' : 'premium'}.name`)} #{order.nftId}
           </h3>
           <p className="text-sm text-gray-500">
             {t('sharesAvailable', { count: order.shares })}
@@ -74,6 +80,10 @@ function SellOrderCard({
         <p className="mt-1 text-xs text-gray-500">
           {t('total', { amount: formatTokenAmount(totalPrice, 18, 2) })}
         </p>
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          <span>订单ID: #{order.orderId}</span>
+          <span>创建时间: {order.createdAtDisplay}</span>
+        </div>
       </div>
 
       {/* Seller Info */}
@@ -86,10 +96,7 @@ function SellOrderCard({
 
       {/* Listed Date */}
       <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-gray-500">{t('listed')}:</span>
-        <span className="text-gray-900">
-          {formatDateTime(order.createdAt)}
-        </span>
+        <span className="text-gray-500">{t('listed', { time: formatDate(order.createdAt) })}</span>
       </div>
 
       {/* Action Button */}
@@ -97,10 +104,10 @@ function SellOrderCard({
         {isOwnOrder ? (
           <button
             onClick={handleCancel}
-            disabled={cancelOrder.isPending}
+            disabled={cancelOrder.isLoading}
             className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
           >
-            {cancelOrder.isPending ? (
+            {cancelOrder.isLoading ? (
               <span className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t('cancelling')}
@@ -115,10 +122,10 @@ function SellOrderCard({
         ) : (
           <button
             onClick={handleBuy}
-            disabled={buyShares.isPending}
+            disabled={buyShares.isLoading}
             className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
           >
-            {buyShares.isPending ? (
+            {buyShares.isLoading ? (
               <span className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t('buying')}
@@ -140,15 +147,18 @@ function CreateOrderModal({
   nftId,
   maxShares,
   onClose,
+  onOrderCreated,
 }: {
   nftId: number;
   maxShares: number;
   onClose: () => void;
+  onOrderCreated?: () => void;
 }) {
   const t = useTranslations('marketplace.createOrder');
   const [shares, setShares] = useState("1");
   const [pricePerShare, setPricePerShare] = useState("");
   const createOrder = useCreateSellOrder();
+  const { totalShares, availableShares, listedShares } = useUserSharesInfo(nftId);
 
   const handleCreate = async () => {
     if (!shares || !pricePerShare) return;
@@ -162,6 +172,11 @@ function CreateOrderModal({
         shares: sharesNum,
         pricePerShare: pricePerShareBigInt,
       });
+      
+      // Notify parent component to refresh orders
+      if (onOrderCreated) {
+        onOrderCreated();
+      }
       
       onClose();
     } catch (error) {
@@ -191,15 +206,19 @@ function CreateOrderModal({
             <input
               type="number"
               min="1"
-              max={maxShares}
+              max={availableShares}
               value={shares}
               onChange={(e) => setShares(e.target.value)}
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder={t('sharesPlaceholder')}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              {t('youOwn', { count: maxShares })}
-            </p>
+            <div className="mt-1 text-xs text-gray-500 space-y-1">
+              <p>{t('youOwn', { count: totalShares })}</p>
+              {listedShares > 0 && (
+                <p className="text-orange-600">{t('listedShares', { count: listedShares })}</p>
+              )}
+              <p className="text-green-600">{t('availableShares', { count: availableShares })}</p>
+            </div>
           </div>
 
           {/* Price Input */}
@@ -239,10 +258,10 @@ function CreateOrderModal({
           </button>
           <button
             onClick={handleCreate}
-            disabled={!shares || !pricePerShare || createOrder.isPending}
+            disabled={!shares || !pricePerShare || createOrder.isLoading}
             className="flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
           >
-            {createOrder.isPending ? (
+            {createOrder.isLoading ? (
               <span className="flex items-center justify-center">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 {t('creating')}
@@ -261,18 +280,22 @@ export default function MarketplacePage() {
   const t = useTranslations('marketplace');
   const tCommon = useTranslations('common');
   const { isConnected } = useWallet();
-  const { data: userNFTs } = useUserNFTs();
+  const web3Data = useWeb3Data();
   const buyShares = useBuyShares();
+  const allOrders = useAllSellOrders();
+  
   const [selectedNFT, setSelectedNFT] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createOrderNFT, setCreateOrderNFT] = useState<{ nftId: number; maxShares: number } | null>(null);
 
   // Get orders for selected NFT or all NFTs
-  const nftIdsToShow = selectedNFT !== null ? [selectedNFT] : (userNFTs || []);
+  const nftIdsToShow = selectedNFT !== null ? [selectedNFT] : (web3Data.nfts || []).map(nft => nft.id);
   
   const handleBuy = async (orderId: number) => {
     try {
       await buyShares.mutateAsync({ orderId });
+      // Refresh orders after successful purchase
+      allOrders.refetch();
     } catch (error) {
       console.error("Failed to buy shares:", error);
     }
@@ -282,6 +305,20 @@ export default function MarketplacePage() {
     setCreateOrderNFT({ nftId, maxShares });
     setShowCreateModal(true);
   };
+
+  // Manual refresh only - no auto-refresh to prevent infinite loops
+  useEffect(() => {
+    if (!isConnected) return;
+    
+    // Initial fetch with delay to avoid race conditions
+    const initialTimeout = setTimeout(() => {
+      allOrders.refetch();
+    }, 2000); // Increased delay
+
+    return () => {
+      clearTimeout(initialTimeout);
+    };
+  }, [isConnected]); // Only depend on connection status
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -317,7 +354,7 @@ export default function MarketplacePage() {
                   {t('sidebar.subtitle')}
                 </p>
 
-                {!userNFTs || userNFTs.length === 0 ? (
+                {!web3Data.nfts || web3Data.nfts.length === 0 ? (
                   <div className="mt-4 rounded-lg border-2 border-dashed border-gray-200 p-6 text-center">
                     <Tag className="mx-auto h-8 w-8 text-gray-400" />
                     <p className="mt-2 text-sm text-gray-500">
@@ -326,10 +363,10 @@ export default function MarketplacePage() {
                   </div>
                 ) : (
                   <div className="mt-4 space-y-2">
-                    {userNFTs.map((nftId: number) => (
+                    {web3Data.nfts.map((nft: any) => (
                       <NFTListItem
-                        key={nftId}
-                        nftId={nftId}
+                        key={nft.id}
+                        nftId={nft.id}
                         onCreateOrder={handleCreateOrder}
                       />
                     ))}
@@ -341,30 +378,66 @@ export default function MarketplacePage() {
             {/* Main Content - Orders */}
             <div className="lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {t('orders.title')}
-                </h2>
-                <button
-                  onClick={() => setSelectedNFT(null)}
-                  className="text-sm text-blue-600 hover:text-blue-700"
-                >
-                  {t('orders.viewAll')}
-                </button>
+                <div className="flex items-center space-x-4">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {t('orders.title')}
+                  </h2>
+                  {allOrders.data && allOrders.data.length > 0 && (
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                      {allOrders.data.length} 个活跃订单
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => allOrders.refetch()}
+                    disabled={allOrders.isLoading}
+                    className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                  >
+                    {allOrders.isLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        刷新中...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-1" />
+                        刷新订单
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setSelectedNFT(null)}
+                    className="text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    {t('orders.viewAll')}
+                  </button>
+                </div>
               </div>
 
               {/* Orders Grid */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {nftIdsToShow.map((nftId: number) => (
-                  <OrdersForNFT
-                    key={nftId}
-                    nftId={nftId}
-                    onBuy={handleBuy}
-                  />
-                ))}
-              </div>
-
-              {/* Empty State */}
-              {nftIdsToShow.length === 0 && (
+              {allOrders.isLoading ? (
+                <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                  <span className="ml-2 text-gray-600">加载订单中...</span>
+                </div>
+              ) : allOrders.error ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+                  <p className="text-red-600">加载订单失败: {allOrders.error}</p>
+                  <button
+                    onClick={() => allOrders.refetch()}
+                    className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                  >
+                    重试
+                  </button>
+                </div>
+              ) : allOrders.data && allOrders.data.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {allOrders.data.map((order) => (
+                    <SellOrderCard key={order.orderId} order={order} onBuy={handleBuy} />
+                  ))}
+                </div>
+              ) : (
                 <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center">
                   <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-4 text-lg font-medium text-gray-900">
@@ -373,6 +446,10 @@ export default function MarketplacePage() {
                   <p className="mt-2 text-sm text-gray-500">
                     {t('orders.empty.description')}
                   </p>
+                  <div className="mt-4 text-xs text-gray-400">
+                    <p>调试信息: NFT数量 {web3Data.nfts?.length || 0}</p>
+                    <p>连接状态: {isConnected ? '已连接' : '未连接'}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -389,6 +466,9 @@ export default function MarketplacePage() {
             setShowCreateModal(false);
             setCreateOrderNFT(null);
           }}
+          onOrderCreated={() => {
+            allOrders.refetch();
+          }}
         />
       )}
     </div>
@@ -403,27 +483,34 @@ function NFTListItem({
   onCreateOrder: (nftId: number, maxShares: number) => void;
 }) {
   const t = useTranslations('marketplace.nftList');
+  const tTypes = useTranslations('nftTypes');
   const { data: pool } = useNFTPool(nftId);
   const { data: userShare } = useUserShare(nftId);
+  const { totalShares, availableShares, listedShares } = useUserSharesInfo(nftId);
 
-  if (!pool || !userShare || userShare.shares === 0) return null;
+  if (!pool || !userShare || userShare.shares === "0") return null;
 
   const config = NFT_CONFIG[pool.nftType as NFTType];
 
   return (
     <div className="rounded-lg border border-gray-200 p-3 hover:border-gray-300">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">
-            {config.name} #{nftId}
+            {pool.nftType === NFTType.Standard ? tTypes('standard.name') : tTypes('premium.name')} #{nftId}
           </p>
-          <p className="text-xs text-gray-500">
-            {t('shares', { count: userShare.shares })}
-          </p>
+          <div className="text-xs text-gray-500 space-y-1 mt-1">
+            <p>总份额: {totalShares}</p>
+            {listedShares > 0 && (
+              <p className="text-orange-600">已挂单: {listedShares}</p>
+            )}
+            <p className="text-green-600">可出售: {availableShares}</p>
+          </div>
         </div>
         <button
-          onClick={() => onCreateOrder(nftId, userShare.shares)}
-          className="rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700"
+          onClick={() => onCreateOrder(nftId, availableShares)}
+          disabled={availableShares === 0}
+          className="rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -433,12 +520,27 @@ function NFTListItem({
 }
 
 function OrdersForNFT({ nftId, onBuy }: { nftId: number; onBuy: (orderId: number) => void }) {
-  const { data: orders, isLoading } = useNFTSellOrders(nftId);
+  const { data: orders, isLoading, error, refetch } = useNFTSellOrders(nftId);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-8">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-600">加载订单中...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+        <p className="text-red-600">加载订单失败: {error}</p>
+        <button
+          onClick={() => refetch()}
+          className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+        >
+          重试
+        </button>
       </div>
     );
   }

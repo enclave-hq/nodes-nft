@@ -7,7 +7,7 @@ Modern Next.js 14 frontend for the Enclave Node NFT platform with wallet integra
 - ✅ **Next.js 14** with App Router
 - ✅ **TypeScript** for type safety
 - ✅ **Tailwind CSS** for styling
-- ✅ **Ethers.js v6** for blockchain interactions
+- ✅ **Wallet SDK** for blockchain interactions
 - ✅ **React Query** for data fetching and caching
 - ✅ **Wallet Connection** (MetaMask, etc.)
 - ✅ **BSC Network** support (Testnet & Mainnet)

@@ -6,36 +6,38 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title TestUSDT
- * @notice Test USDT token for BSC Testnet
- * @dev ERC20 token with minting capability for testing
+ * @dev Test USDT token for BSC testnet
+ * @notice This is a test token that mimics USDT behavior (18 decimals)
  */
 contract TestUSDT is ERC20, Ownable {
-    /**
-     * @notice Constructor
-     * @dev Deploys Test USDT with initial supply to deployer
-     */
+    uint8 private constant _DECIMALS = 18;
+    
     constructor() ERC20("Test USDT", "USDT") Ownable(msg.sender) {
-        // Mint initial 10 million USDT to deployer for testing
-        _mint(msg.sender, 10_000_000 * 10**18);
+        // No initial supply - mint as needed for testing
     }
-
+    
     /**
-     * @notice Mint tokens to an address
-     * @dev Only owner can mint
-     * @param to Address to receive tokens
-     * @param amount Amount to mint (in wei)
+     * @dev Returns the number of decimals used to get its user representation
+     */
+    function decimals() public pure override returns (uint8) {
+        return _DECIMALS;
+    }
+    
+    /**
+     * @dev Mint tokens to a specific address
+     * @param to The address to mint tokens to
+     * @param amount The amount of tokens to mint (in smallest unit)
      */
     function mint(address to, uint256 amount) external onlyOwner {
         _mint(to, amount);
     }
-
+    
     /**
-     * @notice Burn tokens from sender
-     * @param amount Amount to burn (in wei)
+     * @dev Burn tokens from a specific address
+     * @param from The address to burn tokens from
+     * @param amount The amount of tokens to burn (in smallest unit)
      */
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
+    function burn(address from, uint256 amount) external onlyOwner {
+        _burn(from, amount);
     }
 }
-
-

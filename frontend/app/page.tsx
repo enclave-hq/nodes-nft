@@ -2,20 +2,20 @@
 
 import { Navbar } from "@/components/Navbar";
 import { useWallet } from "@/lib/providers/WalletProvider";
-import { useUserNFTs } from "@/lib/hooks/useNFTManager";
-import { useBalances } from "@/lib/hooks/useBalances";
+import { useWeb3Data } from "@/lib/stores/web3Store";
 import { formatTokenAmount, formatUSD } from "@/lib/utils";
 import { NFT_CONFIG, NFTType } from "@/lib/contracts/config";
 import { ArrowRight, Coins, TrendingUp, Users, Shield } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations } from "@/lib/i18n/provider";
+import { TokenBalance, NFTCount } from "@/lib/components/FormattedNumber";
 
 export default function Home() {
   const t = useTranslations('home');
   const tCommon = useTranslations('common');
   const { isConnected } = useWallet();
-  const { data: nftIds } = useUserNFTs();
-  const { data: balances } = useBalances();
+  const web3Data = useWeb3Data();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -24,6 +24,15 @@ export default function Home() {
       {/* Hero Section */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="text-center">
+          <div className="flex justify-center mb-8">
+        <Image
+              src="/LOGO_WITH_BACK.png"
+              alt="Enclave Logo"
+              width={200}
+              height={80}
+              className="h-20 w-auto"
+            />
+          </div>
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
             {t('hero.title')}
           </h1>
@@ -63,7 +72,10 @@ export default function Home() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">{t('stats.myNfts')}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">
-                    {nftIds?.length || 0}
+                    <NFTCount 
+                      count={web3Data.nfts?.length || 0}
+                      className="text-3xl font-semibold text-gray-900"
+                    />
                   </p>
                 </div>
                 <div className="rounded-full bg-blue-100 p-3">
@@ -77,7 +89,11 @@ export default function Home() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">{t('stats.eclvBalance')}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">
-                    {balances ? formatTokenAmount(balances.eclv, 18, 2) : "0"}
+                    <TokenBalance 
+                      value={web3Data.balances.e || "0"}
+                      decimals={2}
+                      className="text-3xl font-semibold text-gray-900"
+                    />
                   </p>
                 </div>
                 <div className="rounded-full bg-purple-100 p-3">
@@ -91,7 +107,11 @@ export default function Home() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">{t('stats.usdtBalance')}</p>
                   <p className="mt-2 text-3xl font-semibold text-gray-900">
-                    {balances ? formatTokenAmount(balances.usdt, 18, 2) : "0"}
+                    <TokenBalance 
+                      value={web3Data.balances.usdt || "0"}
+                      decimals={2}
+                      className="text-3xl font-semibold text-gray-900"
+                    />
                   </p>
                 </div>
                 <div className="rounded-full bg-green-100 p-3">
@@ -199,7 +219,7 @@ export default function Home() {
             <ul className="mt-8 space-y-3 text-sm leading-6 text-gray-600">
               <li className="flex gap-x-3">
                 <span className="text-blue-600">✓</span>
-                {t('nftTypes.standard.lock', { amount: formatTokenAmount(NFT_CONFIG[NFTType.Standard].eclvLockAmount, 0, 0) })}
+                {t('nftTypes.standard.lock')} {formatTokenAmount(NFT_CONFIG[NFTType.Standard].eLockAmount, 0, 0)}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-blue-600">✓</span>
@@ -241,7 +261,7 @@ export default function Home() {
             <ul className="mt-8 space-y-3 text-sm leading-6 text-purple-100">
               <li className="flex gap-x-3">
                 <span className="text-white">✓</span>
-                {t('nftTypes.premium.lock', { amount: formatTokenAmount(NFT_CONFIG[NFTType.Premium].eclvLockAmount, 0, 0) })}
+                {t('nftTypes.premium.lock')} {formatTokenAmount(NFT_CONFIG[NFTType.Premium].eLockAmount, 0, 0)}
               </li>
               <li className="flex gap-x-3">
                 <span className="text-white">✓</span>
@@ -277,20 +297,20 @@ export default function Home() {
             <div className="mt-6 flex justify-center space-x-6">
               <a 
                 href="https://github.com/enclave-hq/nodes-nft" 
-                target="_blank" 
-                rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white text-sm"
               >
                 {t('footer.github')}
-              </a>
-              <a 
+          </a>
+          <a
                 href="https://x.com/favorlabs" 
-                target="_blank" 
-                rel="noopener noreferrer"
+            target="_blank"
+            rel="noopener noreferrer"
                 className="text-gray-400 hover:text-white text-sm"
-              >
+          >
                 {t('footer.twitter')}
-              </a>
+          </a>
             </div>
             <p className="mt-6 text-xs text-gray-500">
               {t('footer.rights')}

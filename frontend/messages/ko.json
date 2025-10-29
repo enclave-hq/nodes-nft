@@ -160,8 +160,10 @@
       "unlocked": "잠금 해제됨",
       "pendingEclv": "대기 중 $E",
       "pendingUsdt": "대기 중 USDT",
-      "created": "생성일: {date}"
-    }
+      "created": "생성일: {date}",
+      "claim": "청구"
+    },
+    "created": "생성일"
   },
   "marketplace": {
     "title": "마켓플레이스",
@@ -206,13 +208,17 @@
       "createButton": "주문 생성"
     }
   },
-  "nftTypes": {
-    "standard": "스탠다드",
-    "premium": "프리미엄"
-  },
   "status": {
     "live": "활성",
     "dissolved": "해산됨"
+  },
+  "nftTypes": {
+    "standard": {
+      "name": "스탠다드 노드"
+    },
+    "premium": {
+      "name": "프리미엄 노드"
+    }
   },
   "errors": {
     "connectWallet": "지갑을 연결해주세요",

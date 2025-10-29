@@ -32,7 +32,7 @@ async function main() {
   // 2. Deploy NodeNFT
   console.log("\n2️⃣  Deploying NodeNFT...");
   const NodeNFT = await ethers.getContractFactory("NodeNFT");
-  const nodeNFT = await NodeNFT.deploy();
+  const nodeNFT = await NodeNFT.deploy("Enclave Node NFT", "ENFT");
   await nodeNFT.waitForDeployment();
   const nftAddress = await nodeNFT.getAddress();
   console.log("✅ NodeNFT deployed to:", nftAddress);
@@ -42,7 +42,7 @@ async function main() {
   const NFTManager = await ethers.getContractFactory("NFTManager");
   const nftManager = await upgrades.deployProxy(
     NFTManager,
-    [nftAddress, eclvAddress, USDT_ADDRESS],
+    [nftAddress, eclvAddress, USDT_ADDRESS, deployer.address, deployer.address], // 添加 oracle 和 treasury 参数
     { initializer: "initialize", kind: "uups" }
   );
   await nftManager.waitForDeployment();
@@ -63,9 +63,17 @@ async function main() {
 
   // 6. Add reward tokens
   console.log("\n5️⃣  Adding reward tokens...");
-  const tx3 = await nftManager.addRewardToken(USDT_ADDRESS);
-  await tx3.wait();
-  console.log("✅ USDT added as reward token");
+  try {
+    const tx3 = await nftManager.addRewardToken(USDT_ADDRESS);
+    await tx3.wait();
+    console.log("✅ USDT added as reward token");
+  } catch (error: any) {
+    if (error.message.includes("Already added")) {
+      console.log("✅ USDT already added as reward token");
+    } else {
+      throw error;
+    }
+  }
 
   // 7. Transfer some $E to NFTManager for production distribution
   console.log("\n6️⃣  Setting up initial $E balance...");
@@ -131,5 +139,7 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+
 
 

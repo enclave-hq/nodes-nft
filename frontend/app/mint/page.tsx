@@ -3,13 +3,14 @@
 import { Navbar } from "@/components/Navbar";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { useMintNFT } from "@/lib/hooks/useNFTManager";
-import { useBalances } from "@/lib/hooks/useBalances";
+import { useWeb3Data } from "@/lib/stores/web3Store";
 import { formatTokenAmount, formatUSD, cn } from "@/lib/utils";
 import { NFT_CONFIG, NFTType, UNLOCK_CONFIG } from "@/lib/contracts/config";
 import { Shield, Check, Loader2, AlertCircle, ArrowRight } from "lucide-react";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/provider";
+import toast from 'react-hot-toast';
 
 function NFTTypeCard({
   nftType,
@@ -23,7 +24,7 @@ function NFTTypeCard({
   disabled: boolean;
 }) {
   const t = useTranslations('mint');
-  const tHome = useTranslations('home');
+  const tNftTypes = useTranslations('nftTypes');
   const config = NFT_CONFIG[nftType];
   const isPremium = nftType === NFTType.Premium;
   
@@ -75,7 +76,7 @@ function NFTTypeCard({
 
       {/* Title & Price */}
       <h3 className="mt-6 text-2xl font-bold text-gray-900">
-        {config.name}
+        {tNftTypes(`${typeKey}.name`)}
       </h3>
       <p className="mt-2 flex items-baseline gap-x-2">
         <span className="text-4xl font-bold tracking-tight text-gray-900">
@@ -92,7 +93,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {tHome(`nftTypes.${typeKey}.features.quota`, { amount: formatTokenAmount(config.eclvLockAmount, 0, 0) })}
+            {tNftTypes(`${typeKey}.features.quota`, { amount: formatTokenAmount(config.eLockAmount, 0, 0) })}
           </span>
         </li>
         <li className="flex gap-x-3 text-sm">
@@ -101,7 +102,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {tHome(`nftTypes.${typeKey}.features.shares`, { count: config.sharesPerNFT })}
+            {tNftTypes(`${typeKey}.features.shares`, { count: config.sharesPerNFT })}
           </span>
         </li>
         <li className="flex gap-x-3 text-sm">
@@ -110,7 +111,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {tHome(`nftTypes.${typeKey}.weight`)}
+            {tNftTypes(`${typeKey}.weight`)}
           </span>
         </li>
         <li className="flex gap-x-3 text-sm">
@@ -119,7 +120,7 @@ function NFTTypeCard({
             isPremium ? "text-purple-600" : "text-blue-600"
           )} />
           <span className="text-gray-700">
-            {tHome(`nftTypes.${typeKey}.unlock`)}
+            {tNftTypes(`${typeKey}.unlock`)}
           </span>
         </li>
       </ul>
@@ -131,9 +132,9 @@ function MintContent() {
   const t = useTranslations('mint');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isConnected } = useWallet();
-  const { data: balances } = useBalances();
-  const mintNFT = useMintNFT();
+  const { isConnected, address } = useWallet();
+  const web3Data = useWeb3Data();
+  const { mintNFT, minting, error } = useMintNFT();
 
   // Get default type from URL params
   const defaultType = searchParams.get("type");
@@ -142,23 +143,26 @@ function MintContent() {
   );
 
   const config = NFT_CONFIG[selectedType];
-  const mintPriceBigInt = BigInt(config.mintPrice + "000000000000000000"); // Add 18 decimals
-  // Note: eclvLockAmount is just a quota, user doesn't need to have ECLV
-
+  
+  // Simple numeric comparison (both values are already in USDT units)
+  const mintPrice = parseFloat(config.mintPrice); // 10000 USDT
+  const usdtBalance = web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0; // 10100000.0 USDT
+  
   // Check if user has enough USDT balance (only requirement)
-  const hasEnoughUSDT = balances ? balances.usdt >= mintPriceBigInt : false;
+  const hasEnoughUSDT = usdtBalance >= mintPrice;
   const canMint = hasEnoughUSDT;
 
   const handleMint = async () => {
     if (!canMint) return;
 
     try {
-      const result = await mintNFT.mutateAsync({ nftType: selectedType });
+      const result = await mintNFT(selectedType, address || "");
+      console.log("NFT minted successfully:", result);
       // Redirect to My NFTs page after successful mint
       router.push("/my-nfts");
     } catch (error: any) {
       console.error("Failed to mint NFT:", error);
-      alert(error.message || "Failed to mint NFT");
+      toast.error(error.message || "Failed to mint NFT");
     }
   };
 
@@ -227,10 +231,7 @@ function MintContent() {
                       1
                     </div>
                     <p className="text-sm text-blue-800">
-                      {t('howItWorks.step1', { 
-                        price: formatUSD(parseFloat(config.mintPrice)),
-                        amount: formatTokenAmount(config.eclvLockAmount, 0, 0)
-                      })}
+                      {t('howItWorks.step1')} {formatUSD(parseFloat(config.mintPrice))} {formatTokenAmount(config.eLockAmount, 0, 0)}
                     </p>
                   </div>
                   <div className="flex gap-x-3">
@@ -282,33 +283,43 @@ function MintContent() {
                   </div>
 
                   {/* Your Balance */}
-                  {balances && (
+                  {web3Data.balances && (
                     <div>
                       <p className="text-sm font-medium text-gray-700">{t('summary.yourBalance')}</p>
                       <div className="mt-2 space-y-1 text-sm text-gray-600">
                         <div className="flex justify-between">
-                          <span>USDT:</span>
+                          <span>USDT余额:</span>
                           <span className="font-medium">
-                            {formatTokenAmount(balances.usdt, 18, 2)}
+                            {web3Data.balances.usdt}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>USDT授权:</span>
+                          <span className="font-medium">
+                            {web3Data.loading.allowances ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              formatTokenAmount(web3Data.allowances.usdt, 18, 2)
+                            )}
                           </span>
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-gray-500">
-                        {t('summary.note', { amount: formatTokenAmount(config.eclvLockAmount, 0, 0) })}
+                        {t('summary.note')} {formatTokenAmount(config.eLockAmount, 0, 0)}
                       </p>
                     </div>
                   )}
                 </div>
 
                 {/* Warnings */}
-                {!canMint && balances && (
+                {!canMint && web3Data.balances && (
                   <div className="mt-4 rounded-lg bg-yellow-50 p-3">
                     <div className="flex gap-x-2">
                       <AlertCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
                       <div className="text-sm text-yellow-800">
                         <p className="font-medium">{t('summary.insufficientBalance')}</p>
                         <p className="mt-1">
-                          {t('summary.needAmount', { amount: formatTokenAmount(config.mintPrice, 0, 0) })}
+                          {t('summary.needAmount')} {formatTokenAmount(config.mintPrice, 0, 0)}
                         </p>
                       </div>
                     </div>
@@ -318,28 +329,28 @@ function MintContent() {
                 {/* Mint Button */}
                 <button
                   onClick={handleMint}
-                  disabled={!canMint || mintNFT.isPending}
+                  disabled={!canMint || minting}
                   className={cn(
                     "mt-6 w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all",
-                    canMint && !mintNFT.isPending
+                    canMint && !minting
                       ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                       : "bg-gray-300 cursor-not-allowed"
                   )}
                 >
-                  {mintNFT.isPending ? (
+                  {minting ? (
                     <span className="flex items-center justify-center">
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                       {t('minting')}
                     </span>
                   ) : (
                     <span className="flex items-center justify-center">
-                      {t('mintButton', { type: config.name })}
+                      {t('mintButton')} {config.name}
                       <ArrowRight className="ml-2 h-5 w-5" />
                     </span>
                   )}
                 </button>
 
-                {mintNFT.isPending && (
+                {minting && (
                   <p className="mt-2 text-center text-xs text-gray-500">
                     {t('confirmTransaction')}
                   </p>

@@ -13,12 +13,22 @@ export const CONTRACT_ADDRESSES = {
  */
 export const NETWORK_CONFIG = {
   chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "97"),
-  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545/",
+  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://data-seed-prebsc-2-s1.binance.org:8545/",
   blockExplorer: process.env.NEXT_PUBLIC_CHAIN_ID === "56"
     ? "https://bscscan.com"
     : "https://testnet.bscscan.com",
   isTestnet: process.env.NEXT_PUBLIC_ENABLE_TESTNET === "true",
 } as const;
+
+// Fallback RPC node list, sorted by reliability
+export const FALLBACK_RPC_URLS = [
+  "https://data-seed-prebsc-2-s1.binance.org:8545",
+  "https://data-seed-prebsc-1-s2.binance.org:8545", 
+  "https://data-seed-prebsc-2-s2.binance.org:8545",
+  "https://data-seed-prebsc-1-s3.binance.org:8545",
+  "https://data-seed-prebsc-2-s3.binance.org:8545",
+  "https://data-seed-prebsc-1-s1.binance.org:8545", // Original main node as last fallback
+] as const;
 
 /**
  * NFT type enumeration (must match contract)
@@ -43,14 +53,14 @@ export const NFT_CONFIG = {
   [NFTType.Standard]: {
     name: "Standard Node",
     mintPrice: "10000", // 10,000 USDT
-    eclvLockAmount: "20000", // 20,000 $E
+    eLockAmount: "20000", // 20,000 $E
     shareWeight: 1,
     sharesPerNFT: 10,
   },
   [NFTType.Premium]: {
     name: "Premium Node",
     mintPrice: "50000", // 50,000 USDT
-    eclvLockAmount: "100000", // 100,000 $E
+    eLockAmount: "100000", // 100,000 $E
     shareWeight: 6,
     sharesPerNFT: 10,
   },
@@ -74,4 +84,19 @@ export const TOKEN_DECIMALS = {
   USDT: 18, // BSC USDT uses 18 decimals
 } as const;
 
-
+/**
+ * Gas configuration for BSC Testnet
+ */
+export const GAS_CONFIG = {
+  // Gas price for BSC Testnet (in wei)
+  gasPrice: "300000000", // 0.3 Gwei = 300000000 wei
+  // Gas limits for different operations
+  gasLimits: {
+    erc20Transfer: 21000,
+    erc20Approve: 100000, // Increased USDT approval gas limit
+    contractCall: 200000, // Increased general contract call gas limit
+    createSellOrder: 500000, // Creating sell orders requires more gas (increased from 300k to 500k)
+    buyShares: 400000, // Buying shares requires more gas
+    mintNFT: 500000, // Increased mintNFT gas limit
+  },
+} as const;

@@ -4,6 +4,7 @@ import "@nomicfoundation/hardhat-verify";
 import "@openzeppelin/hardhat-upgrades";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "dotenv/config";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -23,7 +24,7 @@ const config: HardhatUserConfig = {
       url: process.env.BSC_TESTNET_RPC || "https://data-seed-prebsc-1-s1.binance.org:8545",
       chainId: 97,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 10000000000, // 10 gwei
+      gasPrice: 100000000, // 0.1 gwei
     },
     bscMainnet: {
       url: process.env.BSC_MAINNET_RPC || "https://bsc-dataseed.binance.org/",

@@ -1,23 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { WalletProvider } from "@/lib/providers/WalletProvider";
-import { QueryProvider } from "@/lib/providers/QueryProvider";
+import { Providers } from "@/lib/providers/Providers";
 import { I18nProvider } from "@/lib/i18n/provider";
+import { DebugPanel } from "@/components/DebugPanel";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
   title: "Enclave Node NFT",
-  description: "Decentralized Node NFT platform with guaranteed returns",
+  description: "Decentralized Node NFT Platform with Reward Distribution",
 };
 
 export default function RootLayout({
@@ -27,15 +22,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${inter.variable} font-sans antialiased`}>
         <I18nProvider>
-          <QueryProvider>
-            <WalletProvider>
-              {children}
-            </WalletProvider>
-          </QueryProvider>
+          <Providers>
+            {children}
+            {/* <DebugPanel /> */}
+          </Providers>
         </I18nProvider>
       </body>
     </html>

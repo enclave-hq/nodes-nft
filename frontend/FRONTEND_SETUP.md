@@ -22,7 +22,7 @@ This is a Next.js 15 application with:
 - ✅ React 19
 - ✅ TypeScript
 - ✅ Tailwind CSS
-- ✅ Ethers.js v6
+- ✅ Wallet SDK
 - ✅ Multi-language support (en, zh, ja, ko)
 - ✅ Wallet integration (MetaMask)
 

@@ -160,8 +160,10 @@
       "unlocked": "アンロック済み",
       "pendingEclv": "保留中 $E",
       "pendingUsdt": "保留中 USDT",
-      "created": "作成日：{date}"
-    }
+      "created": "作成日：{date}",
+      "claim": "請求"
+    },
+    "created": "作成日"
   },
   "marketplace": {
     "title": "マーケットプレイス",
@@ -177,10 +179,14 @@
     },
     "orders": {
       "title": "アクティブな注文",
+      "viewAll": "すべて表示",
       "empty": {
         "title": "注文が見つかりません",
         "description": "最初の売却注文を作成しましょう！"
       }
+    },
+    "nftList": {
+      "shares": "シェア"
     },
     "orderCard": {
       "sharesAvailable": "{count} シェア購入可能",
@@ -206,13 +212,17 @@
       "createButton": "注文を作成"
     }
   },
-  "nftTypes": {
-    "standard": "スタンダード",
-    "premium": "プレミアム"
-  },
   "status": {
     "live": "アクティブ",
     "dissolved": "解散済み"
+  },
+  "nftTypes": {
+    "standard": {
+      "name": "スタンダードノード"
+    },
+    "premium": {
+      "name": "プレミアムノード"
+    }
   },
   "errors": {
     "connectWallet": "ウォレットを接続してください",

@@ -1,145 +1,113 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { useState, useEffect } from 'react';
 
 /**
- * Merge Tailwind CSS classes
+ * Utility functions for formatting
  */
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function formatAddress(address: string, length = 6): string {
+  if (!address) return '';
+  return `${address.slice(0, length)}...${address.slice(-length)}`;
 }
 
-/**
- * Format wallet address (truncate middle)
- */
-export function formatAddress(address: string, startLength = 6, endLength = 4): string {
-  if (!address) return "";
-  if (address.length <= startLength + endLength) return address;
-  return `${address.slice(0, startLength)}...${address.slice(-endLength)}`;
+export function parseTokenAmount(amount: string, decimals: number = 18): bigint {
+  if (!amount) return BigInt(0);
+  
+  // Convert string to number, then to BigInt with proper decimal handling
+  const num = parseFloat(amount);
+  const multiplier = BigInt(10 ** decimals);
+  return BigInt(Math.floor(num * (10 ** decimals)));
 }
 
-/**
- * Format token amount (from wei to human-readable)
- */
-export function formatTokenAmount(
-  amount: bigint | string,
-  decimals = 18,
-  maxDecimals = 4
-): string {
-  const value = typeof amount === "string" ? BigInt(amount) : amount;
+export function formatTokenAmount(amount: string | bigint, decimals: number = 18, displayDecimals?: number): string {
+  if (!amount) return '0';
+  
+  // If amount is already a formatted string (contains decimal point), return as is
+  if (typeof amount === 'string' && amount.includes('.')) {
+    return amount;
+  }
+  
+  const num = typeof amount === 'string' ? BigInt(amount) : amount;
   const divisor = BigInt(10 ** decimals);
-  const integerPart = value / divisor;
-  const fractionalPart = value % divisor;
-
-  if (fractionalPart === BigInt(0)) {
-    return integerPart.toLocaleString();
+  const whole = num / divisor;
+  const remainder = num % divisor;
+  
+  if (remainder === BigInt(0)) {
+    return whole.toString();
   }
-
-  const fractionalStr = fractionalPart.toString().padStart(decimals, "0");
-  const trimmedFractional = fractionalStr.slice(0, maxDecimals).replace(/0+$/, "");
-
-  if (trimmedFractional === "") {
-    return integerPart.toLocaleString();
+  
+  const remainderStr = remainder.toString().padStart(decimals, '0');
+  const trimmed = remainderStr.replace(/0+$/, '');
+  
+  if (trimmed === '') {
+    return whole.toString();
   }
-
-  return `${integerPart.toLocaleString()}.${trimmedFractional}`;
+  
+  let result = `${whole}.${trimmed}`;
+  
+  // Apply display decimals limit if specified
+  if (displayDecimals !== undefined) {
+    const parts = result.split('.');
+    if (parts[1] && parts[1].length > displayDecimals) {
+      parts[1] = parts[1].substring(0, displayDecimals);
+      result = parts.join('.');
+    }
+  }
+  
+  return result;
 }
 
-/**
- * Parse token amount (from human-readable to wei)
- */
-export function parseTokenAmount(amount: string, decimals = 18): bigint {
-  const [integerPart, fractionalPart = ""] = amount.split(".");
-  const paddedFractional = fractionalPart.padEnd(decimals, "0").slice(0, decimals);
-  return BigInt(integerPart + paddedFractional);
-}
-
-/**
- * Format USD amount
- */
-export function formatUSD(amount: number | string): string {
-  const value = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+export function formatUSD(amount: string | number): string {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(num);
 }
 
-/**
- * Format timestamp to date string
- */
-export function formatDate(timestamp: number | bigint): string {
-  const ts = typeof timestamp === "bigint" ? Number(timestamp) : timestamp;
-  return new Date(ts * 1000).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-/**
- * Format timestamp to date and time string
- */
-export function formatDateTime(timestamp: number | bigint): string {
-  const ts = typeof timestamp === "bigint" ? Number(timestamp) : timestamp;
-  return new Date(ts * 1000).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-/**
- * Calculate time remaining
- */
-export function getTimeRemaining(targetTimestamp: number | bigint): {
-  days: number;
-  hours: number;
-  minutes: number;
-  seconds: number;
-  total: number;
-} {
-  const ts = typeof targetTimestamp === "bigint" ? Number(targetTimestamp) : targetTimestamp;
-  const total = ts * 1000 - Date.now();
-
-  if (total <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 };
+export function formatDate(date: string | Date | number | bigint | undefined | null): string {
+  // 检查输入是否为 undefined 或 null
+  if (date === undefined || date === null) {
+    return 'Invalid Date';
   }
 
-  const seconds = Math.floor((total / 1000) % 60);
-  const minutes = Math.floor((total / 1000 / 60) % 60);
-  const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
-  const days = Math.floor(total / (1000 * 60 * 60 * 24));
-
-  return { days, hours, minutes, seconds, total };
-}
-
-/**
- * Format percentage
- */
-export function formatPercentage(value: number, decimals = 2): string {
-  return `${value.toFixed(decimals)}%`;
-}
-
-/**
- * Copy to clipboard
- */
-export async function copyToClipboard(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
+  let dateObj: Date;
+  
+  if (typeof date === 'string') {
+    // 检查是否是时间戳字符串（纯数字）
+    if (/^\d+$/.test(date)) {
+      // 时间戳字符串，转换为毫秒
+      dateObj = new Date(Number(date) * 1000);
+    } else {
+      // ISO 日期字符串
+      dateObj = new Date(date);
+    }
+  } else if (typeof date === 'bigint') {
+    // BigInt 类型，转换为毫秒
+    dateObj = new Date(Number(date) * 1000);
+  } else if (typeof date === 'number') {
+    // 数字类型，假设是秒级时间戳
+    dateObj = new Date(date * 1000);
+  } else if (date instanceof Date) {
+    dateObj = date;
+  } else {
+    return 'Invalid Date';
   }
+  
+  // 检查日期是否有效
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid Date';
+  }
+  
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(dateObj);
 }
 
-/**
- * Sleep utility
- */
-export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export function cn(...classes: (string | undefined | null | false)[]): string {
+  return classes.filter(Boolean).join(' ');
 }
-

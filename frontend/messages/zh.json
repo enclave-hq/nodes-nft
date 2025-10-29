@@ -121,7 +121,9 @@
       "insufficientBalance": "余额不足",
       "needMoreUsdt": "您需要更多 USDT。",
       "needMoreEclv": "您需要更多 $E。",
-      "confirmTransaction": "请在钱包中确认交易"
+      "confirmTransaction": "请在钱包中确认交易",
+      "note": "注意：{amount} $E 额度仅为会计记录，不会从您的钱包或合约储备中转移实际代币",
+      "needAmount": "您需要 {amount} USDT 来铸造此 NFT"
     },
     "nftCard": {
       "lockAmount": "锁定 {amount} $E",
@@ -160,8 +162,10 @@
       "unlocked": "已解锁",
       "pendingEclv": "待领取 $E",
       "pendingUsdt": "待领取 USDT",
-      "created": "创建时间：{date}"
-    }
+      "created": "创建时间：{date}",
+      "claim": "领取"
+    },
+    "created": "创建时间"
   },
   "marketplace": {
     "title": "市场",
@@ -177,10 +181,14 @@
     },
     "orders": {
       "title": "活跃订单",
+      "viewAll": "查看全部",
       "empty": {
         "title": "未找到订单",
         "description": "成为第一个创建出售订单的人！"
       }
+    },
+    "nftList": {
+      "shares": "份额"
     },
     "orderCard": {
       "sharesAvailable": "{count} 份额可购买",
@@ -199,20 +207,27 @@
       "sharesLabel": "份额数量",
       "sharesPlaceholder": "输入份额数量",
       "youOwn": "您拥有 {count} 份额",
+      "listedShares": "已挂单: {count}",
+      "availableShares": "可出售: {count}",
       "priceLabel": "每份额价格（USDT）",
       "pricePlaceholder": "输入每份额价格",
       "totalValue": "总价值",
       "creating": "创建中...",
-      "createButton": "创建订单"
+      "createButton": "创建订单",
+      "cancel": "取消"
     }
-  },
-  "nftTypes": {
-    "standard": "标准",
-    "premium": "高级"
   },
   "status": {
     "live": "活跃",
     "dissolved": "已解散"
+  },
+  "nftTypes": {
+    "standard": {
+      "name": "标准节点"
+    },
+    "premium": {
+      "name": "高级节点"
+    }
   },
   "errors": {
     "connectWallet": "请连接钱包",

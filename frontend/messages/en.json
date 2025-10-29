@@ -160,8 +160,10 @@
       "unlocked": "Unlocked",
       "pendingEclv": "Pending $E",
       "pendingUsdt": "Pending USDT",
-      "created": "Created: {date}"
-    }
+      "created": "Created: {date}",
+      "claim": "Claim"
+    },
+    "created": "Created"
   },
   "marketplace": {
     "title": "Marketplace",
@@ -177,10 +179,14 @@
     },
     "orders": {
       "title": "Active Orders",
+      "viewAll": "View All",
       "empty": {
         "title": "No Orders Found",
         "description": "Be the first to create a sell order!"
       }
+    },
+    "nftList": {
+      "shares": "shares"
     },
     "orderCard": {
       "sharesAvailable": "{count} shares available",
@@ -199,20 +205,27 @@
       "sharesLabel": "Number of Shares",
       "sharesPlaceholder": "Enter number of shares",
       "youOwn": "You own {count} shares",
+      "listedShares": "Listed: {count}",
+      "availableShares": "Available: {count}",
       "priceLabel": "Price per Share (USDT)",
       "pricePlaceholder": "Enter price per share",
       "totalValue": "Total Value",
       "creating": "Creating...",
-      "createButton": "Create Order"
+      "createButton": "Create Order",
+      "cancel": "Cancel"
     }
-  },
-  "nftTypes": {
-    "standard": "Standard",
-    "premium": "Premium"
   },
   "status": {
     "live": "Live",
     "dissolved": "Dissolved"
+  },
+  "nftTypes": {
+    "standard": {
+      "name": "Standard Node"
+    },
+    "premium": {
+      "name": "Premium Node"
+    }
   },
   "errors": {
     "connectWallet": "Please connect your wallet",
