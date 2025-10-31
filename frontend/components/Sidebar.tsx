@@ -18,19 +18,19 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:bg-white lg:border-r lg:border-gray-200">
+    <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:bg-black lg:border-r lg:border-gray-800">
       <div className="flex flex-col grow pt-5 pb-4 overflow-y-auto">
               {/* Logo */}
               <div className="flex items-center shrink-0 px-4 mb-8">
                 <Link href="/" className="flex items-center space-x-2">
                   <Image
-                    src="/logo_icon.png"
+                    src="/ENCLAVAE3.svg"
                     alt="Enclave Logo"
-                    width={32}
-                    height={32}
-                    className="h-8 w-8"
+                    width={96}
+                    height={96}
+                    className="h-24 w-24"
                   />
-                  <span className="text-xl font-bold text-gray-900">Enclave</span>
+                  <span className="text-xl font-bold text-white">Enclave</span>
                 </Link>
               </div>
 
@@ -48,14 +48,14 @@ export function Sidebar() {
                 className={cn(
                   "group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors",
                   isActive
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-[#B1C72E] text-black"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
                 )}
               >
                 <Icon
                   className={cn(
                     "mr-3 h-5 w-5 shrink-0",
-                    isActive ? "text-blue-700" : "text-gray-400 group-hover:text-gray-500"
+                    isActive ? "text-black" : "text-gray-400 group-hover:text-[#B1C72E]"
                   )}
                 />
                 {item.label}

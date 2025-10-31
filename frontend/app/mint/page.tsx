@@ -36,94 +36,108 @@ function NFTTypeCard({
       onClick={onSelect}
       disabled={disabled}
       className={cn(
-        "relative w-full rounded-2xl border-2 p-8 text-left transition-all",
+        "relative w-full rounded-lg border p-8 text-left transition-all overflow-hidden",
         selected
-          ? isPremium
-            ? "border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100"
-            : "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100"
-          : "border-gray-200 bg-white hover:border-gray-300",
+          ? "border-[#B1C72E]"
+          : "border-gray-700/50",
         disabled && "opacity-50 cursor-not-allowed"
       )}
     >
-      {/* Selection Indicator */}
-      {selected && (
-        <div className={cn(
-          "absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full",
-          isPremium ? "bg-purple-600" : "bg-blue-600"
-        )}>
-          <Check className="h-5 w-5 text-white" />
-        </div>
-      )}
-
-      {/* Best Value Badge */}
-      {isPremium && (
-        <div className="absolute left-4 top-4">
-          <span className="rounded-full bg-gradient-to-r from-purple-600 to-purple-700 px-3 py-1 text-xs font-semibold text-white">
-            {t('bestValue')}
-          </span>
-        </div>
-      )}
-
-      {/* Icon */}
       <div className={cn(
-        "flex h-16 w-16 items-center justify-center rounded-xl",
-        isPremium
-          ? "bg-gradient-to-br from-purple-500 to-purple-700"
-          : "bg-gradient-to-br from-blue-500 to-blue-700"
-      )}>
-        <Shield className="h-8 w-8 text-white" />
+        "absolute inset-0",
+        selected ? "bg-[#B1C72E]" : "bg-[#252532] opacity-20"
+      )}></div>
+      <div className="relative z-10">
+        {/* Selection Indicator */}
+        {selected && (
+          <div className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-black">
+            <Check className="h-5 w-5 text-[#B1C72E]" />
+          </div>
+        )}
+
+        {/* Best Value Badge */}
+        {isPremium && (
+          <div className="absolute left-4 top-4">
+            <span className={cn(
+              "rounded-full px-3 py-1 text-xs font-semibold",
+              selected ? "bg-black text-[#B1C72E]" : "bg-[#B1C72E] text-black"
+            )}>
+              {t('bestValue')}
+            </span>
+          </div>
+        )}
+
+        {/* Icon */}
+        <div className={cn(
+          "flex h-16 w-16 items-center justify-center rounded-xl border",
+          selected ? "border-black" : "border-[#B1C72E]"
+        )}>
+          <Shield className={cn(
+            "h-8 w-8",
+            selected ? "text-black" : "text-[#B1C72E]"
+          )} />
+        </div>
+
+        {/* Title & Price */}
+        <h3 className={cn(
+          "mt-6 text-2xl font-bold",
+          selected ? "text-black" : "text-white"
+        )}>
+          {tNftTypes(`${typeKey}.name`)}
+        </h3>
+        <p className="mt-2 flex items-baseline gap-x-2">
+          <span className={cn(
+            "text-4xl font-bold tracking-tight",
+            selected ? "text-black" : "text-white"
+          )}>
+            {formatUSD(parseFloat(config.mintPrice))}
+          </span>
+          <span className={cn(
+            "text-sm font-semibold",
+            selected ? "text-black/70" : "text-gray-300"
+          )}>USDT</span>
+        </p>
+
+        {/* Features */}
+        <ul className="mt-6 space-y-3">
+          <li className="flex gap-x-3 text-sm">
+            <Check className={cn(
+              "h-5 w-5 flex-shrink-0",
+              selected ? "text-black" : "text-[#B1C72E]"
+            )} />
+            <span className={selected ? "text-black/80" : "text-gray-300"}>
+              {tNftTypes(`${typeKey}.features.quota`, { amount: formatTokenAmount(config.eLockAmount, 0, 0) })}
+            </span>
+          </li>
+          <li className="flex gap-x-3 text-sm">
+            <Check className={cn(
+              "h-5 w-5 flex-shrink-0",
+              selected ? "text-black" : "text-[#B1C72E]"
+            )} />
+            <span className={selected ? "text-black/80" : "text-gray-300"}>
+              {tNftTypes(`${typeKey}.features.shares`, { count: config.sharesPerNFT })}
+            </span>
+          </li>
+          <li className="flex gap-x-3 text-sm">
+            <Check className={cn(
+              "h-5 w-5 flex-shrink-0",
+              selected ? "text-black" : "text-[#B1C72E]"
+            )} />
+            <span className={selected ? "text-black/80" : "text-gray-300"}>
+              {tNftTypes(`${typeKey}.weight`)}
+            </span>
+          </li>
+          <li className="flex gap-x-3 text-sm">
+            <Check className={cn(
+              "h-5 w-5 flex-shrink-0",
+              selected ? "text-black" : "text-[#B1C72E]"
+            )} />
+            <span className={selected ? "text-black/80" : "text-gray-300"}>
+              {tNftTypes(`${typeKey}.unlock`)}
+            </span>
+          </li>
+        </ul>
       </div>
-
-      {/* Title & Price */}
-      <h3 className="mt-6 text-2xl font-bold text-gray-900">
-        {tNftTypes(`${typeKey}.name`)}
-      </h3>
-      <p className="mt-2 flex items-baseline gap-x-2">
-        <span className="text-4xl font-bold tracking-tight text-gray-900">
-          {formatUSD(parseFloat(config.mintPrice))}
-        </span>
-        <span className="text-sm font-semibold text-gray-600">USDT</span>
-      </p>
-
-      {/* Features */}
-      <ul className="mt-6 space-y-3">
-        <li className="flex gap-x-3 text-sm">
-          <Check className={cn(
-            "h-5 w-5 flex-shrink-0",
-            isPremium ? "text-purple-600" : "text-blue-600"
-          )} />
-          <span className="text-gray-700">
-            {tNftTypes(`${typeKey}.features.quota`, { amount: formatTokenAmount(config.eLockAmount, 0, 0) })}
-          </span>
-        </li>
-        <li className="flex gap-x-3 text-sm">
-          <Check className={cn(
-            "h-5 w-5 flex-shrink-0",
-            isPremium ? "text-purple-600" : "text-blue-600"
-          )} />
-          <span className="text-gray-700">
-            {tNftTypes(`${typeKey}.features.shares`, { count: config.sharesPerNFT })}
-          </span>
-        </li>
-        <li className="flex gap-x-3 text-sm">
-          <Check className={cn(
-            "h-5 w-5 flex-shrink-0",
-            isPremium ? "text-purple-600" : "text-blue-600"
-          )} />
-          <span className="text-gray-700">
-            {tNftTypes(`${typeKey}.weight`)}
-          </span>
-        </li>
-        <li className="flex gap-x-3 text-sm">
-          <Check className={cn(
-            "h-5 w-5 flex-shrink-0",
-            isPremium ? "text-purple-600" : "text-blue-600"
-          )} />
-          <span className="text-gray-700">
-            {tNftTypes(`${typeKey}.unlock`)}
-          </span>
-        </li>
-      </ul>
     </button>
   );
 }
@@ -167,34 +181,37 @@ function MintContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-black">
       <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
+          <p className="mt-2 text-gray-300">
             {t('subtitle')}
           </p>
         </div>
 
         {!isConnected ? (
           /* Not Connected State */
-          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-            <Shield className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              {t('connectWallet.title')}
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              {t('connectWallet.description')}
-            </p>
+          <div className="rounded-lg border border-gray-700/50 p-12 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+            <div className="relative z-10">
+              <Shield className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-medium text-white">
+                {t('connectWallet.title')}
+              </h3>
+              <p className="mt-2 text-sm text-gray-300">
+                {t('connectWallet.description')}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* NFT Type Selection */}
             <div className="lg:col-span-2">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 className="text-lg font-semibold text-white mb-4">
                 {t('selectType')}
               </h2>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -213,42 +230,45 @@ function MintContent() {
               </div>
 
               {/* How it Works */}
-              <div className="mt-8 rounded-lg bg-blue-50 p-6">
-                <h3 className="text-lg font-semibold text-blue-900">
-                  {t('howItWorks.title')}
-                </h3>
-                <div className="mt-4 space-y-3">
-                  <div className="flex gap-x-3">
-                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                      0
+              <div className="mt-8 rounded-lg border border-gray-700/50 p-6 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-white">
+                    {t('howItWorks.title')}
+                  </h3>
+                  <div className="mt-4 space-y-3">
+                    <div className="flex gap-x-3">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#B1C72E] text-xs font-bold text-black">
+                        0
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {t('howItWorks.step0')}
+                      </p>
                     </div>
-                    <p className="text-sm text-blue-800">
-                      {t('howItWorks.step0')}
-                    </p>
-                  </div>
-                  <div className="flex gap-x-3">
-                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                      1
+                    <div className="flex gap-x-3">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#B1C72E] text-xs font-bold text-black">
+                        1
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {t('howItWorks.step1')} {formatUSD(parseFloat(config.mintPrice))} {formatTokenAmount(config.eLockAmount, 0, 0)}
+                      </p>
                     </div>
-                    <p className="text-sm text-blue-800">
-                      {t('howItWorks.step1')} {formatUSD(parseFloat(config.mintPrice))} {formatTokenAmount(config.eLockAmount, 0, 0)}
-                    </p>
-                  </div>
-                  <div className="flex gap-x-3">
-                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                      2
+                    <div className="flex gap-x-3">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#B1C72E] text-xs font-bold text-black">
+                        2
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {t('howItWorks.step2')}
+                      </p>
                     </div>
-                    <p className="text-sm text-blue-800">
-                      {t('howItWorks.step2')}
-                    </p>
-                  </div>
-                  <div className="flex gap-x-3">
-                    <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                      3
+                    <div className="flex gap-x-3">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#B1C72E] text-xs font-bold text-black">
+                        3
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        {t('howItWorks.step3')}
+                      </p>
                     </div>
-                    <p className="text-sm text-blue-800">
-                      {t('howItWorks.step3')}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -256,28 +276,33 @@ function MintContent() {
 
             {/* Summary & Action */}
             <div className="lg:col-span-1">
-              <div className="sticky top-8 rounded-lg bg-white p-6 shadow-lg ring-1 ring-gray-900/5">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {t('summary.title')}
-                </h3>
+              <div className="sticky top-8 rounded-lg border border-gray-700/50 p-6 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                <div className="relative z-10">
+                  <h3 className="text-lg font-semibold text-white">
+                    {t('summary.title')}
+                  </h3>
 
                 {/* Requirements */}
                 <div className="mt-6 space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-700">{t('summary.requiredPayment')}</p>
+                    <p className="text-sm font-medium text-gray-300">{t('summary.requiredPayment')}</p>
                     <div className="mt-2 space-y-2">
                       <div className={cn(
-                        "flex items-center justify-between rounded-lg p-3",
-                        hasEnoughUSDT ? "bg-green-50" : "bg-red-50"
+                        "flex items-center justify-between rounded-lg border border-gray-700/50 p-3 relative overflow-hidden",
+                        hasEnoughUSDT ? "" : ""
                       )}>
-                        <span className="text-sm text-gray-700">
+                        <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                        <span className="text-sm text-white relative z-10">
                           {formatTokenAmount(config.mintPrice, 0, 0)} USDT
                         </span>
-                        {hasEnoughUSDT ? (
-                          <Check className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <AlertCircle className="h-5 w-5 text-red-600" />
-                        )}
+                        <div className="relative z-10">
+                          {hasEnoughUSDT ? (
+                            <Check className="h-5 w-5 text-[#B1C72E]" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-red-400" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -285,17 +310,17 @@ function MintContent() {
                   {/* Your Balance */}
                   {web3Data.balances && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700">{t('summary.yourBalance')}</p>
-                      <div className="mt-2 space-y-1 text-sm text-gray-600">
+                      <p className="text-sm font-medium text-gray-300">{t('summary.yourBalance')}</p>
+                      <div className="mt-2 space-y-1 text-sm text-gray-300">
                         <div className="flex justify-between">
                           <span>USDT余额:</span>
-                          <span className="font-medium">
+                          <span className="font-medium text-white">
                             {web3Data.balances.usdt}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span>USDT授权:</span>
-                          <span className="font-medium">
+                          <span className="font-medium text-white">
                             {web3Data.loading.allowances ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
@@ -304,7 +329,7 @@ function MintContent() {
                           </span>
                         </div>
                       </div>
-                      <p className="mt-2 text-xs text-gray-500">
+                      <p className="mt-2 text-xs text-gray-400">
                         {t('summary.note')} {formatTokenAmount(config.eLockAmount, 0, 0)}
                       </p>
                     </div>
@@ -313,10 +338,11 @@ function MintContent() {
 
                 {/* Warnings */}
                 {!canMint && web3Data.balances && (
-                  <div className="mt-4 rounded-lg bg-yellow-50 p-3">
-                    <div className="flex gap-x-2">
-                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-yellow-600" />
-                      <div className="text-sm text-yellow-800">
+                  <div className="mt-4 rounded-lg border border-yellow-700/50 p-3 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-yellow-900/20 opacity-20"></div>
+                    <div className="relative z-10 flex gap-x-2">
+                      <AlertCircle className="h-5 w-5 flex-shrink-0 text-yellow-400" />
+                      <div className="text-sm text-yellow-300">
                         <p className="font-medium">{t('summary.insufficientBalance')}</p>
                         <p className="mt-1">
                           {t('summary.needAmount')} {formatTokenAmount(config.mintPrice, 0, 0)}
@@ -331,10 +357,10 @@ function MintContent() {
                   onClick={handleMint}
                   disabled={!canMint || minting}
                   className={cn(
-                    "mt-6 w-full rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all",
+                    "mt-6 w-full rounded-lg px-6 py-3 text-sm font-semibold shadow-sm transition-all",
                     canMint && !minting
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                      : "bg-gray-300 cursor-not-allowed"
+                      ? "bg-[#B1C72E] text-black hover:bg-[#9db026]"
+                      : "bg-gray-700 text-gray-400 cursor-not-allowed"
                   )}
                 >
                   {minting ? (
@@ -351,10 +377,11 @@ function MintContent() {
                 </button>
 
                 {minting && (
-                  <p className="mt-2 text-center text-xs text-gray-500">
+                  <p className="mt-2 text-center text-xs text-gray-400">
                     {t('confirmTransaction')}
                   </p>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -367,7 +394,7 @@ function MintContent() {
 export default function MintPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="min-h-screen bg-black">
         <Navbar />
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
