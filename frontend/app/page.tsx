@@ -186,18 +186,32 @@ export default function Home() {
                   alt="Light background"
                   width={600}
                   height={800}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover brightness-125 contrast-125"
                 />
               </div>
               {/* bg2 */}
               <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2 }}>
-                <Image
-                  src="/bg2.svg"
-                  alt="Background decoration"
-                  width={600}
-                  height={800}
-                  className="opacity-20"
+                <div 
+                  className="rounded-2xl overflow-hidden" 
                   style={{ transform: 'scaleX(0.4) scaleY(0.8) rotate(90deg)' }}
+                >
+                  <Image
+                    src="/bg2.svg"
+                    alt="Background decoration"
+                    width={600}
+                    height={800}
+                    className="opacity-20"
+                  />
+                </div>
+              </div>
+              {/* NFT image - on top layer */}
+              <div className="absolute inset-0 rounded-2xl overflow-hidden flex items-center justify-center" style={{ zIndex: 3 }}>
+                <Image
+                  src="/nftpng.png"
+                  alt="NFT decoration"
+                  width={300}
+                  height={400}
+                  className="w-3/4 h-3/4 object-contain"
                 />
               </div>
             </div>
@@ -345,7 +359,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-8 lg:grid-cols-2">
+        <div className="mx-auto mt-2 grid max-w-5xl grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Standard NFT */}
           <div className="rounded-2xl border border-[#b1c62f] p-8 relative overflow-hidden">
             <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
