@@ -50,94 +50,100 @@ function SellOrderCard({
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {tTypes(`${pool.nftType === 0 ? 'standard' : 'premium'}.name`)} #{order.nftId}
-          </h3>
-          <p className="text-sm text-gray-500">
-            {t('sharesAvailable', { count: order.shares })}
-          </p>
+    <div className="rounded-2xl border border-gray-700/50 p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-white">
+              {tTypes(`${pool.nftType === 0 ? 'standard' : 'premium'}.name`)} #{order.nftId}
+            </h3>
+            <p className="text-sm text-gray-300">
+              {t('sharesAvailable', { count: order.shares })}
+            </p>
+          </div>
+          <span className={cn(
+            "rounded-full px-2 py-1 text-xs font-medium",
+            pool.nftType === NFTType.Premium
+              ? "bg-[#B1C72E]/20 text-[#B1C72E]"
+              : "bg-[#B1C72E]/20 text-[#B1C72E]"
+          )}>
+            {tTypes(`${pool.nftType}.name`)}
+          </span>
         </div>
-        <span className={cn(
-          "rounded-full px-2 py-1 text-xs font-medium",
-          pool.nftType === NFTType.Premium
-            ? "bg-purple-100 text-purple-700"
-            : "bg-blue-100 text-blue-700"
-        )}>
-          {tTypes(`${pool.nftType}.name`)}
-        </span>
-      </div>
 
-      {/* Price */}
-      <div className="mt-4 rounded-lg bg-gray-50 p-3">
-        <p className="text-xs text-gray-500">{t('pricePerShare')}</p>
-        <p className="mt-1 text-2xl font-bold text-gray-900">
-          {formatTokenAmount(order.pricePerShare, 18, 2)} USDT
-        </p>
-        <p className="mt-1 text-xs text-gray-500">
-          {t('total', { amount: formatTokenAmount(totalPrice, 18, 2) })}
-        </p>
-        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-          <span>订单ID: #{order.orderId}</span>
-          <span>创建时间: {order.createdAtDisplay}</span>
+        {/* Price */}
+        <div className="mt-4 rounded-lg border border-gray-700/50 p-3 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+          <div className="relative z-10">
+            <p className="text-xs text-gray-400">{t('pricePerShare')}</p>
+            <p className="mt-1 text-2xl font-bold text-white">
+              {formatTokenAmount(order.pricePerShare, 18, 2)} USDT
+            </p>
+            <p className="mt-1 text-xs text-gray-400">
+              {t('total', { amount: formatTokenAmount(totalPrice, 18, 2) })}
+            </p>
+            <div className="mt-2 flex items-center justify-between text-xs text-gray-400">
+              <span>订单ID: #{order.orderId}</span>
+              <span>创建时间: {order.createdAtDisplay}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Seller Info */}
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <span className="text-gray-500">{t('seller')}:</span>
-        <span className="font-medium text-gray-900">
-          {isOwnOrder ? "You" : formatAddress(order.seller)}
-        </span>
-      </div>
+        {/* Seller Info */}
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-gray-400">{t('seller')}:</span>
+          <span className="font-medium text-white">
+            {isOwnOrder ? "You" : formatAddress(order.seller)}
+          </span>
+        </div>
 
-      {/* Listed Date */}
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-gray-500">{t('listed', { time: formatDate(order.createdAt) })}</span>
-      </div>
+        {/* Listed Date */}
+        <div className="mt-2 flex items-center justify-between text-sm">
+          <span className="text-gray-400">{t('listed', { time: formatDate(order.createdAt) })}</span>
+        </div>
 
-      {/* Action Button */}
-      <div className="mt-4">
-        {isOwnOrder ? (
-          <button
-            onClick={handleCancel}
-            disabled={cancelOrder.isLoading}
-            className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            {cancelOrder.isLoading ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('cancelling')}
-              </span>
-            ) : (
-              <span className="flex items-center justify-center">
-                <X className="mr-2 h-4 w-4" />
-                {t('cancelOrder')}
-              </span>
-            )}
-          </button>
-        ) : (
-          <button
-            onClick={handleBuy}
-            disabled={buyShares.isLoading}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
-          >
-            {buyShares.isLoading ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('buying')}
-              </span>
-            ) : (
-              <span className="flex items-center justify-center">
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                {t('buyShares')}
-              </span>
-            )}
-          </button>
-        )}
+        {/* Action Button */}
+        <div className="mt-4">
+          {isOwnOrder ? (
+            <button
+              onClick={handleCancel}
+              disabled={cancelOrder.isLoading}
+              className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              {cancelOrder.isLoading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('cancelling')}
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <X className="mr-2 h-4 w-4" />
+                  {t('cancelOrder')}
+                </span>
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleBuy}
+              disabled={buyShares.isLoading}
+              className="w-full rounded-lg bg-[#b1c62f] px-4 py-2 text-sm font-medium text-black hover:bg-[#9db026] disabled:opacity-50"
+            >
+              {buyShares.isLoading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('buying')}
+                </span>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  {t('buyShares')}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -185,91 +191,97 @@ function CreateOrderModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-900">{t('title')}</h3>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="mt-6 space-y-4">
-          {/* Shares Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t('sharesLabel')}
-            </label>
-            <input
-              type="number"
-              min="1"
-              max={availableShares}
-              value={shares}
-              onChange={(e) => setShares(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder={t('sharesPlaceholder')}
-            />
-            <div className="mt-1 text-xs text-gray-500 space-y-1">
-              <p>{t('youOwn', { count: totalShares })}</p>
-              {listedShares > 0 && (
-                <p className="text-orange-600">{t('listedShares', { count: listedShares })}</p>
-              )}
-              <p className="text-green-600">{t('availableShares', { count: availableShares })}</p>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-gray-700/50 p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#252532] opacity-90"></div>
+        <div className="relative z-10">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xl font-bold text-white">{t('title')}</h3>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-700/50"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
 
-          {/* Price Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t('priceLabel')}
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={pricePerShare}
-              onChange={(e) => setPricePerShare(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder={t('pricePlaceholder')}
-            />
-          </div>
-
-          {/* Total Price Display */}
-          {shares && pricePerShare && (
-            <div className="rounded-lg bg-blue-50 p-3">
-              <p className="text-sm text-blue-600">{t('totalValue')}</p>
-              <p className="mt-1 text-xl font-bold text-blue-900">
-                {(parseFloat(shares) * parseFloat(pricePerShare)).toFixed(2)} USDT
-              </p>
+          <div className="mt-6 space-y-4">
+            {/* Shares Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
+                {t('sharesLabel')}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={availableShares}
+                value={shares}
+                onChange={(e) => setShares(e.target.value)}
+                className="mt-1 block w-full rounded-lg border border-gray-700/50 bg-black/50 px-3 py-2 text-white placeholder-gray-500 focus:border-[#b1c62f] focus:outline-none focus:ring-1 focus:ring-[#b1c62f]"
+                placeholder={t('sharesPlaceholder')}
+              />
+              <div className="mt-1 text-xs text-gray-400 space-y-1">
+                <p>{t('youOwn', { count: totalShares })}</p>
+                {listedShares > 0 && (
+                  <p className="text-orange-400">{t('listedShares', { count: listedShares })}</p>
+                )}
+                <p className="text-[#B1C72E]">{t('availableShares', { count: availableShares })}</p>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Actions */}
-        <div className="mt-6 flex space-x-3">
-          <button
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {t('cancel')}
-          </button>
-          <button
-            onClick={handleCreate}
-            disabled={!shares || !pricePerShare || createOrder.isLoading}
-            className="flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
-          >
-            {createOrder.isLoading ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {t('creating')}
-              </span>
-            ) : (
-              t('createButton')
+            {/* Price Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
+                {t('priceLabel')}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={pricePerShare}
+                onChange={(e) => setPricePerShare(e.target.value)}
+                className="mt-1 block w-full rounded-lg border border-gray-700/50 bg-black/50 px-3 py-2 text-white placeholder-gray-500 focus:border-[#b1c62f] focus:outline-none focus:ring-1 focus:ring-[#b1c62f]"
+                placeholder={t('pricePlaceholder')}
+              />
+            </div>
+
+            {/* Total Price Display */}
+            {shares && pricePerShare && (
+              <div className="rounded-lg border border-gray-700/50 p-3 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                <div className="relative z-10">
+                  <p className="text-sm text-[#B1C72E]">{t('totalValue')}</p>
+                  <p className="mt-1 text-xl font-bold text-white">
+                    {(parseFloat(shares) * parseFloat(pricePerShare)).toFixed(2)} USDT
+                  </p>
+                </div>
+              </div>
             )}
-          </button>
+          </div>
+
+          {/* Actions */}
+          <div className="mt-6 flex space-x-3">
+            <button
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-gray-700/50 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700/50"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={!shares || !pricePerShare || createOrder.isLoading}
+              className="flex-1 rounded-lg bg-[#b1c62f] px-4 py-2 text-sm font-medium text-black hover:bg-[#9db026] disabled:opacity-50"
+            >
+              {createOrder.isLoading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {t('creating')}
+                </span>
+              ) : (
+                t('createButton')
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -321,57 +333,66 @@ export default function MarketplacePage() {
   }, [isConnected]); // Only depend on connection status
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black">
       <Navbar />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-white">{t('title')}</h1>
+          <p className="mt-2 text-gray-300">
             {t('subtitle')}
           </p>
         </div>
 
         {!isConnected ? (
           /* Not Connected State */
-          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-            <Store className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              {t('connectWallet.title')}
-            </h3>
-            <p className="mt-2 text-sm text-gray-500">
-              {t('connectWallet.description')}
-            </p>
+          <div className="rounded-2xl border border-gray-700/50 p-12 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+            <div className="relative z-10">
+              <Store className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-4 text-lg font-medium text-white">
+                {t('connectWallet.title')}
+              </h3>
+              <p className="mt-2 text-sm text-gray-400">
+                {t('connectWallet.description')}
+              </p>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Sidebar - My NFTs */}
             <div className="lg:col-span-1">
-              <div className="rounded-lg bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-gray-900">{t('sidebar.title')}</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {t('sidebar.subtitle')}
-                </p>
+              <div className="rounded-2xl border border-gray-700/50 p-6 relative overflow-hidden">
+                <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                <div className="relative z-10">
+                  <h2 className="text-lg font-semibold text-white">{t('sidebar.title')}</h2>
+                  <p className="mt-1 text-sm text-gray-300">
+                    {t('sidebar.subtitle')}
+                  </p>
 
-                {!web3Data.nfts || web3Data.nfts.length === 0 ? (
-                  <div className="mt-4 rounded-lg border-2 border-dashed border-gray-200 p-6 text-center">
-                    <Tag className="mx-auto h-8 w-8 text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-500">
-                      {t('sidebar.empty')}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="mt-4 space-y-2">
-                    {web3Data.nfts.map((nft: any) => (
-                      <NFTListItem
-                        key={nft.id}
-                        nftId={nft.id}
-                        onCreateOrder={handleCreateOrder}
-                      />
-                    ))}
-                  </div>
-                )}
+                  {!web3Data.nfts || web3Data.nfts.length === 0 ? (
+                    <div className="mt-4 rounded-lg border border-gray-700/50 p-6 text-center relative overflow-hidden">
+                      <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                      <div className="relative z-10">
+                        <Tag className="mx-auto h-8 w-8 text-gray-400" />
+                        <p className="mt-2 text-sm text-gray-400">
+                          {t('sidebar.empty')}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-2">
+                      {web3Data.nfts.map((nft: any) => (
+                        <NFTListItem
+                          key={nft.id}
+                          nftId={nft.id}
+                          onCreateOrder={handleCreateOrder}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -379,11 +400,11 @@ export default function MarketplacePage() {
             <div className="lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-white">
                     {t('orders.title')}
                   </h2>
                   {allOrders.data && allOrders.data.length > 0 && (
-                    <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                    <span className="rounded-full bg-[#B1C72E]/20 px-3 py-1 text-sm font-medium text-[#B1C72E]">
                       {allOrders.data.length} 个活跃订单
                     </span>
                   )}
@@ -392,7 +413,7 @@ export default function MarketplacePage() {
                   <button
                     onClick={() => allOrders.refetch()}
                     disabled={allOrders.isLoading}
-                    className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
+                    className="rounded-lg border border-gray-700/50 px-3 py-1 text-sm text-gray-300 hover:bg-gray-700/50 disabled:opacity-50 flex items-center"
                   >
                     {allOrders.isLoading ? (
                       <>
@@ -408,7 +429,7 @@ export default function MarketplacePage() {
                   </button>
                   <button
                     onClick={() => setSelectedNFT(null)}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    className="text-sm text-[#B1C72E] hover:text-[#9db026]"
                   >
                     {t('orders.viewAll')}
                   </button>
@@ -417,19 +438,25 @@ export default function MarketplacePage() {
 
               {/* Orders Grid */}
               {allOrders.isLoading ? (
-                <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                  <span className="ml-2 text-gray-600">加载订单中...</span>
+                <div className="flex items-center justify-center rounded-2xl border border-gray-700/50 p-12 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                  <div className="relative z-10 flex items-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                    <span className="ml-2 text-gray-300">加载订单中...</span>
+                  </div>
                 </div>
               ) : allOrders.error ? (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-                  <p className="text-red-600">加载订单失败: {allOrders.error}</p>
-                  <button
-                    onClick={() => allOrders.refetch()}
-                    className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-                  >
-                    重试
-                  </button>
+                <div className="rounded-2xl border border-red-700/50 p-6 text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-red-900/20 opacity-20"></div>
+                  <div className="relative z-10">
+                    <p className="text-red-400">加载订单失败: {allOrders.error}</p>
+                    <button
+                      onClick={() => allOrders.refetch()}
+                      className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                    >
+                      重试
+                    </button>
+                  </div>
                 </div>
               ) : allOrders.data && allOrders.data.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -438,17 +465,20 @@ export default function MarketplacePage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-                  <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">
-                    {t('orders.empty.title')}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-500">
-                    {t('orders.empty.description')}
-                  </p>
-                  <div className="mt-4 text-xs text-gray-400">
-                    <p>调试信息: NFT数量 {web3Data.nfts?.length || 0}</p>
-                    <p>连接状态: {isConnected ? '已连接' : '未连接'}</p>
+                <div className="rounded-2xl border border-gray-700/50 p-12 text-center relative overflow-hidden">
+                  <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+                  <div className="relative z-10">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-4 text-lg font-medium text-white">
+                      {t('orders.empty.title')}
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-400">
+                      {t('orders.empty.description')}
+                    </p>
+                    <div className="mt-4 text-xs text-gray-500">
+                      <p>调试信息: NFT数量 {web3Data.nfts?.length || 0}</p>
+                      <p>连接状态: {isConnected ? '已连接' : '未连接'}</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -493,24 +523,25 @@ function NFTListItem({
   const config = NFT_CONFIG[pool.nftType as NFTType];
 
   return (
-    <div className="rounded-lg border border-gray-200 p-3 hover:border-gray-300">
-      <div className="flex items-center justify-between">
+    <div className="rounded-lg border border-gray-700/50 p-3 relative overflow-hidden hover:border-[#b1c62f] transition-colors">
+      <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+      <div className="relative z-10 flex items-center justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-sm font-medium text-white">
             {pool.nftType === NFTType.Standard ? tTypes('standard.name') : tTypes('premium.name')} #{nftId}
           </p>
-          <div className="text-xs text-gray-500 space-y-1 mt-1">
+          <div className="text-xs text-gray-400 space-y-1 mt-1">
             <p>总份额: {totalShares}</p>
             {listedShares > 0 && (
-              <p className="text-orange-600">已挂单: {listedShares}</p>
+              <p className="text-orange-400">已挂单: {listedShares}</p>
             )}
-            <p className="text-green-600">可出售: {availableShares}</p>
+            <p className="text-[#B1C72E]">可出售: {availableShares}</p>
           </div>
         </div>
         <button
           onClick={() => onCreateOrder(nftId, availableShares)}
           disabled={availableShares === 0}
-          className="rounded-lg bg-blue-600 p-2 text-white hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="rounded-lg bg-[#b1c62f] p-2 text-black hover:bg-[#9db026] disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed"
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -524,23 +555,29 @@ function OrdersForNFT({ nftId, onBuy }: { nftId: number; onBuy: (orderId: number
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-gray-600">加载订单中...</span>
+      <div className="flex items-center justify-center rounded-2xl border border-gray-700/50 p-8 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
+        <div className="relative z-10 flex items-center">
+          <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          <span className="ml-2 text-gray-300">加载订单中...</span>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-red-600">加载订单失败: {error}</p>
-        <button
-          onClick={() => refetch()}
-          className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-        >
-          重试
-        </button>
+      <div className="rounded-2xl border border-red-700/50 p-6 text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-red-900/20 opacity-20"></div>
+        <div className="relative z-10">
+          <p className="text-red-400">加载订单失败: {error}</p>
+          <button
+            onClick={() => refetch()}
+            className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+          >
+            重试
+          </button>
+        </div>
       </div>
     );
   }

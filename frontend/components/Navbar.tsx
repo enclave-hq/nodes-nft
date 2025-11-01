@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { useWeb3Data } from "@/lib/stores/web3Store";
 import { formatAddress, cn } from "@/lib/utils";
@@ -9,11 +10,11 @@ import { Wallet, Menu, X } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from '@/lib/i18n/provider';
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { TokenBalance } from "@/lib/components/FormattedNumber";
 
 export function Navbar() {
   const t = useTranslations('navbar');
   const tCommon = useTranslations('common');
+  const pathname = usePathname();
   const { account, isConnected, isConnecting, connect, disconnect, chainId, hasWallet, connectionError } = useWallet();
   const web3Data = useWeb3Data();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -185,28 +186,40 @@ export function Navbar() {
           <div className="space-y-1 px-4 pb-3 pt-2">
             <Link
               href="/"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-gray-800"
+              className={cn(
+                "block rounded-md px-3 py-2 text-base font-medium hover:bg-gray-800",
+                pathname === "/" ? "text-[#B1C72E]" : "text-white"
+              )}
               onClick={() => setMobileMenuOpen(false)}
             >
               {t('home')}
             </Link>
             <Link
               href="/marketplace"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              className={cn(
+                "block rounded-md px-3 py-2 text-base font-medium hover:bg-gray-800",
+                pathname === "/marketplace" || pathname?.startsWith("/marketplace") ? "text-[#B1C72E]" : "text-white"
+              )}
               onClick={() => setMobileMenuOpen(false)}
             >
               {t('marketplace')}
             </Link>
             <Link
               href="/my-nfts"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              className={cn(
+                "block rounded-md px-3 py-2 text-base font-medium hover:bg-gray-800",
+                pathname === "/my-nfts" || pathname?.startsWith("/my-nfts") ? "text-[#B1C72E]" : "text-white"
+              )}
               onClick={() => setMobileMenuOpen(false)}
             >
               {t('myNfts')}
             </Link>
             <Link
               href="/mint"
-              className="block rounded-md px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+              className={cn(
+                "block rounded-md px-3 py-2 text-base font-medium hover:bg-gray-800",
+                pathname === "/mint" || pathname?.startsWith("/mint") ? "text-[#B1C72E]" : "text-white"
+              )}
               onClick={() => setMobileMenuOpen(false)}
             >
               {t('mint')}
@@ -220,25 +233,8 @@ export function Navbar() {
             <div className="border-t border-gray-800 pt-4">
               {isConnected && (
                 <div className="mb-3 rounded-lg bg-gray-900 p-3">
-                  <div className="text-sm font-medium text-white">
-                    <TokenBalance 
-                      value={web3Data.balances.e || "0"}
-                      decimals={2}
-                      className="text-sm font-medium text-white"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    <TokenBalance 
-                      value={web3Data.balances.usdt || "0"}
-                      decimals={2}
-                      className="text-xs text-gray-400"
-                    />
-                  </div>
-                  <div className="text-xs text-[#B1C72E]">
-                    授权: {web3Data.loading.allowances ? '...' : web3Data.allowances.usdt}
-                  </div>
                   {account && (
-                    <div className="mt-2 text-xs text-gray-400">
+                    <div className="text-xs text-gray-400">
                       {formatAddress(account)}
                     </div>
                   )}

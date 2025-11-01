@@ -35,7 +35,7 @@ function NFTCard({ nftId }: { nftId: number }) {
 
   if (!pool || !userShare) {
     return (
-      <div className="rounded-lg border border-gray-700/50 p-6 relative overflow-hidden">
+      <div className="rounded-2xl border border-gray-700/50 p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
         <div className="relative z-10 flex items-center justify-center h-32">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -86,7 +86,7 @@ function NFTCard({ nftId }: { nftId: number }) {
 
   return (
     <div className={cn(
-      "rounded-lg border p-4 sm:p-6 relative overflow-hidden transition-all",
+      "rounded-2xl border p-4 sm:p-6 relative overflow-hidden transition-all",
       isLive ? "border-green-700/50" : "border-gray-700/50"
     )}>
       <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
@@ -337,7 +337,7 @@ export default function MyNFTsPage() {
 
         {!isConnected ? (
           /* Not Connected State */
-          <div className="rounded-lg border border-gray-700/50 p-6 sm:p-12 text-center relative overflow-hidden">
+          <div className="rounded-2xl border border-gray-700/50 p-6 sm:p-12 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
             <div className="relative z-10">
               <Shield className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
@@ -356,7 +356,7 @@ export default function MyNFTsPage() {
           </div>
         ) : !web3Data.nfts || web3Data.nfts.length === 0 ? (
           /* Empty State */
-          <div className="rounded-lg border border-gray-700/50 p-6 sm:p-12 text-center relative overflow-hidden">
+          <div className="rounded-2xl border border-gray-700/50 p-6 sm:p-12 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
             <div className="relative z-10">
               <Shield className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
@@ -380,7 +380,7 @@ export default function MyNFTsPage() {
           <>
             {/* Batch Actions */}
             {web3Data.nfts.length > 1 && (
-              <div className="mb-4 sm:mb-6 flex items-center justify-between rounded-lg border border-gray-700/50 p-3 sm:p-4 relative overflow-hidden">
+              <div className="mb-4 sm:mb-6 flex items-center justify-between rounded-2xl border border-gray-700/50 p-3 sm:p-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[#252532] opacity-20"></div>
                 <div className="relative z-10 flex items-center justify-between w-full">
                   <div>
