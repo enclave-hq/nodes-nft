@@ -5,7 +5,7 @@ import { useWallet } from "@/lib/providers/WalletProvider";
 import { useWeb3Data } from "@/lib/stores/web3Store";
 import { formatTokenAmount, formatUSD, cn } from "@/lib/utils";
 import { NFT_CONFIG, NFTType } from "@/lib/contracts/config";
-import { ArrowRight, Coins, TrendingUp, Users, Shield, Wallet } from "lucide-react";
+import { Coins, TrendingUp, Shield, Wallet } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "@/lib/i18n/provider";
@@ -43,7 +43,9 @@ export default function Home() {
               alt="Enclave Logo"
               width={432}
               height={432}
-              className="h-[324px] w-[324px]"
+              className="h-[324px] w-[324px] pointer-events-none"
+              onDragStart={(e) => e.preventDefault()}
+              style={{ WebkitUserDrag: 'none' } as React.CSSProperties}
             />
           </div>
           
@@ -186,14 +188,17 @@ export default function Home() {
                   alt="Light background"
                   width={600}
                   height={800}
-                  className="w-full h-full object-cover brightness-125 contrast-125"
+                  className="w-full h-full object-cover brightness-125 contrast-125 pointer-events-none"
+                  onDragStart={(e) => e.preventDefault()}
+                  style={{ WebkitUserDrag: 'none' } as React.CSSProperties}
                 />
               </div>
               {/* bg2 */}
               <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 2 }}>
                 <div 
-                  className="rounded-2xl overflow-hidden" 
-                  style={{ transform: 'scaleX(0.4) scaleY(0.8) rotate(90deg)' }}
+                  className="rounded-2xl overflow-hidden pointer-events-none" 
+                  style={{ transform: 'scaleX(0.4) scaleY(0.8) rotate(90deg)', WebkitUserDrag: 'none' } as React.CSSProperties}
+                  onDragStart={(e) => e.preventDefault()}
                 >
                   <Image
                     src="/bg2.svg"
@@ -205,7 +210,7 @@ export default function Home() {
                 </div>
               </div>
               {/* NFT image - on top layer */}
-              <div className="absolute inset-0 rounded-2xl overflow-hidden flex items-center justify-center" style={{ zIndex: 3 }}>
+              <div className="absolute inset-0 rounded-2xl overflow-hidden flex items-center justify-center pointer-events-none" style={{ zIndex: 3, WebkitUserDrag: 'none' } as React.CSSProperties} onDragStart={(e) => e.preventDefault()}>
                 <Image
                   src="/nftpng.png"
                   alt="NFT decoration"

@@ -49,7 +49,9 @@ export function Navbar() {
                 alt="Enclave Logo"
                 width={96}
                 height={96}
-                className="h-24 w-24"
+                className="h-24 w-24 pointer-events-none"
+                onDragStart={(e) => e.preventDefault()}
+                style={{ WebkitUserDrag: 'none' } as React.CSSProperties}
               />
             </Link>
           </div>
