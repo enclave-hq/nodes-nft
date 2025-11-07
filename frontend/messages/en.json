@@ -149,7 +149,11 @@
       "unlockSchedule": "{months}-month unlock schedule"
     },
     "minting": "Minting...",
-    "mintButton": "Mint {type}"
+    "mintButton": "Mint {type}",
+    "mintNFT": "Mint NFT",
+    "mintSuccess": "NFT minted successfully!",
+    "whitelistRequired": "You need to join the whitelist first to mint NFTs",
+    "insufficientUsdt": "Insufficient USDT balance. Need {amount}"
   },
   "myNfts": {
     "title": "My NFTs",
@@ -386,6 +390,18 @@
     "applyWhitelist": "apply for whitelist",
     "batchMintable": "This batch can mint:",
     "waitForNextBatch": "Please wait patiently for the next batch to open for minting"
+  },
+  "batch": {
+    "activeBatch": "Active Batch",
+    "activeBatchDescription": "Current mintable NFT batch information",
+    "loadingBatchInfo": "Loading batch information...",
+    "noActiveBatch": "No Active Batch",
+    "noActiveBatchDescription": "There is no active batch currently. Please wait for the administrator to create a new batch",
+    "batchId": "Batch #{id}",
+    "progress": "Progress",
+    "connectWalletFirst": "Please connect your wallet first",
+    "noActiveBatchMint": "There is no active batch currently. Cannot mint NFT",
+    "batchSoldOutMint": "Current batch is sold out. Cannot mint NFT"
   }
 }
 

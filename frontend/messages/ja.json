@@ -164,7 +164,11 @@
       "unlockSchedule": "{months} ヶ月アンロックスケジュール"
     },
     "minting": "ミント中...",
-    "mintButton": "{type} をミント"
+    "mintButton": "{type} をミント",
+    "mintNFT": "NFTをミント",
+    "mintSuccess": "NFTのミントが成功しました！",
+    "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",
+    "insufficientUsdt": "USDT残高が不足しています。{amount}が必要です"
   },
   "myNfts": {
     "title": "マイ NFT",
@@ -398,6 +402,18 @@
     "applyWhitelist": "ホワイトリストに申請",
     "batchMintable": "このバッチでミント可能:",
     "waitForNextBatch": "次のバッチがミント開始されるまでお待ちください"
+  },
+  "batch": {
+    "activeBatch": "アクティブなバッチ",
+    "activeBatchDescription": "現在ミント可能なNFTバッチ情報",
+    "loadingBatchInfo": "バッチ情報を読み込み中...",
+    "noActiveBatch": "アクティブなバッチがありません",
+    "noActiveBatchDescription": "現在アクティブなバッチがありません。管理者が新しいバッチを作成するまでお待ちください",
+    "batchId": "バッチ #{id}",
+    "progress": "進捗",
+    "connectWalletFirst": "まずウォレットを接続してください",
+    "noActiveBatchMint": "現在アクティブなバッチがありません。NFTをミントできません",
+    "batchSoldOutMint": "現在のバッチは完売しました。NFTをミントできません"
   }
 }
 

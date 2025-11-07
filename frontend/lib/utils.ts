@@ -20,8 +20,16 @@ export function parseTokenAmount(amount: string, decimals: number = 18): bigint 
 export function formatTokenAmount(amount: string | bigint, decimals: number = 18, displayDecimals?: number): string {
   if (!amount) return '0';
   
-  // If amount is already a formatted string (contains decimal point), return as is
+  // Default to 6 decimal places if not specified, and limit to maximum 6 decimals
+  const maxDecimals = Math.min(displayDecimals !== undefined ? displayDecimals : 6, 6);
+  
+  // If amount is already a formatted string (contains decimal point), limit decimals
   if (typeof amount === 'string' && amount.includes('.')) {
+    const parts = amount.split('.');
+    if (parts[1] && parts[1].length > maxDecimals) {
+      parts[1] = parts[1].substring(0, maxDecimals).replace(/0+$/, '');
+      return parts[1] ? parts.join('.') : parts[0];
+    }
     return amount;
   }
   
@@ -43,13 +51,11 @@ export function formatTokenAmount(amount: string | bigint, decimals: number = 18
   
   let result = `${whole}.${trimmed}`;
   
-  // Apply display decimals limit if specified
-  if (displayDecimals !== undefined) {
-    const parts = result.split('.');
-    if (parts[1] && parts[1].length > displayDecimals) {
-      parts[1] = parts[1].substring(0, displayDecimals);
-      result = parts.join('.');
-    }
+  // Apply display decimals limit (max 6 by default)
+  const parts = result.split('.');
+  if (parts[1] && parts[1].length > maxDecimals) {
+    parts[1] = parts[1].substring(0, maxDecimals).replace(/0+$/, '');
+    result = parts[1] ? parts.join('.') : parts[0];
   }
   
   return result;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { inviteCodeStore } from '@/lib/stores/inviteCodeStore';
 
 /**
  * DEPRECATED: This API route is deprecated.

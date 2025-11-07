@@ -97,7 +97,7 @@ export default function Home() {
 
         // Handle different return formats
         let ordersArray: any[] = [];
-        let total: bigint = 0n;
+        let total: bigint = BigInt(0);
 
         if (Array.isArray(result) && result.length >= 2) {
           // Standard format: [orders, total]
@@ -309,7 +309,7 @@ export default function Home() {
                   <div className="text-xl sm:text-3xl font-bold text-gray-900">
                     <TokenBalance 
                       value={web3Data.balances.usdt || "0"}
-                      decimals={2}
+                      decimals={6}
                       className="text-xl sm:text-3xl font-bold text-gray-900"
                     />
                   </div>
@@ -323,7 +323,7 @@ export default function Home() {
                   <div className="text-xl sm:text-3xl font-bold text-gray-900">
                     <TokenBalance 
                       value={web3Data.balances.e || "0"}
-                      decimals={2}
+                      decimals={6}
                       className="text-xl sm:text-3xl font-bold text-gray-900"
                     />
                   </div>
@@ -337,7 +337,7 @@ export default function Home() {
                   <div className="text-xl sm:text-3xl font-bold text-gray-900">
                     <TokenBalance 
                       value={stats.totalLocked}
-                      decimals={2}
+                      decimals={6}
                       className="text-xl sm:text-3xl font-bold text-gray-900"
                     />
                   </div>

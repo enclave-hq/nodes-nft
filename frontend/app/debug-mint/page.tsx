@@ -101,7 +101,7 @@ export default function NFTMintDebugger() {
         []
       ) as bigint;
       
-      if (activeBatchId === 0n) {
+      if (activeBatchId === BigInt(0)) {
         addLog("❌ 没有激活的批次");
         setIsTesting(false);
         return;

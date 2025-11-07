@@ -75,21 +75,29 @@ export function useBalances() {
       
       // Format balances (convert from wei to token units)
       // Use string processing to avoid precision loss
+      // Limit to maximum 6 decimal places for display
       const formatTokenAmount = (amount: bigint, decimals: number): string => {
         const amountStr = amount.toString();
-        const decimalsInt = Math.pow(10, decimals);
-        const decimalsStr = decimalsInt.toString();
+        const maxDisplayDecimals = 6;
         
         if (amountStr.length <= decimals) {
           // If amount is less than 1 token, return decimal
           const padded = amountStr.padStart(decimals, '0');
           const integerPart = '0';
-          const decimalPart = padded.slice(-decimals).replace(/0+$/, '') || '0';
+          let decimalPart = padded.slice(-decimals).replace(/0+$/, '') || '0';
+          // Limit to 6 decimal places
+          if (decimalPart.length > maxDisplayDecimals) {
+            decimalPart = decimalPart.substring(0, maxDisplayDecimals).replace(/0+$/, '');
+          }
           return decimalPart === '0' ? integerPart : `${integerPart}.${decimalPart}`;
         } else {
           // If amount is greater than or equal to 1 token
           const integerPart = amountStr.slice(0, -decimals);
-          const decimalPart = amountStr.slice(-decimals).replace(/0+$/, '');
+          let decimalPart = amountStr.slice(-decimals).replace(/0+$/, '');
+          // Limit to 6 decimal places
+          if (decimalPart.length > maxDisplayDecimals) {
+            decimalPart = decimalPart.substring(0, maxDisplayDecimals).replace(/0+$/, '');
+          }
           return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
         }
       };
@@ -154,7 +162,7 @@ export function useBNBBalance() {
       });
       
       // Convert from wei to BNB
-      const balanceInBNB = parseInt(balance, 16) / 1e18;
+      const balanceInBNB = parseInt(balance as string, 16) / 1e18;
       setBalance(balanceInBNB.toString());
     } catch (error) {
       console.error('Error fetching BNB balance:', error);

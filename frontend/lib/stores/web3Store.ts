@@ -741,13 +741,14 @@ export const useWeb3Store = create<Web3Store>()(
         // Get detailed information for each NFT
         const nftPromises = nftIdsArray.map(async (nftId: unknown) => {
           try {
+            const nftIdNum = typeof nftId === 'number' ? nftId : typeof nftId === 'string' ? parseInt(nftId, 10) : Number(nftId);
             const poolData = await callContractWithFallback(
               walletManager,
               CONTRACT_ADDRESSES.nftManager,
               NFT_MANAGER_ABI as unknown[],
               'getNFTPool',
-              [BigInt(nftId)],
-              `getNFTPool(${nftId})`
+              [BigInt(nftIdNum)],
+              `getNFTPool(${nftIdNum})`
             );
             
             // Ensure poolData is an array
@@ -776,9 +777,9 @@ export const useWeb3Store = create<Web3Store>()(
             ] = poolData;
             
             // Verify required fields exist
-            const totalEclvLockedValue = totalEclvLocked ?? 0n;
-            const statusValue = status ?? 0n;
-            const createdAtValue = createdAt ?? 0n;
+            const totalEclvLockedValue = totalEclvLocked ?? BigInt(0);
+            const statusValue = status ?? BigInt(0);
+            const createdAtValue = createdAt ?? BigInt(0);
             
             return {
               id: Number(nftId),

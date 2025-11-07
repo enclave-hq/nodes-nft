@@ -74,7 +74,7 @@ export function useActiveBatch() {
         throw contractError;
       }
 
-      if (activeBatchId === 0n) {
+      if (activeBatchId === BigInt(0)) {
         setBatch(null);
         setLoading(false);
         return;

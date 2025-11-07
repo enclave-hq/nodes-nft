@@ -168,12 +168,12 @@ export default function DebugPage() {
                   
                   <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">份额:</span>
-                      <span className="ml-1 font-medium">{order.shares}</span>
+                      <span className="text-gray-500">NFT ID:</span>
+                      <span className="ml-1 font-medium">{order.nftId}</span>
                     </div>
                     <div>
-                      <span className="text-gray-500">单价:</span>
-                      <span className="ml-1 font-medium">{order.pricePerShare.toString()}</span>
+                      <span className="text-gray-500">价格:</span>
+                      <span className="ml-1 font-medium">{order.price.toString()}</span>
                     </div>
                     <div>
                       <span className="text-gray-500">卖家:</span>

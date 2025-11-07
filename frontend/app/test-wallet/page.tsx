@@ -32,7 +32,7 @@ export default function WalletConnectionTester() {
       // 测试2: 检查钱包是否锁定
       addLog("测试2: 检查钱包状态...");
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[];
         addLog(`✅ 钱包账户: ${accounts.length} 个`);
         if (accounts.length > 0) {
           addLog(`✅ 当前账户: ${accounts[0]}`);
@@ -44,7 +44,7 @@ export default function WalletConnectionTester() {
       // 测试3: 检查网络
       addLog("测试3: 检查网络...");
       try {
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' }) as string;
         addLog(`✅ 当前链ID: ${chainId} (${parseInt(chainId, 16)})`);
       } catch (error) {
         addLog(`❌ 检查网络失败: ${error}`);
@@ -55,7 +55,7 @@ export default function WalletConnectionTester() {
       try {
         const accounts = await window.ethereum.request({ 
           method: 'eth_requestAccounts' 
-        });
+        }) as string[];
         addLog(`✅ 连接成功: ${accounts[0]}`);
       } catch (error: any) {
         addLog(`❌ 连接失败: ${error.message} (code: ${error.code})`);
