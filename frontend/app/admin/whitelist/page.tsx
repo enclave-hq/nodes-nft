@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useWallet } from '@enclave-hq/wallet-sdk/react';
+import { useWallet } from '@/lib/providers/WalletProvider';
 import { 
   login, 
   isAuthenticated,

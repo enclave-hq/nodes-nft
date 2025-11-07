@@ -249,7 +249,26 @@
       "days": "日",
       "hours": "時間",
       "minutes": "分"
-    }
+    },
+    "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",
+    "connectWalletFirst": "まずウォレットを接続してください",
+    "joinWhitelistFirst": "まずホワイトリストに参加してください",
+    "noActiveBatch": "アクティブなバッチがありません",
+    "batchSoldOut": "現在のバッチは完売しました",
+    "quickMint": "クイックミント",
+    "whitelisted": "✅ ホワイトリストに登録されています",
+    "viewMyInviteCodes": "招待コードを表示",
+    "loadingBatchInfo": "バッチ情報を読み込み中...",
+    "noActiveBatchDescription": "現在アクティブなバッチがありません。管理者が新しいバッチを作成するまでお待ちください",
+    "currentBatchInfo": "現在のバッチ情報",
+    "batchId": "バッチID",
+    "mintPrice": "ミント価格",
+    "progress": "進捗",
+    "minted": "ミント済み",
+    "eachNFTContains": "各NFTには",
+    "unlockMethod": "アンロック方法",
+    "monthsLinearUnlock": "25ヶ月のリニアアンロック、毎月4%アンロック",
+    "mintFailed": "ミントに失敗しました"
   },
   "marketplace": {
     "title": "マーケットプレイス",
@@ -379,27 +398,6 @@
     "applyWhitelist": "ホワイトリストに申請",
     "batchMintable": "このバッチでミント可能:",
     "waitForNextBatch": "次のバッチがミント開始されるまでお待ちください"
-  },
-    "myNfts": {
-      "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",
-      "connectWalletFirst": "まずウォレットを接続してください",
-      "joinWhitelistFirst": "まずホワイトリストに参加してください",
-      "noActiveBatch": "アクティブなバッチがありません",
-      "batchSoldOut": "現在のバッチは完売しました",
-      "quickMint": "クイックミント",
-      "whitelisted": "✅ ホワイトリストに参加しました",
-      "viewMyInviteCodes": "マイ招待コードを表示",
-      "loadingBatchInfo": "バッチ情報を読み込み中...",
-      "noActiveBatchDescription": "現在アクティブなバッチがありません。管理者が新しいバッチを作成するまでお待ちください",
-      "currentBatchInfo": "現在のバッチ情報",
-      "batchId": "バッチID",
-      "mintPrice": "ミント価格",
-      "progress": "進捗",
-      "minted": "ミント済み",
-      "eachNFTContains": "各NFTに含まれる",
-      "unlockMethod": "アンロック方法",
-      "monthsLinearUnlock": "25ヶ月のリニアアンロック、毎月4%アンロック",
-      "mintFailed": "ミントに失敗しました"
-    }
+  }
 }
 
