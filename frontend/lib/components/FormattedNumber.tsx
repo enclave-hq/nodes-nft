@@ -102,7 +102,7 @@ function ValueDialog({
 
 export function FormattedNumber({
   value,
-  decimals = 2,
+  decimals = 6,
   className,
   showFullOnClick = true,
   prefix = "",
@@ -152,34 +152,39 @@ export function FormattedNumber({
     }
   }
 
-  // 格式化数字（K/M + 2位小数）
+  // 格式化数字（K/M + 最多6位小数）
+  // 限制小数位数最多为6位
+  const maxDecimals = Math.min(decimals, 6);
+  
   const formatNumber = (num: number): { value: string; unit: string } => {
     const absNum = Math.abs(num);
     
     if (absNum >= 1e12) {
       return {
-        value: (num / 1e12).toFixed(decimals),
+        value: (num / 1e12).toFixed(maxDecimals).replace(/\.?0+$/, ''),
         unit: 'T'
       };
     } else if (absNum >= 1e9) {
       return {
-        value: (num / 1e9).toFixed(decimals),
+        value: (num / 1e9).toFixed(maxDecimals).replace(/\.?0+$/, ''),
         unit: 'B'
       };
     } else if (absNum >= 1e6) {
       return {
-        value: (num / 1e6).toFixed(decimals),
+        value: (num / 1e6).toFixed(maxDecimals).replace(/\.?0+$/, ''),
         unit: 'M'
       };
     } else if (absNum >= 1e3) {
       return {
-        value: (num / 1e3).toFixed(decimals),
+        value: (num / 1e3).toFixed(maxDecimals).replace(/\.?0+$/, ''),
         unit: 'K'
       };
     } else {
-      // 小于1000的数字也显示2位小数
+      // 小于1000的数字，最多显示6位小数
+      const formatted = num.toFixed(maxDecimals);
+      // 移除末尾的0和小数点（如果小数部分全为0）
       return {
-        value: num.toFixed(decimals),
+        value: formatted.replace(/\.?0+$/, ''),
         unit: ''
       };
     }
@@ -224,7 +229,7 @@ interface TokenBalanceProps {
 export function TokenBalance({
   value,
   symbol = "",
-  decimals = 2,
+  decimals = 6,
   className,
   showSymbol = false,
 }: TokenBalanceProps) {

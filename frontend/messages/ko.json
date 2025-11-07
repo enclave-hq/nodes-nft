@@ -158,7 +158,11 @@
       "unlockSchedule": "{months}개월 잠금 해제 일정"
     },
     "minting": "민팅 중...",
-    "mintButton": "{type} 민팅"
+    "mintButton": "{type} 민팅",
+    "mintNFT": "NFT 민팅",
+    "mintSuccess": "NFT 민팅 성공!",
+    "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",
+    "insufficientUsdt": "USDT 잔액이 부족합니다. {amount}가 필요합니다"
   },
   "myNfts": {
     "title": "내 NFT",
@@ -388,6 +392,18 @@
     "applyWhitelist": "화이트리스트에 신청",
     "batchMintable": "이 배치에서 민팅 가능:",
     "waitForNextBatch": "다음 배치가 민팅을 시작할 때까지 기다려주세요"
+  },
+  "batch": {
+    "activeBatch": "활성 배치",
+    "activeBatchDescription": "현재 민팅 가능한 NFT 배치 정보",
+    "loadingBatchInfo": "배치 정보 로딩 중...",
+    "noActiveBatch": "활성 배치 없음",
+    "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
+    "batchId": "배치 #{id}",
+    "progress": "진행률",
+    "connectWalletFirst": "먼저 지갑을 연결해주세요",
+    "noActiveBatchMint": "현재 활성 배치가 없습니다. NFT를 민팅할 수 없습니다",
+    "batchSoldOutMint": "현재 배치가 매진되었습니다. NFT를 민팅할 수 없습니다"
   }
 }
 

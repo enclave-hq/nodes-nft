@@ -210,19 +210,19 @@ function NFTCard({ nftId }: { nftId: number }) {
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('notUnlocked')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {formatTokenAmount(pool.remainingMintQuota, 18, 2)}
+              {formatTokenAmount(pool.remainingMintQuota, 18, 6)}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('unlocked')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {formatTokenAmount(BigInt(pool.totalEclvLocked) - BigInt(pool.remainingMintQuota), 18, 2)}
+              {formatTokenAmount(BigInt(pool.totalEclvLocked) - BigInt(pool.remainingMintQuota), 18, 6)}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('withdrawnAmount')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {formatTokenAmount(pool.unlockedWithdrawn, 18, 2)}
+              {formatTokenAmount(pool.unlockedWithdrawn, 18, 6)}
             </p>
           </div>
         </div>
@@ -257,19 +257,19 @@ function NFTCard({ nftId }: { nftId: number }) {
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('totalProduced')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {globalState ? formatTokenAmount(globalState.accProducedPerNFT, 18, 2) : "0"}
+              {globalState ? formatTokenAmount(globalState.accProducedPerNFT, 18, 6) : "0"}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('availableForWithdrawal')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {pendingProduced ? formatTokenAmount(pendingProduced, 18, 2) : "0"}
+              {pendingProduced ? formatTokenAmount(pendingProduced, 18, 6) : "0"}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('withdrawnAmount')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {pool?.producedDebt ? formatTokenAmount(pool.producedDebt, 18, 2) : "0"}
+              {pool?.producedDebt ? formatTokenAmount(pool.producedDebt, 18, 6) : "0"}
             </p>
           </div>
         </div>
@@ -304,19 +304,19 @@ function NFTCard({ nftId }: { nftId: number }) {
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('totalReward')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {totalUsdtReward ? formatTokenAmount(totalUsdtReward, 18, 2) : "0"}
+              {totalUsdtReward ? formatTokenAmount(totalUsdtReward, 18, 6) : "0"}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('availableReward')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 2) : "0"}
+              {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 6) : "0"}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-500 mb-1">{t('withdrawnAmount')}</p>
             <p className="text-sm font-bold text-gray-900">
-              {usdtRewardDebt ? formatTokenAmount(usdtRewardDebt, 18, 2) : "0"}
+              {usdtRewardDebt ? formatTokenAmount(usdtRewardDebt, 18, 6) : "0"}
             </p>
           </div>
         </div>
@@ -424,7 +424,7 @@ function NFTCard({ nftId }: { nftId: number }) {
             <div>
               <p className="text-xs font-medium text-gray-700">{tTermination('unlockedWithdrawable')}</p>
               <p className="text-sm font-bold text-gray-900 mt-1">
-                {formatTokenAmount(availableUnlocked, 18, 2)} $E
+                {formatTokenAmount(availableUnlocked, 18, 6)} $E
               </p>
             </div>
             <button

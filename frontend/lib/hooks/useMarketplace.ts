@@ -84,7 +84,7 @@ export function useNFTSellOrders(nftId: number) {
 
       console.log('📋 Found order ID:', orderId ? orderId.toString() : 'No order');
 
-      if (!orderId || orderId === 0n) {
+      if (!orderId || orderId === BigInt(0)) {
         setOrders([]);
         return;
       }
@@ -368,11 +368,12 @@ export function useBuyNFT() {
         const approveReceipt = await walletManager.waitForTransaction(approveTxHash);
         
         // Check approval transaction status
-        const receiptStatus = approveReceipt.status;
-        const isSuccess = receiptStatus === 'success' || receiptStatus === '0x1' || (receiptStatus as any) === 1;
+        const receiptStatus = approveReceipt.status as string | number;
+        const statusStr = String(receiptStatus);
+        const isSuccess = statusStr === 'success' || statusStr === '0x1' || statusStr === '1' || receiptStatus === 1;
         
         if (!isSuccess) {
-          throw new Error(`USDT approval transaction failed, status: ${receiptStatus}`);
+          throw new Error(`USDT approval transaction failed, status: ${statusStr}`);
         }
         
         console.log('✅ USDT approval transaction confirmed');

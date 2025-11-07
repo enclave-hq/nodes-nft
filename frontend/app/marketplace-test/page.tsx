@@ -156,16 +156,16 @@ export default function MarketplaceTestPage() {
                   
                   <div className="space-y-2 mb-4">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">份额数量:</span>
-                      <span className="font-medium">{order.shares}</span>
+                      <span className="text-gray-500">订单ID:</span>
+                      <span className="font-medium">{order.orderId}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">单价:</span>
-                      <span className="font-medium">{formatTokenAmount(order.pricePerShare, 18, 2)} USDT</span>
+                      <span className="text-gray-500">NFT ID:</span>
+                      <span className="font-medium">{order.nftId}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">总价:</span>
-                      <span className="font-medium">{formatTokenAmount(order.totalPrice, 18, 2)} USDT</span>
+                      <span className="text-gray-500">价格:</span>
+                      <span className="font-medium">{formatTokenAmount(order.price, 18, 2)} USDT</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">卖家:</span>

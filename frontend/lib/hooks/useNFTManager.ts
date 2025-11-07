@@ -108,7 +108,7 @@ export function useMintNFT() {
         throw contractError;
       }
       
-      if (activeBatchId === 0n) {
+      if (activeBatchId === BigInt(0)) {
         throw new Error('No active batch found, cannot mint NFT');
       }
       
@@ -907,7 +907,7 @@ export function useCreateSellOrder() {
           `getActiveOrderByNFT(${params.nftId})`
         ) as bigint;
 
-        if (activeOrderId && activeOrderId !== 0n) {
+        if (activeOrderId && activeOrderId !== BigInt(0)) {
           throw new Error(`NFT #${params.nftId} already has an active order (Order ID: ${activeOrderId.toString()})`);
         }
         console.log('✅ NFT has no active order');
@@ -996,8 +996,9 @@ export function useCreateSellOrder() {
           const approveReceipt = await walletManager.waitForTransaction(approveTxHash);
           
           // Check transaction status
-          const receiptStatus = approveReceipt.status;
-          const isSuccess = receiptStatus === 'success' || receiptStatus === '0x1' || (receiptStatus as any) === 1;
+          const receiptStatus = approveReceipt.status as string | number;
+          const statusStr = String(receiptStatus);
+          const isSuccess = statusStr === 'success' || statusStr === '0x1' || statusStr === '1' || receiptStatus === 1;
           
           console.log('📋 Approval transaction details:', {
             hash: approveReceipt.transactionHash || approveTxHash,

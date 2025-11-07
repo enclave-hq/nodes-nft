@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { CONTRACT_ADDRESSES } from "@/lib/contracts/config";
-import { NFT_MANAGER_ABI as ABI } from "@/lib/contracts/nft-manager-abi.json";
+import { NFT_MANAGER_ABI as ABI } from "@/lib/contracts/abis";
 import { Loader2, CheckCircle, AlertCircle, Bug } from "lucide-react";
 
 export default function ContractTestPage() {
@@ -77,13 +77,23 @@ export default function ContractTestPage() {
 
       // Test 5: Network Connection
       try {
-        const networkId = await walletManager.getChainId();
-        results.push({
-          test: '网络连接',
-          status: 'success',
-          details: `链ID: ${networkId}`,
-          error: null
-        });
+        const account = walletManager.getPrimaryAccount();
+        const networkId = account?.chainId;
+        if (networkId) {
+          results.push({
+            test: '网络连接',
+            status: 'success',
+            details: `链ID: ${networkId}`,
+            error: null
+          });
+        } else {
+          results.push({
+            test: '网络连接',
+            status: 'error',
+            details: '无法获取网络信息',
+            error: 'No account connected'
+          });
+        }
       } catch (networkError) {
         results.push({
           test: '网络连接',

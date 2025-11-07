@@ -82,7 +82,7 @@ export function Navbar() {
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.e || "0"}
-                                decimals={0}
+                                decimals={6}
                                 className="text-base font-semibold text-gray-900"
                               />
                             )}
@@ -97,7 +97,7 @@ export function Navbar() {
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.usdt || "0"}
-                                decimals={0}
+                                decimals={6}
                                 className="text-base font-semibold text-gray-900"
                               />
                             )}
@@ -112,7 +112,7 @@ export function Navbar() {
                             {web3Data.loading.allowances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.allowances.usdt || "0"}
-                                decimals={0}
+                                decimals={6}
                                 className="text-sm font-medium text-blue-600"
                               />
                             )}
@@ -201,7 +201,7 @@ export function Navbar() {
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.e || "0"}
-                                decimals={0}
+                                decimals={6}
                                 className="text-base font-semibold text-gray-900"
                               />
                             )}
@@ -216,7 +216,7 @@ export function Navbar() {
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.usdt || "0"}
-                                decimals={0}
+                                decimals={6}
                                 className="text-base font-semibold text-gray-900"
                               />
                             )}
@@ -231,7 +231,7 @@ export function Navbar() {
                             {web3Data.loading.allowances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.allowances.usdt || "0"}
-                                decimals={0}
+                                decimals={6}
                                 className="text-sm font-medium text-blue-600"
                               />
                             )}
