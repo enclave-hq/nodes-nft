@@ -15,7 +15,13 @@
     "create": "作成",
     "viewAll": "すべて表示",
     "shares": "シェア",
-    "share": "シェア"
+    "share": "シェア",
+    "allowance": "承認額",
+    "dataRefreshed": "データが更新されました",
+    "refreshFailed": "更新に失敗しました。後でもう一度お試しください",
+    "refreshChainData": "チェーン上のデータを更新",
+    "refreshing": "更新中...",
+    "refresh": "更新"
   },
   "navbar": {
     "home": "ホーム",
@@ -25,8 +31,8 @@
   },
   "home": {
     "hero": {
-      "title": "分散型ノード NFT プラットフォーム",
-      "subtitle": "ネットワークの一部を所有。$E トークン配布と取引手数料を通じて受動的報酬を獲得。分散型インフラの未来に参加。",
+      "title": "Enclave ノード NFT プラットフォーム",
+      "subtitle": "ネットワークの一部になる。Enclaveのトークン生産と取引手数料を獲得。プライバシー計算の未来を共に構築。",
       "mintButton": "ノード NFT をミント",
       "viewNftsButton": "マイ NFT を表示",
       "connectWallet": "ウォレットを接続して開始"
@@ -34,26 +40,32 @@
     "stats": {
       "myNfts": "マイ NFT",
       "eclvBalance": "$E 残高",
-      "usdtBalance": "USDT 残高"
+      "usdtBalance": "USDT 残高",
+      "eclvLocked": "$E ロック中",
+      "totalShares": "総シェア",
+      "listedShares": "出品中",
+      "notListed": "未出品",
+      "standard": "スタンダード",
+      "premium": "プレミアム"
     },
     "howItWorks": {
-      "title": "仕組み",
-      "subtitle": "シンプル、透明、収益性あり。分散型ノードネットワークに参加。",
+      "title": "操作方式",
+      "subtitle": "シンプル、透明、収益性あり。Enclaveの分散型プライバシーネットワークの一部になる。",
       "step1": {
         "title": "NFT をミント",
-        "description": "USDT を支払い、$E トークンをロックしてノード NFT を購入"
+        "description": "USDT を支払ってノード NFT をミントし、同時に $E を追加獲得"
       },
       "step2": {
-        "title": "報酬を獲得",
-        "description": "毎日自動的に $E 生成と USDT 報酬を受け取る"
+        "title": "手数料分配",
+        "description": "毎日自動的に USDT 報酬を受け取る"
       },
       "step3": {
-        "title": "トークンのアンロック",
-        "description": "1年後、ロックされた $E が毎月 4% ずつ 25 ヶ月間アンロック"
+        "title": "ステーキング報酬",
+        "description": "プライバシー計算の PoW ネットワークに自動ステーキングし、毎日 $E 報酬を獲得"
       },
       "step4": {
         "title": "シェアを取引",
-        "description": "いつでもマーケットプレイスで NFT シェアを売買"
+        "description": "1つの NFT を複数のシェアに分割し、いつでもマーケットプレイスでシェアを取引"
       }
     },
     "nftTypes": {
@@ -97,6 +109,25 @@
       "github": "GitHub",
       "twitter": "Twitter",
       "rights": "© 2025 Enclave. 全著作権所有"
+    },
+    "batch": {
+      "activeBatch": "アクティブなバッチ",
+      "activeBatchDescription": "現在ミント可能なNFTバッチ情報",
+      "loadingBatchInfo": "バッチ情報を読み込み中...",
+      "noActiveBatch": "アクティブなバッチがありません",
+      "noActiveBatchDescription": "現在アクティブなバッチがありません。管理者が新しいバッチを作成するまでお待ちください",
+      "batchId": "バッチ #{id}",
+      "progress": "進捗",
+      "connectWalletFirst": "まずウォレットを接続してください",
+      "noActiveBatchMint": "現在アクティブなバッチがありません。NFTをミントできません",
+      "batchSoldOutMint": "現在のバッチは完売しました。NFTをミントできません"
+    },
+    "mint": {
+      "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",
+      "insufficientUsdt": "USDT残高が不足しています。{amount}が必要です",
+      "mintSuccess": "NFTのミントが成功しました！",
+      "minting": "ミント中...",
+      "mintNFT": "NFTをミント"
     }
   },
   "mint": {
@@ -121,7 +152,9 @@
       "insufficientBalance": "残高不足",
       "needMoreUsdt": "USDT が不足しています。",
       "needMoreEclv": "$E が不足しています。",
-      "confirmTransaction": "ウォレットでトランザクションを確認してください"
+      "confirmTransaction": "ウォレットでトランザクションを確認してください",
+      "note": "注意：{amount} $E クォータは会計記録のみであり、ウォレットや契約準備金から実際のトークンは転送されません",
+      "needAmount": "この NFT をミントするには {amount} USDT が必要です"
     },
     "nftCard": {
       "lockAmount": "{amount} $E をロック",
@@ -156,14 +189,67 @@
       "premium": "プレミアム",
       "live": "アクティブ",
       "dissolved": "解散済み",
+      "terminating": "終了中",
+      "terminated": "終了済み",
       "lockedEclv": "ロック $E",
       "unlocked": "アンロック済み",
+      "notUnlocked": "未アンロック",
+      "withdrawn": "引き出し済み",
       "pendingEclv": "保留中 $E",
       "pendingUsdt": "保留中 USDT",
       "created": "作成日：{date}",
-      "claim": "請求"
+      "claim": "請求",
+      "eclvLocked": "$Eロック",
+      "eclvProduced": "$E生成",
+      "totalProduced": "総生成",
+      "availableForWithdrawal": "引き出し可能",
+      "withdrawnAmount": "引き出し済み",
+      "claimProduced": "生成を請求",
+      "claiming": "請求中...",
+      "usdtReward": "USDT報酬",
+      "totalReward": "総報酬",
+      "availableReward": "引き出し可能",
+      "claimReward": "報酬を請求",
+      "claimingReward": "請求中..."
     },
-    "created": "作成日"
+    "created": "作成日",
+    "termination": {
+      "initiated": "終了リクエストが提出されました！",
+      "initiateFailed": "終了の開始に失敗しました",
+      "confirmed": "終了が確認されました！",
+      "confirmFailed": "終了の確認に失敗しました",
+      "cancelled": "終了がキャンセルされました！",
+      "cancelFailed": "終了のキャンセルに失敗しました",
+      "withdrawn": "アンロック金額が引き出されました！",
+      "withdrawFailed": "引き出しに失敗しました",
+      "cooldownInfo": "終了を開始した後、1日のクールダウン期間があります",
+      "autoTerminationInfo": "クールダウン期間後、終了を確認するか、30日待って自動終了することができます",
+      "terminationWarning": "NFTを終了した後、新しい生成と報酬を受け取ることができなくなります。",
+      "terminationProcess": "終了プロセス：",
+      "cooldownCancel": "クールダウン期間中に終了をキャンセルできます",
+      "withdrawAfterTermination": "終了後、アンロックされた$Eを引き出すことができます",
+      "confirmTermination": "終了を確認",
+      "initiateTermination": "終了を開始",
+      "terminationInProgress": "終了進行中",
+      "cooldownRemaining": "クールダウン：残り {time}",
+      "processing": "処理中...",
+      "resumeProduction": "生成を再開",
+      "confirmDuringCooldown": "終了を確認（クールダウン中）",
+      "autoConfirmCountdown": "自動確認カウントダウン：残り {time}",
+      "autoTerminated": "自動終了済み",
+      "autoTerminatedDescription": "NFTが自動終了されました。アンロックされた$Eを引き出すことができます",
+      "unlockedWithdrawable": "アンロック引き出し可能",
+      "withdrawing": "引き出し中...",
+      "withdrawUnlockedAmount": "アンロック金額を引き出す",
+      "terminate": "終了",
+      "cooldown": "クールダウン",
+      "afterCooldown": "クールダウン後"
+    },
+    "time": {
+      "days": "日",
+      "hours": "時間",
+      "minutes": "分"
+    }
   },
   "marketplace": {
     "title": "マーケットプレイス",
@@ -198,7 +284,15 @@
       "cancelOrder": "注文をキャンセル",
       "cancelling": "キャンセル中...",
       "buyShares": "シェアを購入",
-      "buying": "購入中..."
+      "buying": "購入中...",
+      "nftPrice": "NFT価格",
+      "orderId": "注文ID",
+      "listedTime": "出品日時",
+      "buyNFT": "NFTを購入",
+      "createdTime": "作成日時",
+      "onSale": "出品中",
+      "revoking": "取り消し中...",
+      "revokeListing": "出品を取り消す"
     },
     "createOrder": {
       "title": "売却注文を作成",
@@ -209,7 +303,29 @@
       "pricePlaceholder": "シェアあたりの価格を入力",
       "totalValue": "合計価値",
       "creating": "作成中...",
-      "createButton": "注文を作成"
+      "createButton": "注文を作成",
+      "nftPriceLabel": "NFT価格（USDT）",
+      "nftPricePlaceholder": "NFT価格を入力",
+      "nftPriceNote": "これはNFT全体の販売価格です"
+    },
+    "myNFTs": {
+      "title": "マイNFT",
+      "noNFTs": "NFTがありません",
+      "noNFTsDescription": "まだNFTがありません。まずNFTをミントしてから出品してください",
+      "loadingOrders": "注文情報を読み込み中...",
+      "onSale": "出品中",
+      "onSaleCount": "{count}個のNFTが現在出品中です",
+      "notOnSale": "未出品",
+      "notOnSaleCount": "{count}個のNFTを出品できます",
+      "noData": "データがありません",
+      "orderRevoked": "注文が取り消されました",
+      "revokeOrderFailed": "注文の取り消しに失敗しました",
+      "listForSale": "出品する",
+      "loadingOrdersError": "注文を読み込み中...",
+      "loadOrdersFailed": "注文の読み込みに失敗しました",
+      "retry": "再試行",
+      "refreshing": "更新中...",
+      "refreshOrders": "注文を更新"
     }
   },
   "status": {
@@ -229,6 +345,61 @@
     "insufficientBalance": "残高不足",
     "transactionFailed": "トランザクション失敗",
     "tryAgain": "もう一度お試しください"
-  }
+  },
+  "whitelist": {
+    "title": "ホワイトリスト管理",
+    "currentAddress": "現在接続中のアドレス",
+    "applyWhitelist": "ホワイトリストに申請",
+    "whitelisted": "ホワイトリスト登録済み",
+    "whitelistedDescription": "ホワイトリストへの登録が成功しました。NFTをミントできます",
+    "enterInviteCode": "ホワイトリストに参加するには招待コードを入力してください",
+    "inviteCodePlaceholder": "招待コードを入力",
+    "register": "登録",
+    "myInviteCodes": "マイ招待コード",
+    "loading": "読み込み中...",
+    "approved": "承認済み",
+    "activeDescription": "有効化済み、他の人を招待するために使用できます",
+    "pending": "審査中",
+    "pendingDescription": "招待コードの申請が審査中です。しばらくお待ちください",
+    "noInviteCode": "まだ招待コードがありません。申請後、他の人をホワイトリストに招待するために使用できます",
+    "applying": "申請中...",
+    "applyInviteCode": "招待コードを申請",
+    "close": "閉じる",
+    "connectWalletFirst": "まずウォレットを接続してください",
+    "enterInviteCodeError": "招待コードを入力してください",
+    "invalidInviteCode": "無効な招待コードまたは取り消されました",
+    "inviteCodeUsed": "招待コードの使用に成功しました！",
+    "whitelistRegistered": "ホワイトリスト登録が成功しました！",
+    "registerFailed": "登録に失敗しました",
+    "applicationSubmitted": "招待コードの申請が提出されました。審査をお待ちください",
+    "applicationFailed": "申請に失敗しました"
+  },
+  "mintStatus": {
+    "applyWhitelistFirst": "まず",
+    "applyWhitelist": "ホワイトリストに申請",
+    "batchMintable": "このバッチでミント可能:",
+    "waitForNextBatch": "次のバッチがミント開始されるまでお待ちください"
+  },
+    "myNfts": {
+      "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",
+      "connectWalletFirst": "まずウォレットを接続してください",
+      "joinWhitelistFirst": "まずホワイトリストに参加してください",
+      "noActiveBatch": "アクティブなバッチがありません",
+      "batchSoldOut": "現在のバッチは完売しました",
+      "quickMint": "クイックミント",
+      "whitelisted": "✅ ホワイトリストに参加しました",
+      "viewMyInviteCodes": "マイ招待コードを表示",
+      "loadingBatchInfo": "バッチ情報を読み込み中...",
+      "noActiveBatchDescription": "現在アクティブなバッチがありません。管理者が新しいバッチを作成するまでお待ちください",
+      "currentBatchInfo": "現在のバッチ情報",
+      "batchId": "バッチID",
+      "mintPrice": "ミント価格",
+      "progress": "進捗",
+      "minted": "ミント済み",
+      "eachNFTContains": "各NFTに含まれる",
+      "unlockMethod": "アンロック方法",
+      "monthsLinearUnlock": "25ヶ月のリニアアンロック、毎月4%アンロック",
+      "mintFailed": "ミントに失敗しました"
+    }
 }
 

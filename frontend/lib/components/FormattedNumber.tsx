@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { Copy, Check, X } from "lucide-react";
 
 interface FormattedNumberProps {
   value: string | number;
@@ -12,6 +13,93 @@ interface FormattedNumberProps {
   suffix?: string;
 }
 
+// Value Dialog Component
+function ValueDialog({
+  isOpen,
+  onClose,
+  value,
+  label,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  value: string;
+  label?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const valueRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {label || '完整数值'}
+          </h3>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+            <p className="text-sm text-gray-500 mb-2">完整数值:</p>
+            <div
+              ref={valueRef}
+              className="text-lg font-mono font-semibold text-gray-900 break-all"
+            >
+              {value}
+            </div>
+          </div>
+
+          <button
+            onClick={handleCopy}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span>已复制</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                <span>复制</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FormattedNumber({
   value,
   decimals = 2,
@@ -20,21 +108,51 @@ export function FormattedNumber({
   prefix = "",
   suffix = "",
 }: FormattedNumberProps) {
-  const [showFull, setShowFull] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
 
-  // 转换值为数字
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  // 保存原始值（字符串形式以保持精度）
+  const originalValue = typeof value === 'string' ? value : String(value);
+  
+  // 转换值为数字用于格式化显示
+  // 对于非常大的数字，parseFloat可能会丢失精度，所以我们先用字符串判断
+  let numValue: number;
+  if (typeof value === 'string') {
+    // 如果是空字符串或无效值
+    if (!value || value.trim() === '' || value === '0') {
+      numValue = 0;
+    } else {
+      numValue = parseFloat(value);
+      // 如果parseFloat失败，尝试处理大数字
+      if (isNaN(numValue)) {
+        // 尝试移除所有非数字字符（除了小数点）
+        const cleaned = value.replace(/[^\d.-]/g, '');
+        numValue = parseFloat(cleaned) || 0;
+      }
+    }
+  } else if (typeof value === 'bigint') {
+    numValue = Number(value);
+  } else {
+    numValue = value;
+  }
   
   // 如果值无效，返回0
   if (isNaN(numValue) || numValue === 0) {
-    return (
-      <span className={className}>
-        {prefix}0{suffix}
-      </span>
-    );
+    // 但如果是字符串"0"或有效的0值，也要检查原始值是否可能是有效的
+    const strValue = originalValue.trim();
+    if (strValue && strValue !== '0' && strValue !== '0.0' && strValue !== '0.00') {
+      // 可能是parseFloat精度丢失，尝试直接处理字符串
+      // 这种情况下，我们仍然尝试格式化显示
+      numValue = parseFloat(strValue) || 0;
+    } else {
+      return (
+        <span className={className}>
+          {prefix}0{suffix}
+        </span>
+      );
+    }
   }
 
-  // 格式化数字
+  // 格式化数字（K/M + 2位小数）
   const formatNumber = (num: number): { value: string; unit: string } => {
     const absNum = Math.abs(num);
     
@@ -59,6 +177,7 @@ export function FormattedNumber({
         unit: 'K'
       };
     } else {
+      // 小于1000的数字也显示2位小数
       return {
         value: num.toFixed(decimals),
         unit: ''
@@ -66,38 +185,30 @@ export function FormattedNumber({
     }
   };
 
-  // 格式化完整数字（带千分位分隔符）
-  const formatFullNumber = (num: number): string => {
-    return num.toLocaleString('en-US', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 18,
-    });
-  };
-
   const formatted = formatNumber(numValue);
-  const fullNumber = formatFullNumber(numValue);
-
-  // 如果显示完整数字或者数字很小不需要格式化
-  if (showFull || formatted.unit === '') {
-    return (
-      <span className={className}>
-        {prefix}{fullNumber}{suffix}
-      </span>
-    );
-  }
 
   // 显示格式化后的数字
   return (
-    <span
-      className={cn(
-        "cursor-pointer hover:text-blue-600 transition-colors",
-        className
+    <>
+      <span
+        className={cn(
+          showFullOnClick && "cursor-pointer hover:text-blue-600 transition-colors",
+          className
+        )}
+        onClick={showFullOnClick ? () => setShowDialog(true) : undefined}
+        title={showFullOnClick ? `点击查看完整数值: ${originalValue}` : undefined}
+      >
+        {prefix}{formatted.value}{formatted.unit}{suffix}
+      </span>
+
+      {showFullOnClick && (
+        <ValueDialog
+          isOpen={showDialog}
+          onClose={() => setShowDialog(false)}
+          value={originalValue}
+        />
       )}
-      onClick={showFullOnClick ? () => setShowFull(!showFull) : undefined}
-      title={showFullOnClick ? `点击查看完整数量: ${fullNumber}` : undefined}
-    >
-      {prefix}{formatted.value}{formatted.unit}{suffix}
-    </span>
+    </>
   );
 }
 

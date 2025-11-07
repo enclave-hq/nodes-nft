@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useWallet } from "@/lib/providers/WalletProvider";
-import { CONTRACT_ADDRESSES, NFTType, GAS_CONFIG } from "@/lib/contracts/config";
+import { CONTRACT_ADDRESSES, GAS_CONFIG } from "@/lib/contracts/config";
 import { NFT_MANAGER_ABI, ERC20_ABI } from "@/lib/contracts/abis";
 
 export default function NFTMintDebugger() {
@@ -65,11 +65,9 @@ export default function NFTMintDebugger() {
         addLog(`❌ 无法读取nextOrderId: ${error.message}`);
       }
 
-      // 检查6: 检查NFT类型配置
-      addLog("🔍 检查NFT类型配置...");
-      for (const [typeName, typeValue] of Object.entries(NFTType)) {
-        addLog(`- ${typeName}: ${typeValue}`);
-      }
+      // 检查6: NFT配置（所有NFT统一配置）
+      addLog("🔍 检查NFT配置...");
+      addLog(`- 所有NFT统一配置，每个NFT包含 2000 $E`);
 
       // 检查7: 检查Gas配置
       addLog("🔍 检查Gas配置...");
@@ -84,23 +82,45 @@ export default function NFTMintDebugger() {
     }
   };
 
-  const testMintNFT = async (nftType: NFTType) => {
+  const testMintNFT = async () => {
     if (!isConnected || !address || !walletManager) {
       addLog("❌ 钱包未连接");
       return;
     }
 
     setIsTesting(true);
-    addLog(`🔍 开始测试铸造NFT (类型: ${nftType})...`);
+    addLog(`🔍 开始测试铸造NFT...`);
 
     try {
-      // 获取mint价格
-      const mintPrice = nftType === NFTType.Premium ? "50000" : "10000";
-      const mintPriceWei = BigInt(mintPrice) * BigInt(10 ** 18);
+      // 获取激活批次价格
+      addLog("🔍 获取激活批次信息...");
+      const activeBatchId = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as any[],
+        'getActiveBatch',
+        []
+      ) as bigint;
       
+      if (activeBatchId === 0n) {
+        addLog("❌ 没有激活的批次");
+        setIsTesting(false);
+        return;
+      }
+      
+      const batchData = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as any[],
+        'batches',
+        [activeBatchId]
+      ) as [bigint, bigint, bigint, bigint, boolean, bigint];
+      
+      const [, , , mintPriceWei, , ] = batchData;
+      addLog(`✅ 批次ID: ${activeBatchId.toString()}`);
+      addLog(`✅ 铸造价格: ${mintPriceWei.toString()} wei`);
+      
+      const mintPrice = Number(mintPriceWei) / 1e18;
       addLog(`📋 铸造信息:`);
-      addLog(`- NFT类型: ${nftType}`);
-      addLog(`- Mint价格: ${mintPrice} USDT`);
+      addLog(`- Mint价格: ${mintPrice.toFixed(2)} USDT`);
       addLog(`- Mint价格(wei): ${mintPriceWei.toString()}`);
 
       // 检查授权是否足够
@@ -125,7 +145,7 @@ export default function NFTMintDebugger() {
       addLog("🎨 开始铸造NFT...");
       addLog(`📋 铸造参数:`);
       addLog(`- 合约地址: ${CONTRACT_ADDRESSES.nftManager}`);
-      addLog(`- NFT类型: ${nftType}`);
+      addLog(`- 批次ID: ${activeBatchId.toString()}`);
       addLog(`- Gas limit: 500000`);
       addLog(`- 用户地址: ${address}`);
       
@@ -133,7 +153,7 @@ export default function NFTMintDebugger() {
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as any[],
         'mintNFT',
-        [nftType],
+        [], // No parameters - price comes from active batch
         {
           gas: 500000, // 增加gas limit
           // gasPrice: 让Wallet SDK自动获取
@@ -222,18 +242,11 @@ export default function NFTMintDebugger() {
               {isTesting ? '检查中...' : '检查铸造条件'}
             </button>
             <button
-              onClick={() => testMintNFT(NFTType.Standard)}
+              onClick={() => testMintNFT()}
               disabled={isTesting || !isConnected}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
-              {isTesting ? '铸造中...' : '铸造Standard NFT'}
-            </button>
-            <button
-              onClick={() => testMintNFT(NFTType.Premium)}
-              disabled={isTesting || !isConnected}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isTesting ? '铸造中...' : '铸造Premium NFT'}
+              {isTesting ? '铸造中...' : '铸造NFT'}
             </button>
             <button
               onClick={clearLogs}

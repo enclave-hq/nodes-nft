@@ -25,8 +25,8 @@
   },
   "home": {
     "hero": {
-      "title": "탈중앙화 노드 NFT 플랫폼",
-      "subtitle": "네트워크의 일부를 소유하세요. $E 토큰 분배와 거래 수수료를 통해 수동적 보상을 획득하세요. 탈중앙화 인프라의 미래에 참여하세요.",
+      "title": "Enclave 노드 NFT 플랫폼",
+      "subtitle": "네트워크의 일부가 되세요. Enclave의 토큰 생산과 거래 수수료를 획득하세요. 프라이버시 컴퓨팅의 미래를 함께 구축하세요.",
       "mintButton": "노드 NFT 민팅",
       "viewNftsButton": "내 NFT 보기",
       "connectWallet": "지갑을 연결하여 시작하세요"
@@ -34,26 +34,32 @@
     "stats": {
       "myNfts": "내 NFT",
       "eclvBalance": "$E 잔액",
-      "usdtBalance": "USDT 잔액"
+      "usdtBalance": "USDT 잔액",
+      "eclvLocked": "$E 잠금 중",
+      "totalShares": "총 지분",
+      "listedShares": "판매 중",
+      "notListed": "미판매",
+      "standard": "스탠다드",
+      "premium": "프리미엄"
     },
     "howItWorks": {
       "title": "작동 방식",
-      "subtitle": "간단하고 투명하며 수익성이 높습니다. 탈중앙화 노드 네트워크에 참여하세요.",
+      "subtitle": "간단하고 투명하며 수익성이 높습니다. Enclave의 탈중앙화 프라이버시 네트워크의 일부가 되세요.",
       "step1": {
         "title": "NFT 민팅",
-        "description": "USDT를 지불하고 $E 토큰을 잠금하여 노드 NFT 구매"
+        "description": "USDT를 지불하여 노드 NFT를 민팅하고 동시에 추가 $E 획득"
       },
       "step2": {
-        "title": "보상 획득",
-        "description": "매일 자동으로 $E 생산과 USDT 보상 수령"
+        "title": "수수료 분배",
+        "description": "매일 자동으로 USDT 보상 수령"
       },
       "step3": {
-        "title": "토큰 잠금 해제",
-        "description": "1년 후, 잠긴 $E가 25개월 동안 매월 4%씩 잠금 해제"
+        "title": "스테이킹 보상",
+        "description": "프라이버시 컴퓨팅 PoW 네트워크에 자동 스테이킹하고 매일 $E 보상 획득"
       },
       "step4": {
         "title": "지분 거래",
-        "description": "언제든지 마켓플레이스에서 NFT 지분 매매"
+        "description": "하나의 NFT를 여러 지분으로 분할하고 언제든지 마켓플레이스에서 지분 거래"
       }
     },
     "nftTypes": {
@@ -97,6 +103,25 @@
       "github": "GitHub",
       "twitter": "Twitter",
       "rights": "© 2025 Enclave. 모든 권리 보유"
+    },
+    "batch": {
+      "activeBatch": "활성 배치",
+      "activeBatchDescription": "현재 민팅 가능한 NFT 배치 정보",
+      "loadingBatchInfo": "배치 정보 로딩 중...",
+      "noActiveBatch": "활성 배치 없음",
+      "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
+      "batchId": "배치 #{id}",
+      "progress": "진행률",
+      "connectWalletFirst": "먼저 지갑을 연결해주세요",
+      "noActiveBatchMint": "현재 활성 배치가 없습니다. NFT를 민팅할 수 없습니다",
+      "batchSoldOutMint": "현재 배치가 매진되었습니다. NFT를 민팅할 수 없습니다"
+    },
+    "mint": {
+      "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",
+      "insufficientUsdt": "USDT 잔액이 부족합니다. {amount}가 필요합니다",
+      "mintSuccess": "NFT 민팅 성공!",
+      "minting": "민팅 중...",
+      "mintNFT": "NFT 민팅"
     }
   },
   "mint": {
@@ -121,7 +146,9 @@
       "insufficientBalance": "잔액 부족",
       "needMoreUsdt": "USDT가 더 필요합니다.",
       "needMoreEclv": "$E가 더 필요합니다.",
-      "confirmTransaction": "지갑에서 트랜잭션을 확인해주세요"
+      "confirmTransaction": "지갑에서 트랜잭션을 확인해주세요",
+      "note": "참고: {amount} $E 할당량은 회계 기록일 뿐이며, 지갑이나 계약 준비금에서 실제 토큰이 전송되지 않습니다",
+      "needAmount": "이 NFT를 민팅하려면 {amount} USDT가 필요합니다"
     },
     "nftCard": {
       "lockAmount": "{amount} $E 잠금",
@@ -156,14 +183,67 @@
       "premium": "프리미엄",
       "live": "활성",
       "dissolved": "해산됨",
+      "terminating": "종료 중",
+      "terminated": "종료됨",
       "lockedEclv": "잠긴 $E",
       "unlocked": "잠금 해제됨",
+      "notUnlocked": "미잠금 해제",
+      "withdrawn": "인출됨",
       "pendingEclv": "대기 중 $E",
       "pendingUsdt": "대기 중 USDT",
       "created": "생성일: {date}",
-      "claim": "청구"
+      "claim": "청구",
+      "eclvLocked": "$E 잠금",
+      "eclvProduced": "$E 생산",
+      "totalProduced": "총 생산",
+      "availableForWithdrawal": "인출 가능",
+      "withdrawnAmount": "인출됨",
+      "claimProduced": "생산 청구",
+      "claiming": "청구 중...",
+      "usdtReward": "USDT 보상",
+      "totalReward": "총 보상",
+      "availableReward": "인출 가능",
+      "claimReward": "보상 청구",
+      "claimingReward": "청구 중..."
     },
-    "created": "생성일"
+    "created": "생성일",
+    "termination": {
+      "initiated": "종료 요청이 제출되었습니다!",
+      "initiateFailed": "종료 시작 실패",
+      "confirmed": "종료가 확인되었습니다!",
+      "confirmFailed": "종료 확인 실패",
+      "cancelled": "종료가 취소되었습니다!",
+      "cancelFailed": "종료 취소 실패",
+      "withdrawn": "잠금 해제 금액이 인출되었습니다!",
+      "withdrawFailed": "인출 실패",
+      "cooldownInfo": "종료를 시작한 후 1일의 쿨다운 기간이 있습니다",
+      "autoTerminationInfo": "쿨다운 기간 후 종료를 확인하거나 30일을 기다려 자동 종료할 수 있습니다",
+      "terminationWarning": "NFT를 종료한 후에는 더 이상 새로운 생산과 보상을 받을 수 없습니다.",
+      "terminationProcess": "종료 프로세스:",
+      "cooldownCancel": "쿨다운 기간 동안 종료를 취소할 수 있습니다",
+      "withdrawAfterTermination": "종료 후 잠금 해제된 $E를 인출할 수 있습니다",
+      "confirmTermination": "종료 확인",
+      "initiateTermination": "종료 시작",
+      "terminationInProgress": "종료 진행 중",
+      "cooldownRemaining": "쿨다운: 남은 시간 {time}",
+      "processing": "처리 중...",
+      "resumeProduction": "생산 재개",
+      "confirmDuringCooldown": "종료 확인 (쿨다운 중)",
+      "autoConfirmCountdown": "자동 확인 카운트다운: 남은 시간 {time}",
+      "autoTerminated": "자동 종료됨",
+      "autoTerminatedDescription": "NFT가 자동 종료되었습니다. 잠금 해제된 $E를 인출할 수 있습니다",
+      "unlockedWithdrawable": "잠금 해제 인출 가능",
+      "withdrawing": "인출 중...",
+      "withdrawUnlockedAmount": "잠금 해제 금액 인출",
+      "terminate": "종료",
+      "cooldown": "쿨다운",
+      "afterCooldown": "쿨다운 후"
+    },
+    "time": {
+      "days": "일",
+      "hours": "시간",
+      "minutes": "분"
+    }
   },
   "marketplace": {
     "title": "마켓플레이스",
@@ -194,7 +274,15 @@
       "cancelOrder": "주문 취소",
       "cancelling": "취소 중...",
       "buyShares": "지분 구매",
-      "buying": "구매 중..."
+      "buying": "구매 중...",
+      "nftPrice": "NFT 가격",
+      "orderId": "주문 ID",
+      "listedTime": "등록 시간",
+      "buyNFT": "NFT 구매",
+      "createdTime": "생성 시간",
+      "onSale": "판매 중",
+      "revoking": "취소 중...",
+      "revokeListing": "판매 취소"
     },
     "createOrder": {
       "title": "판매 주문 생성",
@@ -205,7 +293,29 @@
       "pricePlaceholder": "지분당 가격 입력",
       "totalValue": "총 가치",
       "creating": "생성 중...",
-      "createButton": "주문 생성"
+      "createButton": "주문 생성",
+      "nftPriceLabel": "NFT 가격 (USDT)",
+      "nftPricePlaceholder": "NFT 가격 입력",
+      "nftPriceNote": "이것은 전체 NFT의 판매 가격입니다"
+    },
+    "myNFTs": {
+      "title": "내 NFT",
+      "noNFTs": "NFT 없음",
+      "noNFTsDescription": "아직 NFT가 없습니다. 먼저 NFT를 민팅한 후 판매 목록에 올려주세요",
+      "loadingOrders": "주문 정보 로딩 중...",
+      "onSale": "판매 중",
+      "onSaleCount": "{count}개의 NFT가 현재 판매 중입니다",
+      "notOnSale": "미판매",
+      "notOnSaleCount": "{count}개의 NFT를 판매할 수 있습니다",
+      "noData": "데이터 없음",
+      "orderRevoked": "주문이 취소되었습니다",
+      "revokeOrderFailed": "주문 취소에 실패했습니다",
+      "listForSale": "판매 목록에 올리기",
+      "loadingOrdersError": "주문 로딩 중...",
+      "loadOrdersFailed": "주문 로딩에 실패했습니다",
+      "retry": "다시 시도",
+      "refreshing": "새로고침 중...",
+      "refreshOrders": "주문 새로고침"
     }
   },
   "status": {
@@ -225,6 +335,63 @@
     "insufficientBalance": "잔액 부족",
     "transactionFailed": "트랜잭션 실패",
     "tryAgain": "다시 시도해주세요"
-  }
+  },
+  "whitelist": {
+    "title": "화이트리스트 관리",
+    "currentAddress": "현재 연결된 주소",
+    "applyWhitelist": "화이트리스트 신청",
+    "whitelisted": "화이트리스트 등록됨",
+    "whitelistedDescription": "화이트리스트에 성공적으로 등록되었습니다. NFT를 민팅할 수 있습니다",
+    "enterInviteCode": "화이트리스트에 참여하려면 초대 코드를 입력해주세요",
+    "inviteCodePlaceholder": "초대 코드 입력",
+    "register": "등록",
+    "myInviteCodes": "내 초대 코드",
+    "loading": "로딩 중...",
+    "approved": "승인됨",
+    "activeDescription": "활성화됨, 다른 사람을 초대하는 데 사용할 수 있습니다",
+    "pending": "검토 대기 중",
+    "pendingDescription": "초대 코드 신청이 검토 중입니다. 잠시만 기다려주세요",
+    "noInviteCode": "아직 초대 코드가 없습니다. 신청 후 다른 사람을 화이트리스트에 초대하는 데 사용할 수 있습니다",
+    "applying": "신청 중...",
+    "applyInviteCode": "초대 코드 신청",
+    "close": "닫기",
+    "connectWalletFirst": "먼저 지갑을 연결해주세요",
+    "enterInviteCodeError": "초대 코드를 입력해주세요",
+    "invalidInviteCode": "유효하지 않은 초대 코드이거나 취소되었습니다",
+    "inviteCodeUsed": "초대 코드 사용 성공!",
+    "whitelistRegistered": "화이트리스트 등록 성공!",
+    "registerFailed": "등록에 실패했습니다",
+    "applicationSubmitted": "초대 코드 신청이 제출되었습니다. 검토를 기다려주세요",
+    "applicationFailed": "신청에 실패했습니다"
+  },
+  "mintStatus": {
+    "applyWhitelistFirst": "먼저",
+    "applyWhitelist": "화이트리스트에 신청",
+    "batchMintable": "이 배치에서 민팅 가능:",
+    "waitForNextBatch": "다음 배치가 민팅을 시작할 때까지 기다려주세요"
+  },
+    "myNfts": {
+      "title": "내 NFT",
+      "subtitle": "노드 NFT 보기 및 관리",
+      "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",
+      "connectWalletFirst": "먼저 지갑을 연결해주세요",
+      "joinWhitelistFirst": "먼저 화이트리스트에 참여해주세요",
+      "noActiveBatch": "활성 배치 없음",
+      "batchSoldOut": "현재 배치가 매진되었습니다",
+      "quickMint": "빠른 민팅",
+      "whitelisted": "✅ 화이트리스트에 참여했습니다",
+      "viewMyInviteCodes": "내 초대 코드 보기",
+      "loadingBatchInfo": "배치 정보 로딩 중...",
+      "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
+      "currentBatchInfo": "현재 배치 정보",
+      "batchId": "배치 ID",
+      "mintPrice": "민팅 가격",
+      "progress": "진행률",
+      "minted": "민팅됨",
+      "eachNFTContains": "각 NFT에 포함",
+      "unlockMethod": "잠금 해제 방법",
+      "monthsLinearUnlock": "25개월 선형 잠금 해제, 매월 4% 잠금 해제",
+      "mintFailed": "민팅 실패"
+    }
 }
 

@@ -1,149 +1,203 @@
 import { ethers, upgrades } from "hardhat";
 import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 
 dotenv.config();
 
 async function main() {
-  console.log("🔄 Upgrading NFTManager Contract...\n");
+  console.log("🚀 Upgrading NFTManager Proxy to Latest Implementation\n");
+  console.log("=".repeat(70));
 
   const [deployer] = await ethers.getSigners();
   console.log("Deployer:", deployer.address);
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Balance:", ethers.formatEther(balance), "BNB\n");
 
-  // Get current proxy address
-  const PROXY_ADDRESS = process.env.MANAGER_ADDRESS;
-  if (!PROXY_ADDRESS || PROXY_ADDRESS === "") {
-    throw new Error("❌ Please set MANAGER_ADDRESS in .env file");
+  // Get proxy address from environment or use default
+  // Updated to use the correct address from DEPLOYMENT_RESULTS.md
+  const PROXY_ADDRESS = process.env.NFT_MANAGER_ADDRESS || process.env.MANAGER_ADDRESS || "0x8959EaF389e49f040A11ca27D783F4900532c1F1";
+  
+  console.log("Proxy Address:", PROXY_ADDRESS);
+  console.log("Network:", (await ethers.provider.getNetwork()).name);
+  console.log("Chain ID:", (await ethers.provider.getNetwork()).chainId);
+  console.log("");
+
+  // Verify current implementation
+  try {
+    const currentImpl = await upgrades.erc1967.getImplementationAddress(PROXY_ADDRESS);
+    console.log("Current Implementation:", currentImpl);
+  } catch (error: any) {
+    console.log("⚠️  Could not read current implementation:", error.message);
   }
-  console.log("Current Proxy Address:", PROXY_ADDRESS);
 
-  // Check current implementation
-  console.log("\n🔍 Checking current implementation...");
-  const currentImpl = await upgrades.erc1967.getImplementationAddress(PROXY_ADDRESS);
-  console.log("Current Implementation:", currentImpl);
+  // Check if deployer is the owner
+  try {
+    const NFTManager = await ethers.getContractFactory("NFTManager");
+    const proxy = await NFTManager.attach(PROXY_ADDRESS);
+    const owner = await proxy.owner();
+    console.log("Contract Owner:", owner);
+    console.log("Deployer:", deployer.address);
+    
+    if (owner.toLowerCase() !== deployer.address.toLowerCase()) {
+      console.error("\n❌ ERROR: Deployer is not the contract owner!");
+      console.error("   Only the owner can upgrade the contract.");
+      console.error("   Please use the owner's private key to run this script.");
+      process.exit(1);
+    }
+    console.log("✅ Deployer is the contract owner - can proceed with upgrade\n");
+  } catch (error: any) {
+    console.error("❌ Error checking ownership:", error.message);
+    process.exit(1);
+  }
 
-  // Upgrade the proxy directly
-  console.log("\n⬆️  Upgrading proxy to new implementation...");
+  // First, register the existing proxy if not already registered
+  console.log("📝 Registering existing proxy...");
   const NFTManager = await ethers.getContractFactory("NFTManager");
   
-  // Force deploy new implementation first
-  console.log("📦 Deploying new implementation...");
-  const newImplementation = await NFTManager.deploy();
-  await newImplementation.waitForDeployment();
-  const newImplAddress = await newImplementation.getAddress();
-  console.log("✅ New implementation deployed:", newImplAddress);
+  try {
+    // Try to force import the existing proxy
+    await upgrades.forceImport(PROXY_ADDRESS, NFTManager, { kind: "uups" });
+    console.log("✅ Proxy registered successfully\n");
+  } catch (error: any) {
+    // If already registered or other error, continue
+    if (error.message.includes("already registered")) {
+      console.log("✅ Proxy already registered\n");
+    } else {
+      console.log("⚠️  Could not register proxy (may already be registered):", error.message);
+      console.log("   Continuing with upgrade...\n");
+    }
+  }
+
+  // Deploy new implementation and upgrade
+  console.log("📦 Deploying new implementation and upgrading proxy...");
+  console.log("   This will deploy a new implementation and update the proxy.\n");
+
+  // Force upgrade by deploying new implementation first
+  const upgraded = await upgrades.upgradeProxy(PROXY_ADDRESS, NFTManager, {
+    kind: "uups",
+    unsafeAllow: ["constructor", "state-variable-immutable"]
+  });
+  await upgraded.waitForDeployment();
   
-  // Upgrade proxy to new implementation
-  const proxy = await ethers.getContractAt("NFTManager", PROXY_ADDRESS);
-  const upgradeTx = await proxy.upgradeToAndCall(newImplAddress, "0x");
-  await upgradeTx.wait();
   console.log("✅ Proxy upgraded successfully!");
 
-  // Verify the upgrade
-  console.log("\n🔍 Verifying upgrade...");
-  const upgradedImpl = await upgrades.erc1967.getImplementationAddress(PROXY_ADDRESS);
-  console.log("New Implementation:", upgradedImpl);
-  
-  if (upgradedImpl !== currentImpl) {
-    console.log("✅ Upgrade verified successfully!");
-  } else {
-    console.log("❌ Upgrade verification failed!");
-  }
+  // Get new implementation address
+  const newImplAddress = await upgrades.erc1967.getImplementationAddress(PROXY_ADDRESS);
+  console.log("✅ New Implementation Address:", newImplAddress);
+  console.log("✅ Proxy Address (unchanged):", PROXY_ADDRESS);
 
-  // Test basic functions
-  console.log("\n🧪 Testing basic functions...");
+  // Verify the upgrade worked by calling functions
   try {
-    const owner = await proxy.owner();
-    console.log("✅ Owner:", owner);
+    const owner = await upgraded.owner();
+    console.log("✅ Owner verification:", owner);
     
-    const nextOrderId = await proxy.nextOrderId();
-    console.log("✅ nextOrderId:", nextOrderId.toString());
-    
-    const precision = await proxy.PRECISION();
-    console.log("✅ PRECISION:", precision.toString());
-    
-    const sharesPerNFT = await proxy.SHARES_PER_NFT();
-    console.log("✅ SHARES_PER_NFT:", sharesPerNFT.toString());
-    
-    // Test new getAvailableShares function
-    const testUser = deployer.address;
-    const testNFTId = 1;
+    // Try to read currentBatchId to verify it works
     try {
-      const availableShares = await proxy.getAvailableShares(testNFTId, testUser);
-      console.log(`✅ getAvailableShares(${testNFTId}, ${testUser}):`, availableShares.toString());
+      const batchId = await upgraded.currentBatchId();
+      console.log("✅ Current Batch ID:", batchId.toString());
     } catch (error: any) {
-      console.log("⚠️ getAvailableShares test failed:", error.message);
-      console.log("   This is expected if the user has no shares in NFT", testNFTId);
+      console.log("⚠️  Warning: Could not read currentBatchId -", error.message);
     }
     
-    // Test getUserShareCount function
+    // Verify new functions exist
     try {
-      const userShareCount = await proxy.getUserShareCount(testNFTId, testUser);
-      console.log(`✅ getUserShareCount(${testNFTId}, ${testUser}):`, userShareCount.toString());
+      // Test getNFTPool returns producedDebt (should have 9 return values now)
+      const testNftId = 1;
+      const poolData = await upgraded.getNFTPool(testNftId);
+      if (poolData.length >= 9) {
+        console.log("✅ getNFTPool returns producedDebt (9 values)");
+      } else {
+        console.log("⚠️  Warning: getNFTPool may not return producedDebt");
+      }
     } catch (error: any) {
-      console.log("⚠️ getUserShareCount test failed:", error.message);
+      console.log("⚠️  Warning: Could not test getNFTPool -", error.message);
     }
     
-    // Test getUserNFTs function
     try {
-      const userNFTs = await proxy.getUserNFTs(testUser);
-      console.log(`✅ getUserNFTs(${testUser}):`, userNFTs.map(id => id.toString()));
+      // Test getAccRewardPerNFT function exists
+      const usdtAddress = await upgraded.usdtToken();
+      const accReward = await upgraded.getAccRewardPerNFT(usdtAddress);
+      console.log("✅ getAccRewardPerNFT function works");
     } catch (error: any) {
-      console.log("⚠️ getUserNFTs test failed:", error.message);
+      console.log("⚠️  Warning: Could not test getAccRewardPerNFT -", error.message);
     }
     
-    // Test getShareholders function
     try {
-      const shareholders = await proxy.getShareholders(testNFTId);
-      console.log(`✅ getShareholders(${testNFTId}):`, shareholders);
+      // Test getRewardDebt function exists
+      const testNftId = 1;
+      const usdtAddress = await upgraded.usdtToken();
+      const rewardDebt = await upgraded.getRewardDebt(testNftId, usdtAddress);
+      console.log("✅ getRewardDebt function works");
     } catch (error: any) {
-      console.log("⚠️ getShareholders test failed:", error.message);
+      console.log("⚠️  Warning: Could not test getRewardDebt -", error.message);
     }
     
-    // Test getDissolutionProposal function
     try {
-      const dissolutionProposal = await proxy.getDissolutionProposal(testNFTId);
-      console.log(`✅ getDissolutionProposal(${testNFTId}):`, dissolutionProposal);
+      // Test setNodeNFT function exists
+      const hasSetNodeNFT = upgraded.interface.hasFunction("setNodeNFT");
+      if (hasSetNodeNFT) {
+        console.log("✅ setNodeNFT function exists in upgraded contract");
+      } else {
+        console.log("❌ setNodeNFT function NOT found in upgraded contract!");
+      }
     } catch (error: any) {
-      console.log("❌ getDissolutionProposal test failed:", error.message);
+      console.log("⚠️  Warning: Could not test setNodeNFT -", error.message);
     }
-    
   } catch (error: any) {
-    console.log("❌ Function test failed:", error.message);
+    console.log("⚠️  Warning: Could not verify upgrade -", error.message);
   }
 
+  // Print summary
   console.log("\n" + "=".repeat(70));
   console.log("🎉 UPGRADE COMPLETE!");
   console.log("=".repeat(70));
   
-  console.log("\n📝 Contract Addresses:");
+  console.log("\n📝 Updated Addresses:");
   console.log("─".repeat(70));
-  console.log("Proxy Address:        ", PROXY_ADDRESS);
-  console.log("New Implementation:   ", upgradedImpl);
-  
+  console.log("Proxy Address:      ", PROXY_ADDRESS);
+  console.log("New Implementation:  ", newImplAddress);
+
   console.log("\n🔍 View on BSCScan:");
   console.log("─".repeat(70));
-  console.log("Proxy:         https://testnet.bscscan.com/address/" + PROXY_ADDRESS);
-  console.log("Implementation: https://testnet.bscscan.com/address/" + upgradedImpl);
+  console.log("Proxy:       https://testnet.bscscan.com/address/" + PROXY_ADDRESS);
+  console.log("Implementation: https://testnet.bscscan.com/address/" + newImplAddress);
 
-  console.log("\n💡 Next steps:");
+  console.log("\n💡 Next Steps:");
   console.log("─".repeat(70));
-  console.log("1. Verify new implementation on BSCScan:");
-  console.log(`   npx hardhat verify --network bscTestnet ${upgradedImpl}`);
-  console.log("\n2. Test marketplace functions:");
-  console.log("   - createSellOrder (now checks available shares)");
-  console.log("   - getAvailableShares");
-  console.log("\n3. Update frontend if needed");
-  
-  console.log("\n🔧 V3 Changes:");
-  console.log("─".repeat(70));
-  console.log("✅ Added getAvailableShares() function");
-  console.log("✅ Fixed createSellOrder() to check available shares");
-  console.log("✅ Prevents overselling shares in active orders");
-  console.log("✅ Added _removeFromUserNFTList() function");
-  console.log("✅ Fixed userNFTList cleanup when shares become 0");
-  console.log("✅ Improved data consistency in share transfers");
+  console.log("1. Verify the new implementation on BSCScan:");
+  console.log(`   npx hardhat verify --network bscTestnet ${newImplAddress}`);
+  console.log("\n2. Update DEPLOYMENT_RESULTS.md with the new implementation address");
+  console.log("\n3. Test the contract functions to ensure everything works");
+
+  // Update DEPLOYMENT_RESULTS.md if it exists
+  try {
+    const resultsFile = path.join(__dirname, "..", "DEPLOYMENT_RESULTS.md");
+    if (fs.existsSync(resultsFile)) {
+      let content = fs.readFileSync(resultsFile, "utf-8");
+      
+      // Update implementation address
+      const implPattern = /(\*\*Implementation Address:\*\* )`0x[a-fA-F0-9]+`/;
+      if (implPattern.test(content)) {
+        content = content.replace(implPattern, `$1\`${newImplAddress}\``);
+        console.log("\n✅ Updated DEPLOYMENT_RESULTS.md with new implementation address");
+      }
+      
+      // Update date
+      const currentDate = new Date().toISOString().split("T")[0];
+      content = content.replace(
+        /\*\*Last Updated:\*\* \d{4}-\d{2}-\d{2}/g,
+        `**Last Updated:** ${currentDate}`
+      );
+      
+      fs.writeFileSync(resultsFile, content, "utf-8");
+      console.log("✅ Updated DEPLOYMENT_RESULTS.md date");
+    }
+  } catch (error: any) {
+    console.warn("⚠️  Failed to update DEPLOYMENT_RESULTS.md:", error.message);
+  }
+
+  console.log("");
 }
 
 main()

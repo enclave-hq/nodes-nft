@@ -1,0 +1,150 @@
+// Prisma Schema for NFT Admin Backend
+// This schema defines all database tables for invite codes, NFT records, whitelist, batches, etc.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Admin table
+model Admin {
+  id        Int      @id @default(autoincrement())
+  address   String   @unique @db.VarChar(42)
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
+
+// Invite code request table
+model InviteCodeRequest {
+  id                    Int      @id @default(autoincrement())
+  applicantAddress      String   @db.VarChar(42)
+  referrerInviteCodeId  Int?
+  referrerInviteCode    InviteCode? @relation("ReferrerInviteCode", fields: [referrerInviteCodeId], references: [id])
+  status                String   @default("pending") @db.VarChar(20) // pending, approved, rejected, auto_approved
+  adminAddress          String?  @db.VarChar(42)
+  autoApproved         Boolean  @default(false)
+  note                  String?  @db.Text // Optional note/remark from applicant for admin review
+  createdAt             DateTime @default(now())
+  reviewedAt            DateTime?
+
+  @@map("invite_code_requests")
+}
+
+// Invite code table (supports hierarchical relationships)
+model InviteCode {
+  id                    Int      @id @default(autoincrement())
+  code                  String   @unique @db.VarChar(50) // Base32 encoded, case-insensitive
+  applicantAddress      String   @db.VarChar(42) // Address that applied for this invite code (already whitelisted)
+  parentInviteCodeId    Int?
+  parentInviteCode      InviteCode? @relation("ParentInviteCode", fields: [parentInviteCodeId], references: [id])
+  children              InviteCode[] @relation("ParentInviteCode")
+  referrerRequests      InviteCodeRequest[] @relation("ReferrerInviteCode")
+  creator               String   @db.VarChar(42) // Admin address or system for auto-approval
+  maxUses               Int? // NULL means unlimited
+  usageCount            Int      @default(0)
+  status                String   @default("pending") @db.VarChar(20) // pending, active, revoked
+  mintedNftCount        Int      @default(0) // Number of NFTs minted by applicant address
+  createdAt             DateTime @default(now())
+  activatedAt           DateTime?
+  expiresAt             DateTime?
+  level                 Int      @default(1) // Hierarchy depth (1 for top-level)
+  rootInviteCodeId      Int? // Top-level invite code ID (for fast tracing)
+  rootInviteCode        InviteCode? @relation("RootInviteCode", fields: [rootInviteCodeId], references: [id])
+  rootInviteCodes       InviteCode[] @relation("RootInviteCode")
+  rootApplicantAddress  String?  @db.VarChar(42) // Top-level applicant address (for fast tracing)
+  
+  // Relations
+  usage                 InviteCodeUsage[]
+  nftRecords            NftRecord[]
+  rootNftRecords         NftRecord[] @relation("RootNftRecord")
+
+  @@map("invite_codes")
+}
+
+// Invite code usage record table
+model InviteCodeUsage {
+  id           Int        @id @default(autoincrement())
+  inviteCodeId Int
+  inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  code         String     @db.VarChar(50)
+  userAddress  String     @db.VarChar(42)
+  txHash       String?    @db.VarChar(66) // Transaction hash for whitelist addition
+  createdAt    DateTime   @default(now())
+
+  @@unique([inviteCodeId, userAddress]) // Prevent duplicate usage
+  @@map("invite_code_usage")
+}
+
+// NFT record table (records NFT and invite code associations)
+model NftRecord {
+  id                    Int      @id @default(autoincrement())
+  nftId                 Int      @unique // NFT ID
+  ownerAddress          String   @db.VarChar(42) // Current owner address
+  mintedAt              DateTime @default(now())
+  mintTxHash            String?  @db.VarChar(66) // Mint transaction hash
+  inviteCodeId          Int? // Invite code ID used by user
+  inviteCode            InviteCode? @relation(fields: [inviteCodeId], references: [id])
+  rootInviteCodeId      Int? // Top-level invite code ID (tracing result)
+  rootInviteCode        InviteCode? @relation("RootNftRecord", fields: [rootInviteCodeId], references: [id])
+  rootApplicantAddress  String?  @db.VarChar(42) // Top-level applicant address (tracing result)
+  inviteChain           String?  @db.Text // Invite code chain (JSON format, e.g., [1, 5, 12])
+  createdAt             DateTime @default(now())
+
+  @@map("nft_records")
+}
+
+// Whitelist history table (synced from contract)
+model WhitelistHistory {
+  id          Int      @id @default(autoincrement())
+  address     String   @db.VarChar(42)
+  action      String   @db.VarChar(10) // add or remove
+  inviteCode  String?  @db.VarChar(50) // If joined via invite code, record the code
+  adminAddress String? @db.VarChar(42) // If admin operation, record admin address
+  txHash      String?  @db.VarChar(66) // Transaction hash
+  createdAt   DateTime @default(now())
+
+  @@map("whitelist_history")
+}
+
+// Batch record table
+model Batch {
+  id            Int      @id @default(autoincrement())
+  batchId       BigInt   // Batch ID in contract
+  maxMintable   BigInt   // Max mintable quantity for this batch
+  mintPrice     String   @db.VarChar(50) // Stored as string (wei)
+  currentMinted BigInt   @default(0)
+  active        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  activatedAt   DateTime?
+  deactivatedAt DateTime?
+
+  @@map("batches")
+}
+
+// Admin operation log table
+model AdminLog {
+  id         Int      @id @default(autoincrement())
+  adminAddress String @db.VarChar(42)
+  actionType String   @db.VarChar(50) // whitelist_add, batch_create, etc.
+  actionData Json? // Store operation details
+  txHash     String?  @db.VarChar(66) // Transaction hash (if any)
+  createdAt  DateTime @default(now())
+
+  @@map("admin_logs")
+}
+
+// Statistics cache table (optional)
+model StatsCache {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.VarChar(50)
+  value     Json
+  updatedAt DateTime @default(now())
+
+  @@map("stats_cache")
+}
+

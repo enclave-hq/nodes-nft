@@ -23,10 +23,21 @@ async function main() {
   const usdtAddress = await usdt.getAddress();
   console.log("✅ Test USDT deployed to:", usdtAddress);
 
-  // Get initial supply
+  // Mint 100 million USDT to deployer
+  console.log("\n💰 Minting 100 million USDT to deployer...");
+  const mintAmount = ethers.parseUnits("100000000", 18); // 100 million USDT
+  const mintTx = await usdt.mint(deployer.address, mintAmount);
+  await mintTx.wait();
+  console.log("✅ Minted 100,000,000 USDT to:", deployer.address);
+  console.log("   Transaction hash:", mintTx.hash);
+
+  // Get total supply
   const totalSupply = await usdt.totalSupply();
-  console.log("📊 Initial supply:", ethers.formatUnits(totalSupply, 18), "USDT");
-  console.log("   (Minted to deployer:", deployer.address, ")");
+  console.log("\n📊 Total supply:", ethers.formatUnits(totalSupply, 18), "USDT");
+  
+  // Get deployer balance
+  const deployerBalance = await usdt.balanceOf(deployer.address);
+  console.log("📊 Deployer balance:", ethers.formatUnits(deployerBalance, 18), "USDT");
 
   console.log("\n" + "=".repeat(60));
   console.log("✨ DEPLOYMENT COMPLETE!");

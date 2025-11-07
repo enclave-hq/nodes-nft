@@ -2,26 +2,20 @@ import { useCallback, useState } from 'react';
 import { useWallet } from '@/lib/providers/WalletProvider';
 import { useWeb3Store } from '@/lib/stores/web3Store';
 import { CONTRACT_ADDRESSES, GAS_CONFIG } from '@/lib/contracts/config';
-import NFT_MANAGER_ABI_DATA from '@/lib/contracts/nft-manager-abi.json';
-import NODE_NFT_ABI_DATA from '@/lib/contracts/node-nft-abi.json';
-import USDT_ABI_DATA from '@/lib/contracts/usdt-abi.json';
+import { NFT_MANAGER_ABI, ERC20_ABI, NODE_NFT_ABI } from '@/lib/contracts/abis';
 
-const ABI = NFT_MANAGER_ABI_DATA.abi;
-const NODE_NFT_ABI = NODE_NFT_ABI_DATA.abi;
-const USDT_ABI = USDT_ABI_DATA.abi;
-
+// SellOrder structure matches contract: orderId, nftId, seller, price, createdAt, status
 export interface SellOrder {
   orderId: number;
   nftId: number;
   seller: string;
-  shares: number;
-  pricePerShare: bigint;
+  price: bigint; // Price in USDT (wei) for the whole NFT
   createdAt: number;
   active: boolean;
+  status?: number; // OrderStatus enum: 0 = Active, 1 = Cancelled, 2 = Filled
 }
 
 export interface SellOrderWithDetails extends SellOrder {
-  totalPrice: bigint;
   sellerDisplay: string;
   createdAtDisplay: string;
 }
@@ -71,66 +65,71 @@ export function useNFTSellOrders(nftId: number) {
         return;
       }
 
-      // Get order IDs for this NFT
+      // Get active order for this NFT using getActiveOrderByNFT
       const nftIdParam = Number(nftId);
       console.log(`📋 Call parameters:`, { nftIdParam, originalId: nftId });
       
-      let orderIds: bigint[];
+      let orderId: bigint;
       try {
-        orderIds = await walletManager.readContract(
+        orderId = await walletManager.readContract(
           CONTRACT_ADDRESSES.nftManager,
-          ABI as unknown[],
-          'getNFTSellOrders',
+          NFT_MANAGER_ABI as unknown[],
+          'getActiveOrderByNFT',
           [nftIdParam]
-        ) as bigint[];
+        ) as bigint;
       } catch (contractError) {
         console.error(`❌ Contract call failed (NFT ${nftIdParam}):`, contractError);
         throw new Error(`Failed to query NFT ${nftIdParam} orders: ${contractError}`);
       }
 
-      console.log('📋 Found order IDs:', orderIds ? orderIds.map(id => id.toString()) : 'No orders');
+      console.log('📋 Found order ID:', orderId ? orderId.toString() : 'No order');
 
-      if (!orderIds || orderIds.length === 0) {
+      if (!orderId || orderId === 0n) {
         setOrders([]);
         return;
       }
 
-      // Fetch details for each order
-      const orderPromises = orderIds.map(async (orderId) => {
+      // Fetch order details using getOrder
+      try {
         const orderData = await walletManager.readContract(
           CONTRACT_ADDRESSES.nftManager,
-          ABI as unknown[],
-          'sellOrders',
+          NFT_MANAGER_ABI as unknown[],
+          'getOrder',
           [orderId]
-        ) as [bigint, string, bigint, bigint, bigint, boolean];
+        ) as {
+          orderId: bigint;
+          nftId: bigint;
+          seller: string;
+          price: bigint;
+          createdAt: bigint;
+          status: number;
+        };
 
-        const [nftIdFromContract, seller, shares, pricePerShare, createdAt, active] = orderData;
+        // OrderStatus enum: 0 = Active, 1 = Cancelled, 2 = Filled
+        const isActive = orderData.status === 0;
 
-        return {
-          orderId: Number(orderId),
-          nftId: Number(nftIdFromContract),
-          seller,
-          shares: Number(shares),
-          pricePerShare,
-          createdAt: Number(createdAt),
-          active,
-          totalPrice: shares * pricePerShare,
-          sellerDisplay: formatAddress(seller),
-          createdAtDisplay: formatDate(Number(createdAt))
-        } as SellOrderWithDetails;
-      });
-
-      const orderDetails = await Promise.all(orderPromises);
-      
-      // Filter only active orders
-      const activeOrders = orderDetails.filter(order => order.active);
-      
-      console.log('✅ 获取到活跃订单:', activeOrders.length);
-      setOrders(activeOrders);
-
+        if (isActive) {
+          setOrders([{
+            orderId: Number(orderData.orderId),
+            nftId: Number(orderData.nftId),
+            seller: orderData.seller,
+            price: orderData.price,
+            createdAt: Number(orderData.createdAt),
+            active: true,
+            status: orderData.status,
+            sellerDisplay: formatAddress(orderData.seller),
+            createdAtDisplay: formatDate(Number(orderData.createdAt))
+          } as SellOrderWithDetails]);
+        } else {
+          setOrders([]);
+        }
+      } catch (error) {
+        console.error(`❌ Failed to get order details:`, error);
+        setOrders([]);
+      }
     } catch (err) {
-      console.error('❌ 查询订单失败:', err);
-      setError(err instanceof Error ? err.message : '查询订单失败');
+      console.error('❌ Failed to query orders:', err);
+      setError(err instanceof Error ? err.message : 'Failed to query orders');
       setOrders([]);
     } finally {
       setIsLoading(false);
@@ -147,185 +146,31 @@ export function useNFTSellOrders(nftId: number) {
 
 /**
  * Hook to get all sell orders across all NFTs
+ * Now uses Web3Store for unified data management
  */
 export function useAllSellOrders() {
-  const { walletManager } = useWallet();
   const web3Store = useWeb3Store();
-  const [orders, setOrders] = useState<SellOrderWithDetails[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
-  const fetchAllOrders = useCallback(async () => {
-    if (!walletManager) {
-      setOrders([]);
-      return;
-    }
+  // Use data from Web3Store
+  const orders = web3Store.sellOrders || [];
+  const isLoading = web3Store.loading.sellOrders;
+  const error = web3Store.errors.sellOrders;
 
-    // Prevent too frequent calls (debounce)
-    const now = Date.now();
-    if (now - lastFetchTime < 2000) { // 2 seconds debounce
-      console.log('⏳ Request too frequent, skipping this query');
-      return;
-    }
-    setLastFetchTime(now);
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      console.log('🔍 查询所有出售订单...');
-      
-      // Validate contract address
-      if (!CONTRACT_ADDRESSES.nftManager) {
-        console.error('❌ NFT Manager contract address not configured');
-        console.error('❌ 请检查环境变量 NEXT_PUBLIC_NFT_MANAGER_ADDRESS');
-        setError('NFT Manager contract address not configured, please check environment variables');
-        setOrders([]);
-        return;
-      }
-      console.log('📋 NFT Manager地址:', CONTRACT_ADDRESSES.nftManager);
-
-      // Get NFTs from web3Store - wait for data to be loaded
-      if (!web3Store.nfts || web3Store.nfts.length === 0) {
-        console.log('📋 Web3Store中暂无NFT数据，等待数据加载...');
-        // Wait a bit for web3Store to load
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Check again after waiting
-        if (!web3Store.nfts || web3Store.nfts.length === 0) {
-          console.log('📋 等待后仍无NFT数据，返回空订单列表');
-          setOrders([]);
-          return;
-        }
-      }
-
-      const nfts = web3Store.nfts || [];
-      console.log('📋 从web3Store获取到NFT数量:', nfts.length);
-      console.log('📋 NFT数据详情:', nfts.map(nft => ({ id: nft.id, type: typeof nft.id })));
-
-      if (nfts.length === 0) {
-        console.log('📋 没有找到NFT，返回空订单列表');
-        setOrders([]);
-        return;
-      }
-
-      const allOrderPromises = nfts.map(async (nft: any) => {
-        try {
-          // Validate NFT data
-          if (!nft) {
-            console.warn(`⚠️ NFT对象为空`);
-            return [];
-          }
-          
-          if (typeof nft.id !== 'number' || nft.id <= 0) {
-            console.warn(`⚠️ 无效的NFT ID:`, { 
-              id: nft.id, 
-              type: typeof nft.id, 
-              nft: nft 
-            });
-            return [];
-          }
-          
-          console.log(`🔍 查询NFT ${nft.id} 的订单...`);
-          
-          // Use the NFT ID from web3Store
-          const nftIdParam = Number(nft.id);
-          console.log(`📋 调用参数:`, { nftIdParam, originalId: nft.id });
-          
-          let orderIds: bigint[];
-          try {
-            console.log(`📋 准备调用合约:`, {
-              contractAddress: CONTRACT_ADDRESSES.nftManager,
-              functionName: 'getNFTSellOrders',
-              params: [nftIdParam],
-              abiLength: ABI.length
-            });
-            
-            orderIds = await walletManager.readContract(
-              CONTRACT_ADDRESSES.nftManager,
-              ABI as unknown[],
-              'getNFTSellOrders',
-              [nftIdParam]
-            ) as bigint[];
-          } catch (contractError) {
-            console.error(`❌ Contract call failed (NFT ${nftIdParam}):`, contractError);
-            console.error(`❌ 错误详情:`, {
-              contractAddress: CONTRACT_ADDRESSES.nftManager,
-              functionName: 'getNFTSellOrders',
-              params: [nftIdParam],
-              error: contractError
-            });
-            throw new Error(`Failed to query NFT ${nftIdParam} orders: ${contractError}`);
-          }
-
-          console.log(`📋 NFT ${nft.id} 订单ID:`, orderIds ? orderIds.map(id => id.toString()) : '无订单');
-
-          if (!orderIds || orderIds.length === 0) {
-            console.log(`📋 NFT ${nft.id} 没有订单`);
-            return [];
-          }
-
-          const orderDetails = await Promise.all(
-            orderIds.map(async (orderId) => {
-              try {
-                const orderData = await walletManager.readContract(
-                  CONTRACT_ADDRESSES.nftManager,
-                  ABI as unknown[],
-                  'sellOrders',
-                  [orderId]
-                ) as [bigint, string, bigint, bigint, bigint, boolean];
-
-                const [nftIdFromContract, seller, shares, pricePerShare, createdAt, active] = orderData;
-
-                return {
-                  orderId: Number(orderId),
-                  nftId: Number(nftIdFromContract),
-                  seller,
-                  shares: Number(shares),
-                  pricePerShare,
-                  createdAt: Number(createdAt),
-                  active,
-                  totalPrice: shares * pricePerShare,
-                  sellerDisplay: formatAddress(seller),
-                  createdAtDisplay: formatDate(Number(createdAt))
-                } as SellOrderWithDetails;
-              } catch (orderErr) {
-                console.warn(`查询订单 ${orderId} 详情失败:`, orderErr);
-                return null;
-              }
-            })
-          );
-
-          const validOrders = orderDetails.filter(order => order !== null && order.active);
-          console.log(`✅ NFT ${nft.id} 找到 ${validOrders.length} 个活跃订单`);
-          return validOrders;
-        } catch (err) {
-          console.warn(`查询NFT ${nft.id} 订单失败:`, err);
-          return [];
-        }
-      });
-
-      const allOrders = await Promise.all(allOrderPromises);
-      const flatOrders = allOrders.flat();
-      
-      console.log('✅ 获取到所有活跃订单:', flatOrders.length);
-      setOrders(flatOrders);
-
-    } catch (err) {
-      console.error('❌ 查询所有订单失败:', err);
-      setError(err instanceof Error ? err.message : '查询订单失败');
-      setOrders([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [walletManager, web3Store.nfts]);
+  // Refresh function that triggers Web3Store fetch
+  const refetch = useCallback(async () => {
+    await web3Store.fetchSellOrders();
+  }, [web3Store]);
 
   return {
-    data: orders,
+    data: orders.map(order => ({
+      ...order,
+      price: BigInt(order.price || '0'),
+      sellerDisplay: formatAddress(order.seller),
+      createdAtDisplay: formatDate(order.createdAt)
+    } as SellOrderWithDetails)),
     isLoading,
     error,
-    refetch: fetchAllOrders
+    refetch
   };
 }
 
@@ -344,12 +189,12 @@ export function useCancelSellOrder() {
 
     setIsLoading(true);
     try {
-      console.log('🗑️ 取消出售订单...');
-      console.log('📋 订单ID:', params.orderId);
+      console.log('🗑️ Cancelling sell order...');
+      console.log('📋 Order ID:', params.orderId);
 
       const txHash = await walletManager.writeContract(
         CONTRACT_ADDRESSES.nftManager,
-        ABI as unknown[],
+        NFT_MANAGER_ABI as unknown[],
         'cancelSellOrder',
         [params.orderId],
         {
@@ -357,13 +202,13 @@ export function useCancelSellOrder() {
         }
       );
 
-      console.log('✅ 取消订单交易哈希:', txHash);
-      console.log('⏳ 等待交易确认...');
+      console.log('✅ Cancel order transaction hash:', txHash);
+      console.log('⏳ Waiting for transaction confirmation...');
 
       const receipt = await walletManager.waitForTransaction(txHash);
-      console.log('✅ 订单取消确认完成');
+      console.log('✅ Order cancellation confirmed');
 
-      // 刷新数据
+      // Refresh data
       await web3Store.fetchAllData();
 
       return {
@@ -371,7 +216,7 @@ export function useCancelSellOrder() {
         transactionHash: txHash,
       };
     } catch (error: unknown) {
-      console.error('❌ 取消订单失败:', error);
+      console.error('❌ Cancel order failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -382,75 +227,193 @@ export function useCancelSellOrder() {
 }
 
 /**
- * Hook to buy shares from a sell order
+ * Hook to buy NFT from a sell order
+ * Trades whole NFT
  */
-export function useBuyShares() {
+export function useBuyNFT() {
   const { address, walletManager } = useWallet();
   const web3Store = useWeb3Store();
   const [isLoading, setIsLoading] = useState(false);
 
-  const buyShares = useCallback(async (params: { orderId: number }) => {
+  const buyNFT = useCallback(async (params: { orderId: number }) => {
     if (!address || !walletManager) {
       throw new Error('Wallet not connected');
     }
 
     setIsLoading(true);
     try {
-      console.log('🛒 购买份额...');
-      console.log('📋 订单ID:', params.orderId);
+      console.log('🛒 Buying NFT...');
+      console.log('📋 Order ID:', params.orderId);
 
-      // First get order details to calculate total price
+      // Step 1: Get order details
+      console.log('🔍 Step 1: Getting order details...');
       const orderData = await walletManager.readContract(
         CONTRACT_ADDRESSES.nftManager,
-        ABI as unknown[],
-        'sellOrders',
+        NFT_MANAGER_ABI as unknown[],
+        'getOrder',
         [params.orderId]
-      ) as [bigint, string, bigint, bigint, bigint, boolean];
+      ) as {
+        orderId: bigint;
+        nftId: bigint;
+        seller: string;
+        price: bigint;
+        createdAt: bigint;
+        status: number;
+      };
 
-      const [, , shares, pricePerShare, , active] = orderData;
-      
-      if (!active) {
-        throw new Error('订单已失效');
+      // OrderStatus enum: 0 = Active, 1 = Cancelled, 2 = Filled
+      if (orderData.status !== 0) {
+        throw new Error('Order is invalid (cancelled or filled)');
       }
 
-      const totalPrice = shares * pricePerShare;
-      console.log('💰 总价格:', totalPrice.toString(), 'wei');
+      // Check if trying to buy own NFT
+      if (orderData.seller.toLowerCase() === address.toLowerCase()) {
+        throw new Error('Cannot buy your own NFT');
+      }
 
-      // Approve USDT first
-      console.log('🔐 授权USDT...');
-      const approveTxHash = await walletManager.writeContract(
+      const totalPrice = orderData.price;
+      console.log('✅ Order details:');
+      console.log('- NFT ID:', orderData.nftId.toString());
+      console.log('- Seller:', orderData.seller);
+      console.log('- Price:', totalPrice.toString(), 'wei');
+      console.log('- Price (USDT):', (Number(totalPrice) / 1e18).toFixed(2));
+
+      // Step 2: Check USDT balance
+      console.log('🔍 Step 2: Checking USDT balance...');
+      const usdtBalance = await walletManager.readContract(
         CONTRACT_ADDRESSES.usdt,
-        USDT_ABI as unknown[],
-        'approve',
-        [CONTRACT_ADDRESSES.nftManager, totalPrice],
-        {
-          gas: GAS_CONFIG.gasLimits.erc20Approve,
-          gasPrice: 'auto', // 使用自动 Gas Price
+        ERC20_ABI as unknown[],
+        'balanceOf',
+        [address]
+      ) as bigint;
+
+      console.log('📊 USDT Balance:', usdtBalance.toString(), 'wei');
+      console.log('📊 USDT Balance (USDT):', (Number(usdtBalance) / 1e18).toFixed(2));
+
+      if (usdtBalance < totalPrice) {
+        throw new Error(`Insufficient USDT balance: Need ${(Number(totalPrice) / 1e18).toFixed(2)} USDT, current balance ${(Number(usdtBalance) / 1e18).toFixed(2)} USDT`);
+      }
+      console.log('✅ USDT balance sufficient');
+
+      // Step 3: Check NFT ownership and approval
+      console.log('🔍 Step 3: Checking NFT ownership and approval status...');
+      const nftOwner = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nodeNFT,
+        NODE_NFT_ABI as unknown[],
+        'ownerOf',
+        [orderData.nftId]
+      ) as string;
+
+      console.log('📊 NFT Owner:', nftOwner);
+      console.log('📊 Order Seller:', orderData.seller);
+
+      if (nftOwner.toLowerCase() !== orderData.seller.toLowerCase()) {
+        throw new Error('NFT ownership has changed, order is invalid');
+      }
+
+      // Check if NFTManager is approved to transfer the NFT
+      const nftApproval = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nodeNFT,
+        NODE_NFT_ABI as unknown[],
+        'getApproved',
+        [orderData.nftId]
+      ) as string;
+
+      const isApprovedForAll = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nodeNFT,
+        NODE_NFT_ABI as unknown[],
+        'isApprovedForAll',
+        [orderData.seller, CONTRACT_ADDRESSES.nftManager]
+      ) as boolean;
+
+      console.log('📊 NFT approval status:');
+      console.log('- Current approval address:', nftApproval);
+      console.log('- NFTManager address:', CONTRACT_ADDRESSES.nftManager);
+      console.log('- Approved for all:', isApprovedForAll);
+
+      const nftIsApproved = nftApproval.toLowerCase() === CONTRACT_ADDRESSES.nftManager.toLowerCase() || isApprovedForAll;
+      if (!nftIsApproved) {
+        throw new Error('NFT not approved to NFTManager, please contact seller to approve');
+      }
+      console.log('✅ NFT approval status is valid');
+
+      // Step 4: Check and handle USDT approval
+      console.log('🔍 Step 4: Checking USDT approval status...');
+      const currentAllowance = await walletManager.readContract(
+        CONTRACT_ADDRESSES.usdt,
+        ERC20_ABI as unknown[],
+        'allowance',
+        [address, CONTRACT_ADDRESSES.nftManager]
+      ) as bigint;
+
+      console.log('📊 Current allowance:', currentAllowance.toString(), 'wei');
+      console.log('📊 Required allowance:', totalPrice.toString(), 'wei');
+
+      if (currentAllowance < totalPrice) {
+        console.log('📝 USDT allowance insufficient, starting approval process...');
+        const approveTxHash = await walletManager.writeContract(
+          CONTRACT_ADDRESSES.usdt,
+          ERC20_ABI as unknown[],
+          'approve',
+          [CONTRACT_ADDRESSES.nftManager, totalPrice],
+          {
+            gas: GAS_CONFIG.gasLimits.erc20Approve,
+            gasPrice: 'auto',
+          }
+        );
+
+        console.log('✅ USDT approval transaction submitted:', approveTxHash);
+        console.log('⏳ Waiting for approval transaction confirmation...');
+
+        const approveReceipt = await walletManager.waitForTransaction(approveTxHash);
+        
+        // Check approval transaction status
+        const receiptStatus = approveReceipt.status;
+        const isSuccess = receiptStatus === 'success' || receiptStatus === '0x1' || (receiptStatus as any) === 1;
+        
+        if (!isSuccess) {
+          throw new Error(`USDT approval transaction failed, status: ${receiptStatus}`);
         }
-      );
+        
+        console.log('✅ USDT approval transaction confirmed');
 
-      await walletManager.waitForTransaction(approveTxHash);
-      console.log('✅ USDT授权完成');
+        // Verify approval success
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for state sync
+        
+        const newAllowance = await walletManager.readContract(
+          CONTRACT_ADDRESSES.usdt,
+          ERC20_ABI as unknown[],
+          'allowance',
+          [address, CONTRACT_ADDRESSES.nftManager]
+        ) as bigint;
 
-      // Buy shares
+        if (newAllowance < totalPrice) {
+          throw new Error('USDT approval failed, please retry');
+        }
+        console.log('✅ USDT approval verification successful');
+      } else {
+        console.log('✅ USDT allowance sufficient, skipping approval step');
+      }
+
+      // Buy NFT
       const txHash = await walletManager.writeContract(
         CONTRACT_ADDRESSES.nftManager,
-        ABI as unknown[],
-        'buyShares',
+        NFT_MANAGER_ABI as unknown[],
+        'buyNFT',
         [params.orderId],
         {
-          gas: GAS_CONFIG.gasLimits.buyShares,
-          gasPrice: 'auto', // 使用自动 Gas Price
+          gas: GAS_CONFIG.gasLimits.buyNFT || GAS_CONFIG.gasLimits.contractCall,
+          gasPrice: 'auto', // Use automatic Gas Price
         }
       );
 
-      console.log('✅ 购买份额交易哈希:', txHash);
-      console.log('⏳ 等待交易确认...');
+      console.log('✅ Buy NFT transaction hash:', txHash);
+      console.log('⏳ Waiting for transaction confirmation...');
 
       const receipt = await walletManager.waitForTransaction(txHash);
-      console.log('✅ 份额购买确认完成');
+      console.log('✅ NFT purchase confirmed');
 
-      // 刷新数据
+      // Refresh data
       await web3Store.fetchAllData();
 
       return {
@@ -458,15 +421,45 @@ export function useBuyShares() {
         transactionHash: txHash,
       };
     } catch (error: unknown) {
-      console.error('❌ 购买份额失败:', error);
+      console.error('❌ Buy NFT failed:', error);
+      
+      // Provide more detailed error information
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Check common failure reasons
+      if (errorMessage.includes('Transaction reverted') || errorMessage.includes('execution reverted')) {
+        let detailedError = 'Transaction reverted';
+        
+        if (errorMessage.includes('Order does not exist')) {
+          detailedError = 'Order does not exist';
+        } else if (errorMessage.includes('Order not active')) {
+          detailedError = 'Order is invalid (cancelled or filled)';
+        } else if (errorMessage.includes('Cannot buy own NFT')) {
+          detailedError = 'Cannot buy your own NFT';
+        } else if (errorMessage.includes('NFT ownership changed')) {
+          detailedError = 'NFT ownership has changed, order is invalid';
+        } else if (errorMessage.includes('ERC20InsufficientBalance') || errorMessage.includes('insufficient balance')) {
+          detailedError = 'Insufficient USDT balance';
+        } else if (errorMessage.includes('ERC20InsufficientAllowance') || errorMessage.includes('insufficient allowance')) {
+          detailedError = 'USDT allowance insufficient, please approve first';
+        } else if (errorMessage.includes('ERC721InsufficientApproval')) {
+          detailedError = 'NFT approval insufficient, seller needs to approve NFTManager';
+        }
+        
+        throw new Error(detailedError);
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
     }
   }, [address, walletManager, web3Store]);
 
-  return { mutateAsync: buyShares, isLoading };
+  return { mutateAsync: buyNFT, isLoading };
 }
+
+// Backward compatible alias
+export const useBuyShares = useBuyNFT;
 
 // Helper functions
 function formatAddress(address: string): string {
