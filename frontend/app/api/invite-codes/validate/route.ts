@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * The backend API is available at: /api/invite-codes/validate
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 /**
  * POST /api/invite-codes/validate

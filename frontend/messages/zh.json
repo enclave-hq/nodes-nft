@@ -404,13 +404,13 @@
     "activeBatch": "当前激活批次",
     "activeBatchDescription": "当前可铸造的NFT批次信息",
     "loadingBatchInfo": "加载批次信息中...",
-    "noActiveBatch": "暂无激活批次",
-    "noActiveBatchDescription": "当前没有激活的批次，请等待管理员创建新批次",
+      "noActiveBatch": "暂无激活批次",
+      "noActiveBatchDescription": "当前没有激活的批次，请等待管理员创建新批次",
     "batchId": "批次 #{id}",
-    "progress": "进度",
+      "progress": "进度",
     "connectWalletFirst": "请先连接钱包",
     "noActiveBatchMint": "当前没有激活的批次，无法铸造NFT",
     "batchSoldOutMint": "当前批次已售罄，无法铸造NFT"
-  }
+    }
 }
 

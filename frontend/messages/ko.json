@@ -397,13 +397,13 @@
     "activeBatch": "활성 배치",
     "activeBatchDescription": "현재 민팅 가능한 NFT 배치 정보",
     "loadingBatchInfo": "배치 정보 로딩 중...",
-    "noActiveBatch": "활성 배치 없음",
-    "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
+      "noActiveBatch": "활성 배치 없음",
+      "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
     "batchId": "배치 #{id}",
-    "progress": "진행률",
+      "progress": "진행률",
     "connectWalletFirst": "먼저 지갑을 연결해주세요",
     "noActiveBatchMint": "현재 활성 배치가 없습니다. NFT를 민팅할 수 없습니다",
     "batchSoldOutMint": "현재 배치가 매진되었습니다. NFT를 민팅할 수 없습니다"
-  }
+    }
 }
 

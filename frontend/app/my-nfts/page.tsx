@@ -815,8 +815,8 @@ export default function MyNFTsPage() {
                   index === self.findIndex((n: { id: number }) => n.id === nft.id)
                 )
                 .map((nft: { id: number }) => (
-                  <NFTCard key={nft.id} nftId={nft.id} />
-                ))}
+                <NFTCard key={nft.id} nftId={nft.id} />
+              ))}
             </div>
           </>
         )}

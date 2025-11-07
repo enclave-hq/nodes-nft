@@ -1,8 +1,23 @@
 #!/bin/bash
 # Multi-architecture Docker push script
 # Builds and pushes images for both amd64 and arm64 platforms
+# Usage: ./push-multiarch.sh [prod|dev]
+#   prod: Uses production API URL (https://nodes-back.enclave-hq.com/api)
+#   dev:  Uses default API URL from environment or docker-compose defaults
 
 set -e
+
+# Parse environment argument
+ENV_MODE="${1:-dev}"
+
+# Set API URL based on environment
+if [ "$ENV_MODE" = "prod" ]; then
+    NEXT_PUBLIC_API_URL="https://nodes-back.enclave-hq.com/api"
+    echo "🏭 Production mode: Using API URL: $NEXT_PUBLIC_API_URL"
+else
+    NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}"
+    echo "🔧 Development mode: Using API URL: $NEXT_PUBLIC_API_URL"
+fi
 
 echo "🔨 Building and pushing multi-architecture Docker images..."
 
@@ -47,11 +62,30 @@ docker buildx build \
 echo ""
 echo "🏗️  Building and pushing frontend image (amd64 + arm64)..."
 echo "   This will push BOTH architectures to the registry"
+echo "   API URL: $NEXT_PUBLIC_API_URL"
+
+# Get other environment variables from docker-compose or use defaults
+NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS="${NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS:-0xCd0Ff5Fd00BD622563011A23091af30De24E7262}"
+NEXT_PUBLIC_NODE_NFT_ADDRESS="${NEXT_PUBLIC_NODE_NFT_ADDRESS:-0x92301C0acA7586d9F0B1968af2502616009Abf69}"
+NEXT_PUBLIC_NFT_MANAGER_ADDRESS="${NEXT_PUBLIC_NFT_MANAGER_ADDRESS:-0xF87F9296955439C323ac79769959bEe087f6D06E}"
+NEXT_PUBLIC_USDT_ADDRESS="${NEXT_PUBLIC_USDT_ADDRESS:-0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34}"
+NEXT_PUBLIC_CHAIN_ID="${NEXT_PUBLIC_CHAIN_ID:-97}"
+NEXT_PUBLIC_RPC_URL="${NEXT_PUBLIC_RPC_URL:-https://data-seed-prebsc-1-s1.binance.org:8545}"
+NEXT_PUBLIC_ENABLE_TESTNET="${NEXT_PUBLIC_ENABLE_TESTNET:-true}"
+
 docker buildx build \
     --platform linux/amd64,linux/arm64 \
     --tag ${REGISTRY_PREFIX}ploto/frontend:zkpay \
     --tag ${REGISTRY_PREFIX}ploto/frontend:latest \
     --file frontend/Dockerfile \
+    --build-arg NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS="$NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS" \
+    --build-arg NEXT_PUBLIC_NODE_NFT_ADDRESS="$NEXT_PUBLIC_NODE_NFT_ADDRESS" \
+    --build-arg NEXT_PUBLIC_NFT_MANAGER_ADDRESS="$NEXT_PUBLIC_NFT_MANAGER_ADDRESS" \
+    --build-arg NEXT_PUBLIC_USDT_ADDRESS="$NEXT_PUBLIC_USDT_ADDRESS" \
+    --build-arg NEXT_PUBLIC_CHAIN_ID="$NEXT_PUBLIC_CHAIN_ID" \
+    --build-arg NEXT_PUBLIC_RPC_URL="$NEXT_PUBLIC_RPC_URL" \
+    --build-arg NEXT_PUBLIC_ENABLE_TESTNET="$NEXT_PUBLIC_ENABLE_TESTNET" \
+    --build-arg NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" \
     ./frontend \
     --push
 
