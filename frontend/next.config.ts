@@ -1,13 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Disable Turbopack to avoid Map maximum size exceeded error
-  // Use webpack instead (more stable for large projects)
-  // You can re-enable Turbopack once the issue is resolved upstream
-  experimental: {
-    turbo: false,
-  },
+  // Enable standalone output for Docker
+  output: 'standalone',
   // Optimize webpack for development
+  // Note: Next.js 16 defaults to Turbopack, but we're using webpack for stability
   webpack: (config, { dev }) => {
     if (dev) {
       // Reduce memory usage in development
@@ -18,6 +15,9 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  // Add empty turbopack config to silence the warning
+  // When using webpack, this prevents the Turbopack/webpack conflict error
+  turbopack: {},
 };
 
 export default nextConfig;

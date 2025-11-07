@@ -243,7 +243,26 @@
       "days": "일",
       "hours": "시간",
       "minutes": "분"
-    }
+    },
+    "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",
+    "connectWalletFirst": "먼저 지갑을 연결해주세요",
+    "joinWhitelistFirst": "먼저 화이트리스트에 참여해주세요",
+    "noActiveBatch": "활성 배치가 없습니다",
+    "batchSoldOut": "현재 배치가 매진되었습니다",
+    "quickMint": "빠른 민팅",
+    "whitelisted": "✅ 화이트리스트에 등록되었습니다",
+    "viewMyInviteCodes": "초대 코드 보기",
+    "loadingBatchInfo": "배치 정보 로딩 중...",
+    "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
+    "currentBatchInfo": "현재 배치 정보",
+    "batchId": "배치 ID",
+    "mintPrice": "민팅 가격",
+    "progress": "진행률",
+    "minted": "민팅됨",
+    "eachNFTContains": "각 NFT에는",
+    "unlockMethod": "잠금 해제 방법",
+    "monthsLinearUnlock": "25개월 선형 잠금 해제, 매월 4% 잠금 해제",
+    "mintFailed": "민팅 실패"
   },
   "marketplace": {
     "title": "마켓플레이스",
@@ -369,29 +388,6 @@
     "applyWhitelist": "화이트리스트에 신청",
     "batchMintable": "이 배치에서 민팅 가능:",
     "waitForNextBatch": "다음 배치가 민팅을 시작할 때까지 기다려주세요"
-  },
-    "myNfts": {
-      "title": "내 NFT",
-      "subtitle": "노드 NFT 보기 및 관리",
-      "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",
-      "connectWalletFirst": "먼저 지갑을 연결해주세요",
-      "joinWhitelistFirst": "먼저 화이트리스트에 참여해주세요",
-      "noActiveBatch": "활성 배치 없음",
-      "batchSoldOut": "현재 배치가 매진되었습니다",
-      "quickMint": "빠른 민팅",
-      "whitelisted": "✅ 화이트리스트에 참여했습니다",
-      "viewMyInviteCodes": "내 초대 코드 보기",
-      "loadingBatchInfo": "배치 정보 로딩 중...",
-      "noActiveBatchDescription": "현재 활성 배치가 없습니다. 관리자가 새 배치를 생성할 때까지 기다려주세요",
-      "currentBatchInfo": "현재 배치 정보",
-      "batchId": "배치 ID",
-      "mintPrice": "민팅 가격",
-      "progress": "진행률",
-      "minted": "민팅됨",
-      "eachNFTContains": "각 NFT에 포함",
-      "unlockMethod": "잠금 해제 방법",
-      "monthsLinearUnlock": "25개월 선형 잠금 해제, 매월 4% 잠금 해제",
-      "mintFailed": "민팅 실패"
-    }
+  }
 }
 

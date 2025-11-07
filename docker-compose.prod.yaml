@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: node-nft-postgres
+    environment:
+      POSTGRES_USER: nft_admin
+      POSTGRES_PASSWORD: nft_password
+      POSTGRES_DB: nft_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nft_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - node-nft-network
+    restart: unless-stopped
+
+  # Backend Service (NestJS) - Production
+  backend:
+    image: ploto/backend:zkpay
+    # Uncomment to specify platform (amd64 or arm64)
+    # platform: linux/amd64  # Use linux/arm64 for ARM servers (e.g., AWS Graviton, Apple Silicon)
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: node-nft-backend
+    env_file:
+      - .env
+    environment:
+      # Database - read from .env or use default
+      DATABASE_URL: ${DATABASE_URL:-postgresql://nft_admin:nft_password@postgres:5432/nft_db}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      
+      # Contract Configuration
+      NFT_MANAGER_ADDRESS: ${NFT_MANAGER_ADDRESS:-0xF87F9296955439C323ac79769959bEe087f6D06E}
+      ENCLAVE_TOKEN_ADDRESS: ${ENCLAVE_TOKEN_ADDRESS:-0xCd0Ff5Fd00BD622563011A23091af30De24E7262}
+      USDT_TOKEN_ADDRESS: ${USDT_TOKEN_ADDRESS:-0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34}
+      RPC_URL: ${RPC_URL:-https://data-seed-prebsc-1-s1.binance.org:8545}
+      
+      # Admin Private Key (for contract calls)
+      ADMIN_PRIVATE_KEY: ${ADMIN_PRIVATE_KEY:-}
+      
+      # Service Port
+      PORT: ${PORT:-4000}
+      
+      # CORS - Allow frontend domain and localhost for development
+      FRONTEND_URL: ${FRONTEND_URL:-https://nodes.enclave-hq.com,http://localhost:4001,http://frontend:4001}
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - node-nft-network
+    restart: unless-stopped
+
+  # Frontend Service (Next.js) - Production
+  frontend:
+    image: ploto/frontend:zkpay
+    # Uncomment to specify platform (amd64 or arm64)
+    # platform: linux/amd64  # Use linux/arm64 for ARM servers (e.g., AWS Graviton, Apple Silicon)
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: node-nft-frontend
+    env_file:
+      - .env.local
+    environment:
+      # Contract Addresses
+      NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS: ${NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS:-0xCd0Ff5Fd00BD622563011A23091af30De24E7262}
+      NEXT_PUBLIC_NODE_NFT_ADDRESS: ${NEXT_PUBLIC_NODE_NFT_ADDRESS:-0x92301C0acA7586d9F0B1968af2502616009Abf69}
+      NEXT_PUBLIC_NFT_MANAGER_ADDRESS: ${NEXT_PUBLIC_NFT_MANAGER_ADDRESS:-0xF87F9296955439C323ac79769959bEe087f6D06E}
+      NEXT_PUBLIC_USDT_ADDRESS: ${NEXT_PUBLIC_USDT_ADDRESS:-0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34}
+      
+      # Network Configuration
+      NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-97}
+      NEXT_PUBLIC_RPC_URL: ${NEXT_PUBLIC_RPC_URL:-https://data-seed-prebsc-1-s1.binance.org:8545}
+      
+      # Feature Flags
+      NEXT_PUBLIC_ENABLE_TESTNET: ${NEXT_PUBLIC_ENABLE_TESTNET:-true}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nodes-back.enclave-hq.com/api}
+      
+      # Port Configuration
+      PORT: ${PORT:-4001}
+    ports:
+      - "4001:4001"
+    depends_on:
+      - backend
+    networks:
+      - node-nft-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  node-nft-network:
+    driver: bridge
+

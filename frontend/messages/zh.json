@@ -243,7 +243,26 @@
       "days": "天",
       "hours": "小时",
       "minutes": "分钟"
-    }
+    },
+    "whitelistRequired": "您需要先加入白名单才能铸造NFT",
+    "connectWalletFirst": "请先连接钱包",
+    "joinWhitelistFirst": "请先加入白名单",
+    "noActiveBatch": "暂无激活批次",
+    "batchSoldOut": "当前批次已售罄",
+    "quickMint": "快速铸造",
+    "whitelisted": "✅ 您已加入白名单",
+    "viewMyInviteCodes": "查看我的邀请码",
+    "loadingBatchInfo": "加载批次信息中...",
+    "noActiveBatchDescription": "当前没有激活的批次，请等待管理员创建新批次",
+    "currentBatchInfo": "当前批次信息",
+    "batchId": "批次ID",
+    "mintPrice": "铸造价格",
+    "progress": "进度",
+    "minted": "已铸造",
+    "eachNFTContains": "每个NFT包含",
+    "unlockMethod": "解锁方式",
+    "monthsLinearUnlock": "25个月线性解锁，每月解锁 4%",
+    "mintFailed": "铸造失败"
   },
   "marketplace": {
     "title": "市场",
@@ -376,27 +395,6 @@
     "applyWhitelist": "申请白名单",
     "batchMintable": "本批次可铸造的数量:",
     "waitForNextBatch": "请耐心等待下次开放铸造"
-  },
-    "myNfts": {
-      "whitelistRequired": "您需要先加入白名单才能铸造NFT",
-      "connectWalletFirst": "请先连接钱包",
-      "joinWhitelistFirst": "请先加入白名单",
-      "noActiveBatch": "暂无激活批次",
-      "batchSoldOut": "当前批次已售罄",
-      "quickMint": "快速铸造",
-      "whitelisted": "✅ 您已加入白名单",
-      "viewMyInviteCodes": "查看我的邀请码",
-      "loadingBatchInfo": "加载批次信息中...",
-      "noActiveBatchDescription": "当前没有激活的批次，请等待管理员创建新批次",
-      "currentBatchInfo": "当前批次信息",
-      "batchId": "批次ID",
-      "mintPrice": "铸造价格",
-      "progress": "进度",
-      "minted": "已铸造",
-      "eachNFTContains": "每个NFT包含",
-      "unlockMethod": "解锁方式",
-      "monthsLinearUnlock": "25个月线性解锁，每月解锁 4%",
-      "mintFailed": "铸造失败"
-    }
+  }
 }
 

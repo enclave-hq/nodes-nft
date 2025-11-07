@@ -809,9 +809,14 @@ export default function MyNFTsPage() {
             {/* NFT Cards */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* Existing NFT Cards */}
-              {web3Data.nfts.map((nft: { id: number }) => (
-                <NFTCard key={nft.id} nftId={nft.id} />
-              ))}
+              {/* Remove duplicates by id, keeping the first occurrence */}
+              {web3Data.nfts
+                .filter((nft: { id: number }, index: number, self: Array<{ id: number }>) => 
+                  index === self.findIndex((n: { id: number }) => n.id === nft.id)
+                )
+                .map((nft: { id: number }) => (
+                  <NFTCard key={nft.id} nftId={nft.id} />
+                ))}
             </div>
           </>
         )}

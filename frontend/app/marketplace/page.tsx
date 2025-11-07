@@ -468,6 +468,7 @@ function MyNFTsSection({
   onCreateOrder: (nftId: number) => void;
   onOrderCreated?: () => void;
 }) {
+  const tMyNFTs = useTranslations('marketplace.myNFTs');
   const allOrders = useAllSellOrders();
   
   // Separate NFTs into two groups: with orders and without orders
