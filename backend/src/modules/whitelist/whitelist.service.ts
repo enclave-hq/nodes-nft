@@ -87,7 +87,18 @@ export class WhitelistService {
    * Check whitelist status
    */
   async checkWhitelistStatus(address: string): Promise<boolean> {
-    return await this.contractService.isWhitelisted(address);
+    if (!address || typeof address !== 'string' || address.trim() === '') {
+      console.warn('checkWhitelistStatus called with invalid address:', address);
+      return false;
+    }
+    
+    // Validate address format (basic check)
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+      console.warn('checkWhitelistStatus called with invalid address format:', address);
+      return false;
+    }
+    
+    return await this.contractService.isWhitelisted(address.trim());
   }
 }
 

@@ -46,8 +46,25 @@ export class PublicWhitelistController {
   @Get('check')
   @Public()
   async checkWhitelistStatus(@Query('address') address: string) {
-    const isWhitelisted = await this.whitelistService.checkWhitelistStatus(address);
-    return { isWhitelisted, address };
+    if (!address || typeof address !== 'string' || address.trim() === '') {
+      return { 
+        isWhitelisted: false, 
+        address: address || null,
+        error: 'Address parameter is required' 
+      };
+    }
+    
+    // Validate address format (basic check)
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+      return { 
+        isWhitelisted: false, 
+        address: address,
+        error: 'Invalid address format' 
+      };
+    }
+    
+    const isWhitelisted = await this.whitelistService.checkWhitelistStatus(address.trim());
+    return { isWhitelisted, address: address.trim() };
   }
 }
 

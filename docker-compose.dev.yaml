@@ -20,19 +20,16 @@ services:
       retries: 5
     networks:
       - node-nft-network
-    restart: unless-stopped
 
-  # Backend Service (NestJS) - Production
+  # Backend Service (NestJS)
   backend:
     image: ploto/backend:zkpay
-    # Uncomment to specify platform (amd64 or arm64)
-    # platform: linux/amd64  # Use linux/arm64 for ARM servers (e.g., AWS Graviton, Apple Silicon)
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: node-nft-backend
     env_file:
-      - .env
+      - backend/.env
     environment:
       # Database - read from .env or use default
       DATABASE_URL: ${DATABASE_URL:-postgresql://nft_admin:nft_password@postgres:5432/nft_db}
@@ -48,7 +45,9 @@ services:
       RPC_URL: ${RPC_URL:-https://data-seed-prebsc-1-s1.binance.org:8545}
       
       # Admin Private Key (for contract calls)
-      ADMIN_PRIVATE_KEY: ${ADMIN_PRIVATE_KEY:-}
+      # Read directly from backend/.env file via env_file above
+      # If you need to override from shell environment, uncomment the line below:
+      # ADMIN_PRIVATE_KEY: ${ADMIN_PRIVATE_KEY}
       
       # Service Port
       PORT: ${PORT:-4000}
@@ -60,21 +59,26 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/dist
+    # Development mode - uses volume mounts for hot reload
+    # For production, remove volumes and use: docker-compose -f docker-compose.prod.yaml up
+    command: npm run start:dev
     networks:
       - node-nft-network
     restart: unless-stopped
 
-  # Frontend Service (Next.js) - Production
+  # Frontend Service (Next.js)
   frontend:
     image: ploto/frontend:zkpay
-    # Uncomment to specify platform (amd64 or arm64)
-    # platform: linux/amd64  # Use linux/arm64 for ARM servers (e.g., AWS Graviton, Apple Silicon)
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: node-nft-frontend
     env_file:
-      - .env.local
+      - frontend/.env.local
     environment:
       # Contract Addresses
       NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS: ${NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS:-0xCd0Ff5Fd00BD622563011A23091af30De24E7262}
@@ -96,6 +100,13 @@ services:
       - "4001:4001"
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    # Development mode - uses volume mounts for hot reload
+    # For production, use: docker-compose -f docker-compose.prod.yaml up
+    command: npm run dev
     networks:
       - node-nft-network
     restart: unless-stopped

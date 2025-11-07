@@ -80,12 +80,12 @@ export default function ContractTestPage() {
         const account = walletManager.getPrimaryAccount();
         const networkId = account?.chainId;
         if (networkId) {
-          results.push({
-            test: '网络连接',
-            status: 'success',
-            details: `链ID: ${networkId}`,
-            error: null
-          });
+        results.push({
+          test: '网络连接',
+          status: 'success',
+          details: `链ID: ${networkId}`,
+          error: null
+        });
         } else {
           results.push({
             test: '网络连接',

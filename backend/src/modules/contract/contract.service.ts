@@ -179,8 +179,19 @@ export class ContractService implements OnModuleInit {
    * Uses the isWhitelisted() function from the contract
    */
   async isWhitelisted(address: string): Promise<boolean> {
+    if (!address || typeof address !== 'string' || address.trim() === '') {
+      console.warn('isWhitelisted called with invalid address:', address);
+      return false;
+    }
+    
+    // Validate address format (basic check)
+    if (!/^0x[a-fA-F0-9]{40}$/.test(address.trim())) {
+      console.warn('isWhitelisted called with invalid address format:', address);
+      return false;
+    }
+    
     try {
-      return await this.readContract<boolean>('isWhitelisted', [address]);
+      return await this.readContract<boolean>('isWhitelisted', [address.trim()]);
     } catch (error) {
       console.error('Error checking whitelist:', error);
       return false;
