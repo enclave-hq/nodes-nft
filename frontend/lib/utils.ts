@@ -111,3 +111,30 @@ export function formatDate(date: string | Date | number | bigint | undefined | n
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+/**
+ * Simplify error messages for user-facing display
+ * Removes technical details and shows friendly messages for common errors
+ */
+export function simplifyErrorMessage(error: unknown, defaultMessage: string = "Operation failed"): string {
+  if (!(error instanceof Error)) {
+    return defaultMessage;
+  }
+
+  const errMsg = error.message.toLowerCase();
+  const errorCode = (error as any)?.code;
+  
+  // User rejection errors
+  if (
+    errMsg.includes('user rejected') ||
+    errMsg.includes('denied transaction') ||
+    errMsg.includes('user denied') ||
+    errMsg.includes('rejected the request') ||
+    errorCode === 4001
+  ) {
+    return "User rejected the request.";
+  }
+
+  // Return original message if not a user rejection
+  return error.message || defaultMessage;
+}

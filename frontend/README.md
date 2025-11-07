@@ -95,7 +95,6 @@ npm start
 - `useClaimProduced()` - Claim ECLV production
 - `useClaimReward()` - Claim rewards
 - `useBatchClaimProduced()` - Batch claim from multiple NFTs
-- `useTransferShares()` - Transfer shares P2P
 - `useProposeDissolution()` - Propose NFT dissolution
 - `useApproveDissolution()` - Approve dissolution
 - `useWithdrawUnlocked()` - Withdraw unlocked tokens

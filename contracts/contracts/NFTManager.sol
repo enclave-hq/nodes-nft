@@ -6,33 +6,34 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./NodeNFT.sol";
 import "./EnclaveToken.sol";
 
 /**
  * @title NFTManager
- * @notice Core contract for managing Node NFTs, rewards, and share trading
+ * @notice Core contract for managing Node NFTs, rewards, and unlock mechanism
  * @dev Upgradeable contract using UUPS proxy pattern
  * 
  * Key Features:
- * - Mint NFTs with USDT payment
- * - O(1) global index reward distribution
+ * - Whitelist-based NFT minting (max 5000 NFTs)
+ * - Batch management with price and quantity control
+ * - Two-step termination process (1-day cooldown + 30-day timeout)
+ * - O(1) global index reward distribution for Active NFTs only
  * - Dual reward system ($E production + multi-token rewards)
  * - 25-month linear unlock schedule (4% per month after 1 year)
- * - Share transfer within NFTs
- * - NFT state management (Live/Dissolved)
- * - On-chain marketplace for share trading
+ * - Transfer control (disabled by default to prevent OpenSea listing)
  */
 contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     /* ========== CONSTANTS ========== */
     
-    /// @notice Precision multiplier for calculations (1e18)
-    uint256 public constant PRECISION = 1e18;
+    /// @notice Maximum total supply of NFTs
+    uint256 public constant MAX_SUPPLY = 5000;
     
-    /// @notice Shares per NFT (always 10)
-    uint256 public constant SHARES_PER_NFT = 10;
+    /// @notice $E amount per NFT (2000 $E)
+    uint256 public constant ECLV_PER_NFT = 2000 * 10**18;
     
     /// @notice Total unlock periods (25 months)
     uint256 public constant UNLOCK_PERIODS = 25;
@@ -45,19 +46,29 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     
     /// @notice Lock period before first unlock (365 days)
     uint256 public constant LOCK_PERIOD = 365 days;
+    
+    /// @notice Termination cooldown period (1 day)
+    uint256 public constant TERMINATION_COOLDOWN = 1 days;
+    
+    /// @notice Termination timeout period (30 days after cooldown)
+    uint256 public constant TERMINATION_TIMEOUT = 30 days;
 
     /* ========== ENUMS ========== */
     
-    /// @notice NFT type enumeration
-    enum NFTType {
-        Standard,  // Weight = 1
-        Premium    // Weight = 6
-    }
-    
     /// @notice NFT status enumeration
     enum NFTStatus {
-        Live,      // Active, generating rewards
-        Dissolved  // Inactive, no new rewards
+        Active,            // Producing, can receive rewards
+        PendingTermination, // Termination initiated, waiting for confirmation or timeout
+        Terminated         // Terminated, no new rewards, cannot recover
+    }
+    
+
+    
+    /// @notice Order status enumeration
+    enum OrderStatus {
+        Active,     // Order is active and can be filled
+        Cancelled,  // Order was cancelled by seller
+        Filled      // Order was completely filled
     }
 
     /* ========== STRUCTS ========== */
@@ -67,101 +78,62 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
      * @dev Uses O(1) global index model for scalability
      */
     struct GlobalState {
-        /// @notice Accumulated $E produced per unit of weighted share
-        uint256 accProducedPerWeight;
+        /// @notice Accumulated $E produced per NFT
+        uint256 accProducedPerNFT;
         
-        /// @notice Accumulated reward per unit of weighted share for each token
-        mapping(address => uint256) accRewardPerWeight;
+        /// @notice Accumulated reward per NFT for each token
+        mapping(address => uint256) accRewardPerNFT;
         
-        /// @notice Total weighted shares across all Live NFTs
-        uint256 totalWeightedShares;
+        /// @notice Total Active NFTs (for reward distribution)
+        uint256 totalActiveNFTs;
         
         /// @notice Last update timestamp
         uint256 lastUpdateTime;
     }
     
     /**
-     * @notice NFT configuration
-     * @dev Static configuration for each NFT type
+     * @notice Batch configuration
      */
-    struct NFTConfig {
-        NFTType nftType;          // Type of NFT
-        uint256 mintPrice;        // Mint price in USDT (user pays this)
-        uint256 eclvLockAmount;   // $E production quota (accounting only, no actual lock)
-        uint256 shareWeight;      // Weight per share for reward distribution
+    struct Batch {
+        uint256 batchId;
+        uint256 maxMintable;      // Maximum mintable amount for this batch
+        uint256 currentMinted;    // Current minted amount
+        uint256 mintPrice;        // Mint price in USDT (wei)
+        bool active;             // Whether this batch is active
+        uint256 createdAt;        // Creation timestamp
     }
     
     /**
      * @notice NFT pool data
      * @dev Contains all data for a specific NFT
-     * Important: "Locked" $E is just accounting - no actual tokens are locked
-     * User pays USDT, NFT receives $E production quota that unlocks over time
      */
     struct NFTPool {
-        uint256 nftId;                    // NFT token ID
-        NFTType nftType;                  // Type of NFT
-        NFTStatus status;                 // Current status (Live/Dissolved)
-        uint256 createdAt;                // Creation timestamp
-        uint256 dissolvedAt;              // Dissolution timestamp (0 if not dissolved)
-        
-        // Unlock tracking (accounting only, no actual token lock)
-        uint256 totalEclvLocked;          // Total $E production quota
-        uint256 remainingMintQuota;       // R: Remaining quota (not yet unlocked)
-        uint256 unlockedNotWithdrawn;     // U: Unlocked but not withdrawn
-        uint256 lastUnlockTime;           // Last unlock timestamp
-        uint256 unlockedPeriods;          // Number of periods unlocked
-        
-        // Share tracking
-        uint256 totalShares;              // Total shares (always 10)
-        uint256 shareWeight;              // Weight per share
-        address[] shareholders;           // List of addresses holding shares
-        
-        // Frozen indices (set at dissolution)
-        uint256 dissolvedAccProducedPerWeight;           // Frozen produced index
-        mapping(address => uint256) dissolvedAccRewardPerWeight;  // Frozen reward indices
+        uint256 nftId;
+        NFTStatus status;              // Current status
+        uint256 createdAt;
+        uint256 terminationInitiatedAt; // Termination initiation time (if status is PendingTermination)
+        uint256 unlockedWithdrawn;      // Unlocked and withdrawn $E (default 0)
+        uint256 producedWithdrawn;      // $E production withdrawn (accumulated)
+        mapping(address => uint256) rewardWithdrawn; // Reward withdrawn per token (accumulated)
     }
     
     /**
-     * @notice User share data
-     * @dev Tracks user's shares in a specific NFT
-     */
-    struct UserShare {
-        uint256 shares;                   // Number of shares owned
-        uint256 producedDebt;             // $E production debt
-        mapping(address => uint256) rewardDebt;  // Reward debt per token
-        uint256 withdrawnAfterDissolve;   // Amount withdrawn after dissolution
-    }
-    
-    /**
-     * @notice Sell order for shares
+     * @notice Sell order for NFT
      * @dev On-chain order book entry
      */
     struct SellOrder {
-        uint256 nftId;                    // NFT ID
-        address seller;                   // Seller address
-        uint256 shares;                   // Number of shares for sale
-        uint256 pricePerShare;            // Price per share in USDT
-        uint256 createdAt;                // Order creation timestamp
-        bool active;                      // Order status
-    }
-    
-    /**
-     * @notice Dissolution proposal
-     * @dev Multi-signature mechanism for NFT dissolution
-     */
-    struct DissolutionProposal {
-        uint256 nftId;                    // NFT ID
-        address proposer;                 // Proposer address
-        uint256 createdAt;                // Proposal timestamp
-        mapping(address => bool) approvals;  // Approval status per user
-        uint256 approvalCount;            // Number of approvals
-        uint256 totalShareholderCount;    // Total number of shareholders
-        bool executed;                    // Execution status
+        uint256 orderId;        // Order ID
+        uint256 nftId;          // NFT ID
+        address seller;         // Seller address
+        uint256 price;          // Price in USDT (wei)
+        uint256 createdAt;      // Order creation timestamp
+        OrderStatus status;     // Order status
     }
 
     /* ========== STATE VARIABLES ========== */
     
     /// @notice Global state for reward distribution
+    /// @dev Must come after OpenZeppelin base contracts to avoid storage conflicts
     GlobalState public globalState;
     
     /// @notice NFT contract reference
@@ -179,123 +151,116 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     /// @notice Treasury address (receives mint payments)
     address public treasury;
     
-    /// @notice NFT configurations
-    mapping(NFTType => NFTConfig) public nftConfigs;
+    /// @notice Multi-signature node address (receives 20% of mining rewards)
+    address public multisigNode;
+    
+    /// @notice Multisig reward total distributed per token (accumulated)
+    mapping(address => uint256) public multisigRewardDistributed;
+    
+    /// @notice Multisig reward withdrawn per token (accumulated)
+    mapping(address => uint256) public multisigRewardWithdrawn;
+    
+    /// @notice Whitelist mapping
+    mapping(address => bool) public whitelist;
+    
+    /// @notice Whitelist count
+    uint256 public whitelistCount;
+    
+    /// @notice Get whitelist count (custom getter to work around compiler issue)
+    function getWhitelistCount() external view returns (uint256) {
+        return whitelistCount;
+    }
+    
+    /// @notice Whether transfers are enabled (default false)
+    bool public transfersEnabled;
+    
+    /// @notice Batch configurations
+    mapping(uint256 => Batch) public batches;
+    
+    /// @notice Current batch ID
+    uint256 public currentBatchId;
+    
+    /// @notice Get current batch ID (custom getter to work around compiler issue)
+    function getCurrentBatchId() external view returns (uint256) {
+        return currentBatchId;
+    }
+    
+    /// @notice Total minted NFTs
+    uint256 public totalMinted;
     
     /// @notice NFT pools (nftId => NFTPool)
     mapping(uint256 => NFTPool) public nftPools;
     
-    /// @notice User shares (nftId => user => UserShare)
-    mapping(uint256 => mapping(address => UserShare)) public userShares;
-    
     /// @notice User NFT list (user => nftId[])
     mapping(address => uint256[]) public userNFTList;
     
-    /// @notice Supported reward tokens
+    /// @notice Reward tokens list
     address[] public rewardTokens;
+    
+    /// @notice Whether a token is a reward token
     mapping(address => bool) public isRewardToken;
     
     /// @notice Sell orders (orderId => SellOrder)
     mapping(uint256 => SellOrder) public sellOrders;
+    
+    /// @notice NFT to active order ID (nftId => orderId, 0 if no active order)
+    mapping(uint256 => uint256) public nftActiveOrder;
+    
+    /// @notice Next order ID
     uint256 public nextOrderId;
     
-    /// @notice Active sell order IDs for each NFT (nftId => orderIds[])
-    mapping(uint256 => uint256[]) public nftSellOrders;
+    /// @notice TGE (Token Generation Event) timestamp - global unlock start time
+    /// @dev Placed after all inherited variables for storage compatibility
+    uint256 public tgeTime;
     
-    /// @notice Dissolution proposals (nftId => DissolutionProposal)
-    mapping(uint256 => DissolutionProposal) public dissolutionProposals;
+    /// @notice Market fee rate (basis points, e.g., 250 = 2.5%)
+    uint256 public marketFeeRate;
+    
+    /// @notice Active order IDs list (for querying all active orders)
+    uint256[] public activeOrderIds;
 
     /* ========== EVENTS ========== */
     
-    event NFTMinted(
-        uint256 indexed nftId,
-        address indexed minter,
-        NFTType nftType,
-        uint256 mintPrice,
-        uint256 eclvLocked
-    );
-    
-    event ProducedDistributed(
-        uint256 amount,
-        uint256 newAccProducedPerWeight,
-        uint256 timestamp
-    );
-    
-    event RewardDistributed(
-        address indexed token,
-        uint256 amount,
-        uint256 newAccRewardPerWeight,
-        uint256 timestamp
-    );
-    
-    event ProducedClaimed(
-        uint256 indexed nftId,
-        address indexed user,
-        uint256 amount
-    );
-    
-    event RewardClaimed(
-        uint256 indexed nftId,
-        address indexed user,
-        address indexed token,
-        uint256 amount
-    );
-    
-    event ShareTransferred(
-        uint256 indexed nftId,
-        address indexed from,
-        address indexed to,
-        uint256 shares
-    );
-    
-    event UnlockProcessed(
-        uint256 indexed nftId,
-        uint256 period,
-        uint256 unlockedAmount,
-        uint256 newRemainingQuota
-    );
-    
-    event NFTDissolved(
-        uint256 indexed nftId,
-        uint256 timestamp
-    );
-    
-    event DissolutionProposed(
-        uint256 indexed nftId,
-        address indexed proposer
-    );
-    
-    event DissolutionApproved(
-        uint256 indexed nftId,
-        address indexed approver
-    );
-    
-    event SellOrderCreated(
-        uint256 indexed orderId,
-        uint256 indexed nftId,
-        address indexed seller,
-        uint256 shares,
-        uint256 pricePerShare
-    );
-    
-    event SellOrderCancelled(
-        uint256 indexed orderId
-    );
-    
-    event SharesSold(
-        uint256 indexed orderId,
-        uint256 indexed nftId,
-        address indexed buyer,
-        uint256 shares,
-        uint256 totalPrice
-    );
+    event NFTMinted(uint256 indexed nftId, address indexed minter, uint256 indexed batchId, uint256 mintPrice, uint256 timestamp);
+    event TerminationInitiated(uint256 indexed nftId, address indexed owner, uint256 initiateTime, uint256 confirmDeadline);
+    event TerminationConfirmed(uint256 indexed nftId, address indexed owner, uint256 timestamp);
+    event TerminationCancelled(uint256 indexed nftId, address indexed owner, uint256 timestamp);
+    event UnlockedWithdrawn(uint256 indexed nftId, address indexed owner, uint256 amount, uint256 timestamp);
+    event TgeTimeSet(uint256 tgeTime);
+    event BatchCreated(uint256 indexed batchId, uint256 maxMintable, uint256 mintPrice);
+    event BatchActivated(uint256 indexed batchId);
+    event BatchDeactivated(uint256 indexed batchId);
+    event WhitelistAdded(address[] users);
+    event WhitelistRemoved(address user);
+    event TransfersEnabled(bool enabled);
+    event ProducedDistributed(uint256 amount, uint256 accProducedPerNFT, uint256 timestamp);
+    event RewardDistributed(address indexed token, uint256 totalAmount, uint256 nftAmount, uint256 multisigAmount, uint256 accRewardPerNFT, uint256 timestamp);
+    event MultisigRewardClaimed(address indexed token, uint256 amount, uint256 timestamp);
+    event ProducedClaimed(uint256 indexed nftId, address indexed user, uint256 amount);
+    event RewardClaimed(uint256 indexed nftId, address indexed user, address indexed token, uint256 amount);
+    event RewardTokenAdded(address indexed token);
+    event RewardTokenRemoved(address indexed token);
+    event OracleSet(address indexed oracle);
+    event TreasurySet(address indexed treasury);
+    event NodeNFTSet(address indexed nodeNFT);
+    event SellOrderCreated(uint256 indexed orderId, uint256 indexed nftId, address indexed seller, uint256 price, uint256 timestamp);
+    event SellOrderCancelled(uint256 indexed orderId, uint256 indexed nftId, address seller, uint256 timestamp);
+    event NFTBought(uint256 indexed orderId, uint256 indexed nftId, address indexed seller, address buyer, uint256 price, uint256 timestamp);
+    event MarketFeeRateUpdated(uint256 newFeeRate);
+    event MultisigNodeSet(address indexed multisigNode);
+    event MiningDistributed(uint256 totalAmount, uint256 nftAmount, uint256 multisigAmount);
+    event TokensBurnedFromSwap(uint256 amount, string reason);
+    event UsdtTokenUpdated(address indexed oldUsdt, address indexed newUsdt);
+    event UserNFTListSynced(uint256 indexed nftId, address indexed from, address indexed to);
 
-    /* ========== CONSTRUCTOR & INITIALIZER ========== */
+    /* ========== MODIFIERS ========== */
     
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
+    modifier onlyOracle() {
+        require(msg.sender == oracle, "Only oracle");
+        _;
     }
+
+    /* ========== INITIALIZATION ========== */
     
     /**
      * @notice Initialize the contract
@@ -328,23 +293,6 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         oracle = oracle_;
         treasury = treasury_;
         
-        // Initialize NFT configurations
-        // Standard NFT: 10,000 USDT, 20,000 $E, weight = 1
-        nftConfigs[NFTType.Standard] = NFTConfig({
-            nftType: NFTType.Standard,
-            mintPrice: 10_000 * 10**18,      // 10,000 USDT (assuming 18 decimals)
-            eclvLockAmount: 20_000 * 10**18, // 20,000 $E
-            shareWeight: 1                    // Weight per share
-        });
-        
-        // Premium NFT: 50,000 USDT, 100,000 $E, weight = 6
-        nftConfigs[NFTType.Premium] = NFTConfig({
-            nftType: NFTType.Premium,
-            mintPrice: 50_000 * 10**18,       // 50,000 USDT
-            eclvLockAmount: 100_000 * 10**18, // 100,000 $E
-            shareWeight: 6                     // Weight per share
-        });
-        
         // Add USDT as default reward token
         rewardTokens.push(usdtToken_);
         isRewardToken[usdtToken_] = true;
@@ -352,116 +300,608 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         // Initialize global state
         globalState.lastUpdateTime = block.timestamp;
         
+        // Initialize batch ID
+        currentBatchId = 1;
+        
         // Initialize order ID
         nextOrderId = 1;
+        
+        // Transfers disabled by default
+        transfersEnabled = false;
+        
+        // Market fee rate (default 0%, can be set by owner)
+        marketFeeRate = 0;
     }
 
-    /* ========== MODIFIERS ========== */
+    /* ========== WHITELIST MANAGEMENT ========== */
     
-    modifier onlyOracle() {
-        require(msg.sender == oracle, "Only oracle");
-        _;
+    /**
+     * @notice Add users to whitelist
+     * @param users Array of user addresses to add
+     */
+    function addToWhitelist(address[] calldata users) external onlyOwner {
+        require(users.length > 0, "Empty array");
+        
+        for (uint256 i = 0; i < users.length; i++) {
+            if (!whitelist[users[i]]) {
+                whitelist[users[i]] = true;
+                whitelistCount++;
+            }
+        }
+        
+        emit WhitelistAdded(users);
+    }
+    
+    /**
+     * @notice Remove user from whitelist
+     * @param user User address to remove
+     */
+    function removeFromWhitelist(address user) external onlyOwner {
+        require(whitelist[user], "User not in whitelist");
+        
+        whitelist[user] = false;
+        whitelistCount--;
+        
+        emit WhitelistRemoved(user);
+    }
+    
+    /**
+     * @notice Check if user is whitelisted
+     * @param user User address to check
+     * @return Whether user is whitelisted
+     */
+    function isWhitelisted(address user) external view returns (bool) {
+        return whitelist[user];
     }
 
-    /* ========== MINTING FUNCTIONS ========== */
+    /* ========== MULTISIG NODE MANAGEMENT ========== */
+    
+    /**
+     * @notice Set multi-signature node address
+     * @param multisigNode_ Multi-signature node address
+     */
+    function setMultisigNode(address multisigNode_) external onlyOwner {
+        require(multisigNode_ != address(0), "Invalid multisig node address");
+        multisigNode = multisigNode_;
+        emit MultisigNodeSet(multisigNode_);
+    }
+
+    /* ========== CONTRACT CONFIGURATION ========== */
+    
+    /**
+     * @notice Set oracle address
+     * @param oracle_ New oracle address
+     */
+    function setOracle(address oracle_) external onlyOwner {
+        require(oracle_ != address(0), "Invalid oracle address");
+        oracle = oracle_;
+        emit OracleSet(oracle_);
+    }
+    
+    /**
+     * @notice Set treasury address
+     * @param treasury_ New treasury address
+     */
+    function setTreasury(address treasury_) external onlyOwner {
+        require(treasury_ != address(0), "Invalid treasury address");
+        treasury = treasury_;
+        emit TreasurySet(treasury_);
+    }
+    
+    /**
+     * @notice Set NodeNFT contract address
+     * @dev Only owner can call this function
+     * @param nodeNFT_ New NodeNFT contract address
+     */
+    function setNodeNFT(address nodeNFT_) external onlyOwner {
+        require(nodeNFT_ != address(0), "Invalid NodeNFT address");
+        nodeNFT = NodeNFT(nodeNFT_);
+        emit NodeNFTSet(nodeNFT_);
+    }
+    
+    /**
+     * @notice Set USDT token address
+     * @dev Updates USDT token address and manages reward token list
+     * @param usdtToken_ New USDT token address
+     */
+    function setUsdtToken(address usdtToken_) external onlyOwner {
+        require(usdtToken_ != address(0), "Invalid USDT address");
+        require(usdtToken_ != address(usdtToken), "Same address");
+        
+        address oldUsdt = address(usdtToken);
+        
+        // Remove old USDT from reward tokens if it was added
+        if (isRewardToken[oldUsdt]) {
+            isRewardToken[oldUsdt] = false;
+            
+            // Remove from reward tokens array
+            for (uint256 i = 0; i < rewardTokens.length; i++) {
+                if (rewardTokens[i] == oldUsdt) {
+                    rewardTokens[i] = rewardTokens[rewardTokens.length - 1];
+                    rewardTokens.pop();
+                    break;
+                }
+            }
+            
+            emit RewardTokenRemoved(oldUsdt);
+        }
+        
+        // Update USDT token address
+        usdtToken = IERC20(usdtToken_);
+        
+        // Add new USDT as reward token if not already added
+        if (!isRewardToken[usdtToken_]) {
+            rewardTokens.push(usdtToken_);
+            isRewardToken[usdtToken_] = true;
+            emit RewardTokenAdded(usdtToken_);
+        }
+        
+        emit UsdtTokenUpdated(oldUsdt, usdtToken_);
+    }
+
+    /* ========== BATCH MANAGEMENT ========== */
+    
+    /**
+     * @notice Create a new batch
+     * @dev Batch is created as active by default. All batches' maxMintable sum must not exceed MAX_SUPPLY (5000).
+     * @param maxMintable Maximum mintable amount for this batch
+     * @param mintPrice Mint price in USDT (wei)
+     * @return batchId The created batch ID
+     */
+    function createBatch(uint256 maxMintable, uint256 mintPrice) external onlyOwner returns (uint256) {
+        require(maxMintable > 0, "maxMintable must be > 0");
+        require(mintPrice > 0, "mintPrice must be > 0");
+        
+        // Calculate total maxMintable from all existing batches
+        uint256 totalMaxMintable = 0;
+        for (uint256 i = 1; i < currentBatchId; i++) {
+            totalMaxMintable += batches[i].maxMintable;
+        }
+        
+        // Check that adding this batch won't exceed MAX_SUPPLY
+        require(totalMaxMintable + maxMintable <= MAX_SUPPLY, "Total maxMintable exceeds MAX_SUPPLY");
+        
+        uint256 batchId = currentBatchId;
+        currentBatchId++;
+        
+        // Deactivate current active batch if exists (only one batch can be active at a time)
+        for (uint256 i = 1; i < batchId; i++) {
+            if (batches[i].active) {
+                batches[i].active = false;
+                emit BatchDeactivated(i);
+            }
+        }
+        
+        batches[batchId] = Batch({
+            batchId: batchId,
+            maxMintable: maxMintable,
+            currentMinted: 0,
+            mintPrice: mintPrice,
+            active: true, // Created as active by default
+            createdAt: block.timestamp
+        });
+        
+        emit BatchCreated(batchId, maxMintable, mintPrice);
+        emit BatchActivated(batchId);
+        
+        return batchId;
+    }
+    
+    /**
+     * @notice Activate a batch
+     * @param batchId Batch ID to activate
+     */
+    function activateBatch(uint256 batchId) external onlyOwner {
+        Batch storage batch = batches[batchId];
+        require(batch.batchId == batchId, "Batch does not exist");
+        require(!batch.active, "Batch already active");
+        
+        // Deactivate current active batch if exists
+        for (uint256 i = 1; i < currentBatchId; i++) {
+            if (batches[i].active) {
+                batches[i].active = false;
+                emit BatchDeactivated(i);
+            }
+        }
+        
+        batch.active = true;
+        emit BatchActivated(batchId);
+    }
+    
+    /**
+     * @notice Deactivate a batch
+     * @param batchId Batch ID to deactivate
+     */
+    function deactivateBatch(uint256 batchId) external onlyOwner {
+        Batch storage batch = batches[batchId];
+        require(batch.batchId == batchId, "Batch does not exist");
+        require(batch.active, "Batch not active");
+        
+        batch.active = false;
+        emit BatchDeactivated(batchId);
+    }
+    
+    /**
+     * @notice Get active batch
+     * @return batchId Active batch ID, 0 if none
+     */
+    function getActiveBatch() external view returns (uint256) {
+        for (uint256 i = 1; i < currentBatchId; i++) {
+            if (batches[i].active) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    /* ========== TRANSFER CONTROL ========== */
+    
+    /**
+     * @notice Set transfers enabled/disabled
+     * @param enabled Whether transfers are enabled
+     */
+    function setTransfersEnabled(bool enabled) external onlyOwner {
+        transfersEnabled = enabled;
+        emit TransfersEnabled(enabled);
+    }
+    
+    /**
+     * @notice Set TGE (Token Generation Event) time
+     * @dev Only owner can set. TGE is the global unlock start time.
+     *      Unlock starts at TGE + LOCK_PERIOD (365 days), then every 30 days unlocks 4%.
+     * @param tgeTime_ TGE timestamp
+     */
+    function setTgeTime(uint256 tgeTime_) external onlyOwner {
+        require(tgeTime_ > 0, "Invalid TGE time");
+        tgeTime = tgeTime_;
+        emit TgeTimeSet(tgeTime_);
+    }
+
+    /* ========== MINTING ========== */
     
     /**
      * @notice Mint a new NFT
-     * @dev User pays USDT, NFT gets $E production quota (no actual $E transfer)
-     * @param nftType_ Type of NFT to mint
+     * @dev User must be whitelisted, batch must be active, and not exceed limits
      * @return nftId Minted NFT ID
      */
-    function mintNFT(NFTType nftType_) external nonReentrant returns (uint256) {
-        NFTConfig memory config = nftConfigs[nftType_];
+    function mintNFT() external nonReentrant returns (uint256) {
+        // Check whitelist
+        require(whitelist[msg.sender], "Not whitelisted");
+        
+        // Find active batch
+        uint256 activeBatchId = 0;
+        for (uint256 i = 1; i < currentBatchId; i++) {
+            if (batches[i].active) {
+                activeBatchId = i;
+                break;
+            }
+        }
+        require(activeBatchId > 0, "No active batch");
+        
+        Batch storage batch = batches[activeBatchId];
+        
+        // Check batch limit
+        require(batch.currentMinted < batch.maxMintable, "Batch sold out");
+        
+        // Check global limit
+        require(totalMinted < MAX_SUPPLY, "Max supply reached");
         
         // Transfer USDT from user to treasury
-        usdtToken.safeTransferFrom(msg.sender, treasury, config.mintPrice);
+        usdtToken.safeTransferFrom(msg.sender, treasury, batch.mintPrice);
         
-        // Note: No $E transfer needed
-        // The NFT will receive $E production quota that unlocks over time
-        
-        // Mint NFT to user
+        // Mint NFT
         uint256 nftId = nodeNFT.mint(msg.sender);
         
         // Create NFT pool
-        // Note: totalEclvLocked is the $E production quota (not actual locked tokens)
-        // This quota will unlock gradually over time
         NFTPool storage pool = nftPools[nftId];
         pool.nftId = nftId;
-        pool.nftType = nftType_;
-        pool.status = NFTStatus.Live;
+        pool.status = NFTStatus.Active;
         pool.createdAt = block.timestamp;
-        pool.totalEclvLocked = config.eclvLockAmount;      // Total $E quota
-        pool.remainingMintQuota = config.eclvLockAmount;   // Initially all quota is "locked" (not yet unlocked)
-        pool.totalShares = SHARES_PER_NFT;
-        pool.shareWeight = config.shareWeight;
-        pool.lastUnlockTime = block.timestamp;
+        pool.unlockedWithdrawn = 0; // Initialize to 0
+        pool.producedWithdrawn = 0; // Initialize to 0
         
-        // Assign all shares to minter
-        UserShare storage userShare = userShares[nftId][msg.sender];
-        userShare.shares = SHARES_PER_NFT;
-        userShare.producedDebt = (SHARES_PER_NFT * config.shareWeight * globalState.accProducedPerWeight) / PRECISION;
-        
-        // Initialize reward debts for all reward tokens
+        // Initialize reward withdrawn for all reward tokens
         for (uint256 i = 0; i < rewardTokens.length; i++) {
             address token = rewardTokens[i];
-            userShare.rewardDebt[token] = (SHARES_PER_NFT * config.shareWeight * globalState.accRewardPerWeight[token]) / PRECISION;
+            pool.rewardWithdrawn[token] = 0; // Initialize to 0
         }
         
         // Add to user's NFT list
         userNFTList[msg.sender].push(nftId);
         
-        // Add minter to shareholders list
-        pool.shareholders.push(msg.sender);
+        // Update counters
+        batch.currentMinted++;
+        totalMinted++;
+        globalState.totalActiveNFTs++;
         
-        // Update global weighted shares (NFT is now Live)
-        globalState.totalWeightedShares += SHARES_PER_NFT * config.shareWeight;
-        
-        emit NFTMinted(nftId, msg.sender, nftType_, config.mintPrice, config.eclvLockAmount);
+        emit NFTMinted(nftId, msg.sender, activeBatchId, batch.mintPrice, block.timestamp);
         
         return nftId;
     }
 
-    /* ========== REWARD DISTRIBUTION FUNCTIONS (ORACLE) ========== */
+    /* ========== TERMINATION MANAGEMENT ========== */
     
     /**
-     * @notice Distribute $E production to all Live NFTs (O(1) operation)
-     * @dev Only oracle can call. Updates global index, users claim individually
-     * @param amount Amount of $E to distribute
+     * @notice Initiate NFT termination
+     * @param nftId NFT ID
      */
-    function distributeProduced(uint256 amount) external onlyOracle nonReentrant {
-        require(amount > 0, "Amount must be positive");
-        require(globalState.totalWeightedShares > 0, "No active NFTs");
+    function initiateTermination(uint256 nftId) external {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
         
-        // Transfer $E from oracle to this contract
-        eclvToken.transferFrom(msg.sender, address(this), amount);
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.status == NFTStatus.Active, "NFT not active");
         
-        // Update global index (O(1) operation)
-        globalState.accProducedPerWeight += (amount * PRECISION) / globalState.totalWeightedShares;
-        globalState.lastUpdateTime = block.timestamp;
+        pool.status = NFTStatus.PendingTermination;
+        pool.terminationInitiatedAt = block.timestamp;
         
-        emit ProducedDistributed(amount, globalState.accProducedPerWeight, block.timestamp);
+        emit TerminationInitiated(nftId, msg.sender, block.timestamp, block.timestamp + TERMINATION_COOLDOWN);
     }
     
     /**
-     * @notice Distribute reward tokens to all Live NFTs (O(1) operation)
+     * @notice Confirm termination (after cooldown)
+     * @param nftId NFT ID
+     */
+    function confirmTermination(uint256 nftId) external {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
+        
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.status == NFTStatus.PendingTermination, "NFT not terminating");
+        require(
+            block.timestamp >= pool.terminationInitiatedAt + TERMINATION_COOLDOWN,
+            "Cooldown not passed"
+        );
+        
+        pool.status = NFTStatus.Terminated;
+        globalState.totalActiveNFTs--;
+        
+        emit TerminationConfirmed(nftId, msg.sender, block.timestamp);
+    }
+    
+    /**
+     * @notice Cancel termination
+     * @param nftId NFT ID
+     */
+    function cancelTermination(uint256 nftId) external {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
+        
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.status == NFTStatus.PendingTermination, "NFT not terminating");
+        
+        // Check timeout (if more than 30 days after cooldown, cannot cancel)
+        require(
+            block.timestamp < pool.terminationInitiatedAt + TERMINATION_COOLDOWN + TERMINATION_TIMEOUT,
+            "Termination timeout exceeded"
+        );
+        
+        pool.status = NFTStatus.Active;
+        pool.terminationInitiatedAt = 0;
+        
+        emit TerminationCancelled(nftId, msg.sender, block.timestamp);
+    }
+    
+    /**
+     * @notice Check and auto-confirm termination if timeout exceeded
+     * @param nftId NFT ID
+     */
+    function _checkTerminationTimeout(uint256 nftId) internal {
+        NFTPool storage pool = nftPools[nftId];
+        
+        if (
+            pool.status == NFTStatus.PendingTermination &&
+            block.timestamp >= pool.terminationInitiatedAt + TERMINATION_COOLDOWN + TERMINATION_TIMEOUT
+        ) {
+            pool.status = NFTStatus.Terminated;
+            globalState.totalActiveNFTs--;
+            emit TerminationConfirmed(nftId, nodeNFT.ownerOf(nftId), block.timestamp);
+        }
+    }
+
+    /* ========== REWARD DISTRIBUTION (ORACLE) ========== */
+    
+    /**
+     * @notice Distribute $E production by mining from EnclaveToken
+     * @dev Only oracle can call. Mines tokens from EnclaveToken contract:
+     *      - 80% to NFTManager (distributed to Active NFTs)
+     *      - 20% directly to multisig node address
+     *      Note: This contract must be set as EnclaveToken's oracle or owner
+     *            to have permission to call mineTokens()
+     * @param totalAmount Total amount of $E to mine (from EnclaveToken)
+     */
+    function distributeProduced(uint256 totalAmount) external onlyOracle nonReentrant {
+        require(totalAmount > 0, "Amount must be positive");
+        require(multisigNode != address(0), "Multisig node not set");
+        require(globalState.totalActiveNFTs > 0, "No active NFTs");
+        
+        // Calculate distribution: 80% to NFTs, 20% to multisig node
+        uint256 nftAmount = (totalAmount * 80) / 100;
+        uint256 multisigAmount = totalAmount - nftAmount; // Ensures exact split
+        
+        // Mine tokens to NFTManager contract (80% for NFT distribution)
+        if (nftAmount > 0) {
+            eclvToken.mineTokens(address(this), nftAmount);
+            
+            // Update global index (O(1) operation)
+            // nftAmount is already in wei, so we don't need to multiply by PRECISION
+            globalState.accProducedPerNFT += nftAmount / globalState.totalActiveNFTs;
+        }
+        
+        // Mine tokens directly to multisig node (20%)
+        if (multisigAmount > 0) {
+            eclvToken.mineTokens(multisigNode, multisigAmount);
+        }
+        
+        globalState.lastUpdateTime = block.timestamp;
+        
+        emit MiningDistributed(totalAmount, nftAmount, multisigAmount);
+        emit ProducedDistributed(nftAmount, globalState.accProducedPerNFT, block.timestamp);
+    }
+    
+    /**
+     * @notice Burn tokens from Swap buyback (called by Oracle)
+     * @dev Only oracle can call. Oracle purchases tokens from Swap, then either:
+     *      Option 1: Oracle transfers tokens to NFTManager, then calls this function
+     *      Option 2: Oracle approves tokens to NFTManager, then calls this function (NFTManager will pull)
+     *      Note: This contract must be set as EnclaveToken's oracle to have permission to call burnFromSwap()
+     * @param amount Amount of tokens to burn
+     * @param reason Reason for burn (e.g., "swap_buyback")
+     */
+    function burnTokensFromSwap(uint256 amount, string memory reason) external onlyOracle nonReentrant {
+        require(amount > 0, "Amount must be positive");
+        
+        // Ensure this contract has enough tokens
+        uint256 balance = eclvToken.balanceOf(address(this));
+        if (balance < amount) {
+            // Try to pull tokens from oracle (Oracle must have approved first)
+            uint256 needed = amount - balance;
+            IERC20(address(eclvToken)).safeTransferFrom(msg.sender, address(this), needed);
+        }
+        
+        // Approve EnclaveToken to spend tokens from this contract
+        // Note: OpenZeppelin v5 uses forceApprove instead of safeApprove
+        IERC20(address(eclvToken)).forceApprove(address(eclvToken), amount);
+        
+        // Call EnclaveToken's burnFromSwap function
+        // This contract must be set as EnclaveToken's oracle
+        eclvToken.burnFromSwap(amount, reason);
+        
+        emit TokensBurnedFromSwap(amount, reason);
+    }
+    
+    /**
+     * @notice Distribute reward tokens to all Active NFTs (O(1) operation)
      * @dev Only oracle can call. Updates global index for specific token
+     *      Distribution: 80% to NFTs, 20% to multisig node
      * @param token Reward token address
-     * @param amount Amount to distribute
+     * @param amount Total amount to distribute
      */
     function distributeReward(address token, uint256 amount) external onlyOracle nonReentrant {
         require(amount > 0, "Amount must be positive");
         require(isRewardToken[token], "Token not supported");
-        require(globalState.totalWeightedShares > 0, "No active NFTs");
+        require(multisigNode != address(0), "Multisig node not set");
+        require(globalState.totalActiveNFTs > 0, "No active NFTs");
+        
+        // Calculate distribution: 80% to NFTs, 20% to multisig node
+        uint256 nftAmount = (amount * 80) / 100;
+        uint256 multisigAmount = amount - nftAmount; // Ensures exact split
         
         // Transfer reward token from oracle to this contract
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         
+        // Accumulate multisig reward (multisig can claim later)
+        multisigRewardDistributed[token] += multisigAmount;
+        
         // Update global index for this token (O(1) operation)
-        globalState.accRewardPerWeight[token] += (amount * PRECISION) / globalState.totalWeightedShares;
+        // Only nftAmount is distributed to NFTs
+        // amount is already in wei, so we don't need to multiply by PRECISION
+        globalState.accRewardPerNFT[token] += nftAmount / globalState.totalActiveNFTs;
         globalState.lastUpdateTime = block.timestamp;
         
-        emit RewardDistributed(token, amount, globalState.accRewardPerWeight[token], block.timestamp);
+        emit RewardDistributed(token, amount, nftAmount, multisigAmount, globalState.accRewardPerNFT[token], block.timestamp);
+    }
+
+    /* ========== REWARD TOKEN MANAGEMENT ========== */
+    
+    /**
+     * @notice Add a reward token
+     * @param token Token address to add
+     */
+    function addRewardToken(address token) external onlyOwner {
+        require(token != address(0), "Invalid token address");
+        require(!isRewardToken[token], "Token already added");
+        
+        rewardTokens.push(token);
+        isRewardToken[token] = true;
+        
+        emit RewardTokenAdded(token);
+    }
+    
+    /**
+     * @notice Remove a reward token
+     * @param token Token address to remove
+     */
+    function removeRewardToken(address token) external onlyOwner {
+        require(isRewardToken[token], "Token not added");
+        
+        isRewardToken[token] = false;
+        
+        // Remove from array
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            if (rewardTokens[i] == token) {
+                rewardTokens[i] = rewardTokens[rewardTokens.length - 1];
+                rewardTokens.pop();
+                break;
+            }
+        }
+        
+        emit RewardTokenRemoved(token);
+    }
+
+    /* ========== UNLOCK MECHANISM ========== */
+    
+    /**
+     * @notice Calculate unlocked periods based on TGE and current time
+     * @dev Internal function to calculate how many periods should be unlocked
+     * @return periods Number of periods unlocked (0-25)
+     */
+    function _calculateUnlockedPeriods() internal view returns (uint256) {
+        if (tgeTime == 0) {
+            return 0; // TGE not set yet
+        }
+        
+        // Unlock starts at TGE + LOCK_PERIOD (365 days)
+        uint256 unlockStartTime = tgeTime + LOCK_PERIOD;
+        
+        // Check if unlock period has started
+        if (block.timestamp < unlockStartTime) {
+            return 0; // Lock period not passed yet
+        }
+        
+        // Calculate time since unlock started
+        uint256 timeSinceUnlockStart = block.timestamp - unlockStartTime;
+        
+        // Calculate periods (every 30 days = 1 period)
+        uint256 periods = timeSinceUnlockStart / UNLOCK_INTERVAL;
+        
+        // Cap at max periods
+        if (periods > UNLOCK_PERIODS) {
+            periods = UNLOCK_PERIODS;
+        }
+        
+        return periods;
+        }
+        
+    /**
+     * @notice Calculate unlocked amount based on TGE and current time
+     * @dev Automatically calculates based on TGE + lock period + unlock intervals
+     *      All NFTs have the same locked amount (ECLV_PER_NFT = 2000 $E)
+     * @return unlockedAmount Total unlocked amount
+     */
+    function _calculateUnlockedAmount() internal view returns (uint256) {
+        uint256 periods = _calculateUnlockedPeriods();
+        if (periods == 0) {
+            return 0;
+        }
+        uint256 unlockAmountPerPeriod = (ECLV_PER_NFT * UNLOCK_PERCENTAGE) / 100;
+        return periods * unlockAmountPerPeriod;
+    }
+    
+    /**
+     * @notice Calculate unlocked amount for an NFT (public view)
+     * @param nftId NFT ID (for validation only, all NFTs have same unlock schedule)
+     * @return unlockedAmount Total unlocked amount based on TGE and current time
+     */
+    function calculateUnlockedAmount(uint256 nftId) external view returns (uint256) {
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.nftId == nftId, "NFT does not exist");
+        return _calculateUnlockedAmount();
+    }
+    
+    /**
+     * @notice Get current unlocked periods (public view)
+     * @return periods Number of periods unlocked based on TGE and current time
+     */
+    function getUnlockedPeriods() external view returns (uint256) {
+        return _calculateUnlockedPeriods();
     }
 
     /* ========== CLAIM FUNCTIONS ========== */
@@ -472,23 +912,20 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
      * @return amount Claimed amount
      */
     function claimProduced(uint256 nftId) public nonReentrant returns (uint256) {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
+        
         NFTPool storage pool = nftPools[nftId];
-        UserShare storage userShare = userShares[nftId][msg.sender];
         
-        require(userShare.shares > 0, "No shares owned");
+        // Check termination timeout
+        _checkTerminationTimeout(nftId);
         
-        // Process unlock first
-        _processUnlock(nftId);
-        
-        uint256 amount = _getPendingProduced(nftId, msg.sender);
+        uint256 amount = _getPendingProduced(nftId);
         
         if (amount > 0) {
-            // Update user's debt
-            uint256 accIndex = pool.status == NFTStatus.Live 
-                ? globalState.accProducedPerWeight 
-                : pool.dissolvedAccProducedPerWeight;
-            
-            userShare.producedDebt = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
+            // Accumulate withdrawn amount
+            if (pool.status == NFTStatus.Active || pool.status == NFTStatus.PendingTermination) {
+                pool.producedWithdrawn += amount;
+            }
             
             // Transfer $E to user
             eclvToken.transfer(msg.sender, amount);
@@ -506,24 +943,23 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
      * @return amount Claimed amount
      */
     function claimReward(uint256 nftId, address token) public nonReentrant returns (uint256) {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
         require(isRewardToken[token], "Token not supported");
         
         NFTPool storage pool = nftPools[nftId];
-        UserShare storage userShare = userShares[nftId][msg.sender];
         
-        require(userShare.shares > 0, "No shares owned");
+        // Check termination timeout
+        _checkTerminationTimeout(nftId);
         
-        uint256 amount = _getPendingReward(nftId, msg.sender, token);
+        uint256 amount = _getPendingReward(nftId, token);
         
         if (amount > 0) {
-            // Update user's debt
-            uint256 accIndex = pool.status == NFTStatus.Live 
-                ? globalState.accRewardPerWeight[token]
-                : pool.dissolvedAccRewardPerWeight[token];
+            // Accumulate withdrawn amount
+            if (pool.status == NFTStatus.Active || pool.status == NFTStatus.PendingTermination) {
+                pool.rewardWithdrawn[token] += amount;
+            }
             
-            userShare.rewardDebt[token] = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
-            
-            // Transfer reward token to user
+            // Transfer reward to user
             IERC20(token).safeTransfer(msg.sender, amount);
             
             emit RewardClaimed(nftId, msg.sender, token, amount);
@@ -533,660 +969,152 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     }
     
     /**
-     * @notice Batch claim $E production for multiple NFTs
-     * @param nftIds Array of NFT IDs
-     * @return totalAmount Total claimed amount
-     */
-    function batchClaimProduced(uint256[] calldata nftIds) external returns (uint256) {
-        uint256 totalAmount = 0;
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            totalAmount += claimProduced(nftIds[i]);
-        }
-        return totalAmount;
-    }
-    
-    /**
-     * @notice Batch claim rewards for multiple NFTs
-     * @param nftIds Array of NFT IDs
-     * @param token Reward token address
-     * @return totalAmount Total claimed amount
-     */
-    function batchClaimReward(uint256[] calldata nftIds, address token) external returns (uint256) {
-        uint256 totalAmount = 0;
-        for (uint256 i = 0; i < nftIds.length; i++) {
-            totalAmount += claimReward(nftIds[i], token);
-        }
-        return totalAmount;
-    }
-
-    /* ========== SHARE TRANSFER FUNCTIONS ========== */
-    
-    /**
-     * @notice Transfer shares to another user (P2P)
-     * @dev Claims all pending rewards before transfer
+     * @notice Claim all reward tokens for a specific NFT (claim all tokens at once)
      * @param nftId NFT ID
-     * @param to Recipient address
-     * @param shares Number of shares to transfer
+     * @return tokens Array of token addresses that were claimed
+     * @return amounts Array of claimed amounts for each token
+     * @return totalClaimed Total amount claimed across all tokens
      */
-    function transferShares(
-        uint256 nftId,
-        address to,
-        uint256 shares
-    ) public nonReentrant {
-        require(to != address(0), "Invalid recipient");
-        require(to != msg.sender, "Cannot transfer to self");
-        require(shares > 0, "Must transfer at least 1 share");
+    function claimAllRewards(uint256 nftId) external nonReentrant returns (
+        address[] memory tokens,
+        uint256[] memory amounts,
+        uint256 totalClaimed
+    ) {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
         
         NFTPool storage pool = nftPools[nftId];
-        UserShare storage fromShare = userShares[nftId][msg.sender];
-        UserShare storage toShare = userShares[nftId][to];
         
-        require(fromShare.shares >= shares, "Insufficient shares");
+        // Check termination timeout
+        _checkTerminationTimeout(nftId);
         
-        // Process unlock first
-        _processUnlock(nftId);
+        // Get all reward tokens
+        uint256 tokenCount = rewardTokens.length;
+        tokens = new address[](tokenCount);
+        amounts = new uint256[](tokenCount);
         
-        // Claim all pending rewards for sender
-        _claimAllRewards(nftId, msg.sender);
-        
-        // Claim all pending rewards for recipient (if they have shares)
-        if (toShare.shares > 0) {
-            _claimAllRewards(nftId, to);
-        }
-        
-        // Transfer shares
-        fromShare.shares -= shares;
-        toShare.shares += shares;
-        
-        // Update debts based on current indices
-        uint256 accProduced = pool.status == NFTStatus.Live 
-            ? globalState.accProducedPerWeight 
-            : pool.dissolvedAccProducedPerWeight;
-        
-        fromShare.producedDebt = (fromShare.shares * pool.shareWeight * accProduced) / PRECISION;
-        toShare.producedDebt = (toShare.shares * pool.shareWeight * accProduced) / PRECISION;
-        
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
+        // Claim rewards for each token
+        for (uint256 i = 0; i < tokenCount; i++) {
             address token = rewardTokens[i];
-            uint256 accReward = pool.status == NFTStatus.Live 
-                ? globalState.accRewardPerWeight[token]
-                : pool.dissolvedAccRewardPerWeight[token];
+            tokens[i] = token;
             
-            fromShare.rewardDebt[token] = (fromShare.shares * pool.shareWeight * accReward) / PRECISION;
-            toShare.rewardDebt[token] = (toShare.shares * pool.shareWeight * accReward) / PRECISION;
+            uint256 amount = _getPendingReward(nftId, token);
+            amounts[i] = amount;
+            
+            if (amount > 0) {
+                // Accumulate withdrawn amount
+                if (pool.status == NFTStatus.Active || pool.status == NFTStatus.PendingTermination) {
+                    pool.rewardWithdrawn[token] += amount;
+                }
+                
+                // Transfer reward to user
+                IERC20(token).safeTransfer(msg.sender, amount);
+                
+                totalClaimed += amount;
+                
+                emit RewardClaimed(nftId, msg.sender, token, amount);
+            }
         }
         
-        // Update shareholders list
-        _addShareholder(nftId, to);
-        _removeShareholder(nftId, msg.sender);
-        
-        // Add to recipient's NFT list if first time
-        if (toShare.shares == shares) {
-            userNFTList[to].push(nftId);
-        }
-        
-        // Remove from sender's NFT list if no shares left
-        if (fromShare.shares == 0) {
-            _removeFromUserNFTList(msg.sender, nftId);
-        }
-        
-        emit ShareTransferred(nftId, msg.sender, to, shares);
-    }
-
-    /* ========== UNLOCK FUNCTIONS ========== */
-    
-    /**
-     * @notice Process unlock for an NFT
-     * @dev Internal function, called automatically during claims/transfers
-     * @param nftId NFT ID
-     */
-    function _processUnlock(uint256 nftId) internal {
-        NFTPool storage pool = nftPools[nftId];
-        
-        // Skip if already fully unlocked
-        if (pool.unlockedPeriods >= UNLOCK_PERIODS) {
-            return;
-        }
-        
-        // Check if lock period has passed
-        if (block.timestamp < pool.createdAt + LOCK_PERIOD) {
-            return;
-        }
-        
-        // Calculate number of periods to unlock
-        uint256 timeSinceFirstUnlock = block.timestamp - (pool.createdAt + LOCK_PERIOD);
-        uint256 periodsElapsed = timeSinceFirstUnlock / UNLOCK_INTERVAL + 1;
-        
-        // Cap at max periods
-        if (periodsElapsed > UNLOCK_PERIODS) {
-            periodsElapsed = UNLOCK_PERIODS;
-        }
-        
-        // Skip if no new periods to unlock
-        if (periodsElapsed <= pool.unlockedPeriods) {
-            return;
-        }
-        
-        // Calculate unlock amount
-        uint256 periodsToUnlock = periodsElapsed - pool.unlockedPeriods;
-        uint256 unlockAmount = (pool.totalEclvLocked * UNLOCK_PERCENTAGE * periodsToUnlock) / 100;
-        
-        // Update pool state
-        pool.remainingMintQuota -= unlockAmount;
-        pool.unlockedNotWithdrawn += unlockAmount;
-        pool.unlockedPeriods = periodsElapsed;
-        pool.lastUnlockTime = block.timestamp;
-        
-        emit UnlockProcessed(nftId, periodsElapsed, unlockAmount, pool.remainingMintQuota);
+        return (tokens, amounts, totalClaimed);
     }
     
     /**
-     * @notice Withdraw unlocked $E (only in Dissolved state)
+     * @notice Withdraw unlocked $E (only for Terminated NFTs)
+     * @dev Can withdraw: calculateUnlockedAmount() - unlockedWithdrawn
      * @param nftId NFT ID
-     * @param amount Amount to withdraw
+     * @param amount Amount to withdraw (0 = withdraw all available)
+     * @return withdrawnAmount Actual withdrawn amount
      */
-    function withdrawUnlocked(uint256 nftId, uint256 amount) external nonReentrant {
+    function withdrawUnlocked(uint256 nftId, uint256 amount) external nonReentrant returns (uint256) {
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
+        
         NFTPool storage pool = nftPools[nftId];
-        UserShare storage userShare = userShares[nftId][msg.sender];
+        require(pool.status == NFTStatus.Terminated, "NFT not terminated");
         
-        require(pool.status == NFTStatus.Dissolved, "NFT must be dissolved");
-        require(userShare.shares > 0, "No shares owned");
-        require(amount > 0, "Amount must be positive");
+        // Calculate total unlocked amount based on TGE and current time
+        uint256 totalUnlocked = _calculateUnlockedAmount();
         
-        // Process unlock first
-        _processUnlock(nftId);
+        // Calculate available amount: totalUnlocked - withdrawn
+        uint256 available = totalUnlocked > pool.unlockedWithdrawn
+            ? totalUnlocked - pool.unlockedWithdrawn
+            : 0;
         
-        // Calculate user's portion of unlocked amount
-        uint256 userPortion = (pool.unlockedNotWithdrawn * userShare.shares) / pool.totalShares;
-        require(amount <= userPortion, "Exceeds available amount");
+        require(available > 0, "No unlocked amount available");
         
-        // Update state
-        pool.unlockedNotWithdrawn -= amount;
-        userShare.withdrawnAfterDissolve += amount;
+        // If amount is 0, withdraw all available
+        if (amount == 0) {
+            amount = available;
+        } else {
+            require(amount <= available, "Insufficient unlocked amount");
+        }
+        
+        // Update withdrawn amount
+        pool.unlockedWithdrawn += amount;
         
         // Transfer $E to user
         eclvToken.transfer(msg.sender, amount);
-    }
-
-    /* ========== DISSOLUTION FUNCTIONS ========== */
-    
-    /**
-     * @notice Propose NFT dissolution
-     * @dev Any shareholder can propose
-     * @param nftId NFT ID
-     */
-    function proposeDissolution(uint256 nftId) external nonReentrant {
-        NFTPool storage pool = nftPools[nftId];
-        UserShare storage userShare = userShares[nftId][msg.sender];
         
-        require(pool.status == NFTStatus.Live, "NFT not live");
-        require(userShare.shares > 0, "No shares owned");
-        require(dissolutionProposals[nftId].proposer == address(0), "Proposal exists");
+        emit UnlockedWithdrawn(nftId, msg.sender, amount, block.timestamp);
         
-        // Create proposal
-        DissolutionProposal storage proposal = dissolutionProposals[nftId];
-        proposal.nftId = nftId;
-        proposal.proposer = msg.sender;
-        proposal.createdAt = block.timestamp;
-        proposal.approvals[msg.sender] = true;
-        proposal.approvalCount = 1;
-        
-        // Count total shareholders
-        uint256 shareholderCount = _countShareholders(nftId);
-        proposal.totalShareholderCount = shareholderCount;
-        
-        emit DissolutionProposed(nftId, msg.sender);
-        
-        // Auto-execute if proposer is sole owner
-        if (shareholderCount == 1) {
-            _executeDissolution(nftId);
-        }
-    }
-    
-    /**
-     * @notice Approve dissolution proposal
-     * @param nftId NFT ID
-     */
-    function approveDissolution(uint256 nftId) external nonReentrant {
-        DissolutionProposal storage proposal = dissolutionProposals[nftId];
-        UserShare storage userShare = userShares[nftId][msg.sender];
-        
-        require(proposal.proposer != address(0), "No proposal");
-        require(!proposal.executed, "Already executed");
-        require(userShare.shares > 0, "No shares owned");
-        require(!proposal.approvals[msg.sender], "Already approved");
-        
-        // Record approval
-        proposal.approvals[msg.sender] = true;
-        proposal.approvalCount++;
-        
-        emit DissolutionApproved(nftId, msg.sender);
-        
-        // Execute if all shareholders approved
-        if (proposal.approvalCount >= proposal.totalShareholderCount) {
-            _executeDissolution(nftId);
-        }
-    }
-    
-    /**
-     * @notice Execute dissolution
-     * @dev Internal function
-     * @param nftId NFT ID
-     */
-    function _executeDissolution(uint256 nftId) internal {
-        NFTPool storage pool = nftPools[nftId];
-        DissolutionProposal storage proposal = dissolutionProposals[nftId];
-        
-        require(pool.status == NFTStatus.Live, "NFT not live");
-        require(!proposal.executed, "Already executed");
-        
-        // Process unlock before dissolution
-        _processUnlock(nftId);
-        
-        // Freeze indices
-        pool.dissolvedAccProducedPerWeight = globalState.accProducedPerWeight;
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
-            address token = rewardTokens[i];
-            pool.dissolvedAccRewardPerWeight[token] = globalState.accRewardPerWeight[token];
-        }
-        
-        // Update status
-        pool.status = NFTStatus.Dissolved;
-        pool.dissolvedAt = block.timestamp;
-        proposal.executed = true;
-        
-        // Remove from global weighted shares
-        globalState.totalWeightedShares -= pool.totalShares * pool.shareWeight;
-        
-        emit NFTDissolved(nftId, block.timestamp);
-    }
-    
-    /**
-     * @notice Get dissolution proposal info
-     * @param nftId NFT ID
-     * @return nftId NFT ID
-     * @return proposer Proposer address
-     * @return createdAt Creation timestamp
-     * @return approvalCount Number of approvals
-     * @return totalShareholderCount Total number of shareholders
-     * @return executed Execution status
-     */
-    function getDissolutionProposal(uint256 nftId) external view returns (
-        uint256,
-        address,
-        uint256,
-        uint256,
-        uint256,
-        bool
-    ) {
-        DissolutionProposal storage proposal = dissolutionProposals[nftId];
-        return (
-            proposal.nftId,
-            proposal.proposer,
-            proposal.createdAt,
-            proposal.approvalCount,
-            proposal.totalShareholderCount,
-            proposal.executed
-        );
-    }
-
-    /* ========== MARKETPLACE FUNCTIONS ========== */
-    
-    /**
-     * @notice Create sell order
-     * @param nftId NFT ID
-     * @param shares Number of shares to sell
-     * @param pricePerShare Price per share in USDT
-     * @return orderId Created order ID
-     */
-    function createSellOrder(
-        uint256 nftId,
-        uint256 shares,
-        uint256 pricePerShare
-    ) external nonReentrant returns (uint256) {
-        require(shares > 0, "Must sell at least 1 share");
-        require(pricePerShare > 0, "Price must be positive");
-        
-        // Check available shares (total shares - shares in active orders)
-        uint256 availableShares = getAvailableShares(nftId, msg.sender);
-        require(availableShares >= shares, "Insufficient available shares");
-        
-        uint256 orderId = nextOrderId++;
-        
-        sellOrders[orderId] = SellOrder({
-            nftId: nftId,
-            seller: msg.sender,
-            shares: shares,
-            pricePerShare: pricePerShare,
-            createdAt: block.timestamp,
-            active: true
-        });
-        
-        nftSellOrders[nftId].push(orderId);
-        
-        emit SellOrderCreated(orderId, nftId, msg.sender, shares, pricePerShare);
-        
-        return orderId;
-    }
-    
-    /**
-     * @notice Cancel sell order
-     * @param orderId Order ID
-     */
-    function cancelSellOrder(uint256 orderId) external nonReentrant {
-        SellOrder storage order = sellOrders[orderId];
-        
-        require(order.active, "Order not active");
-        require(order.seller == msg.sender, "Not order owner");
-        
-        order.active = false;
-        
-        emit SellOrderCancelled(orderId);
-    }
-    
-    /**
-     * @notice Buy shares from sell order
-     * @param orderId Order ID
-     */
-    function buyShares(uint256 orderId) external nonReentrant {
-        SellOrder storage order = sellOrders[orderId];
-        
-        require(order.active, "Order not active");
-        require(order.seller != msg.sender, "Cannot buy own order");
-        
-        UserShare storage sellerShare = userShares[order.nftId][order.seller];
-        require(sellerShare.shares >= order.shares, "Seller has insufficient shares");
-        
-        uint256 totalPrice = order.shares * order.pricePerShare;
-        
-        // Transfer USDT from buyer to seller
-        usdtToken.safeTransferFrom(msg.sender, order.seller, totalPrice);
-        
-        // Transfer shares (seller transfers to buyer)
-        // Note: We need to call this from seller's context, so we implement inline
-        _executeShareTransferForOrder(order.nftId, order.seller, msg.sender, order.shares);
-        
-        // Deactivate order
-        order.active = false;
-        
-        emit SharesSold(orderId, order.nftId, msg.sender, order.shares, totalPrice);
-    }
-
-    /* ========== INTERNAL HELPER FUNCTIONS ========== */
-    
-    /**
-     * @notice Execute share transfer for marketplace order
-     * @dev Internal function to handle share transfer in buy order context
-     * @param nftId NFT ID
-     * @param from Seller address
-     * @param to Buyer address
-     * @param shares Number of shares
-     */
-    function _executeShareTransferForOrder(
-        uint256 nftId,
-        address from,
-        address to,
-        uint256 shares
-    ) internal {
-        NFTPool storage pool = nftPools[nftId];
-        UserShare storage fromShare = userShares[nftId][from];
-        UserShare storage toShare = userShares[nftId][to];
-        
-        require(fromShare.shares >= shares, "Insufficient shares");
-        
-        // Process unlock first
-        _processUnlock(nftId);
-        
-        // Claim all pending rewards for seller
-        _claimAllRewards(nftId, from);
-        
-        // Claim all pending rewards for buyer (if they have shares)
-        if (toShare.shares > 0) {
-            _claimAllRewards(nftId, to);
-        }
-        
-        // Transfer shares
-        fromShare.shares -= shares;
-        toShare.shares += shares;
-        
-        // Update debts based on current indices
-        uint256 accProduced = pool.status == NFTStatus.Live 
-            ? globalState.accProducedPerWeight 
-            : pool.dissolvedAccProducedPerWeight;
-        
-        fromShare.producedDebt = (fromShare.shares * pool.shareWeight * accProduced) / PRECISION;
-        toShare.producedDebt = (toShare.shares * pool.shareWeight * accProduced) / PRECISION;
-        
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
-            address token = rewardTokens[i];
-            uint256 accReward = pool.status == NFTStatus.Live 
-                ? globalState.accRewardPerWeight[token]
-                : pool.dissolvedAccRewardPerWeight[token];
-            
-            fromShare.rewardDebt[token] = (fromShare.shares * pool.shareWeight * accReward) / PRECISION;
-            toShare.rewardDebt[token] = (toShare.shares * pool.shareWeight * accReward) / PRECISION;
-        }
-        
-        // Update shareholders list
-        _addShareholder(nftId, to);
-        _removeShareholder(nftId, from);
-        
-        // Add to recipient's NFT list if first time
-        if (toShare.shares == shares) {
-            userNFTList[to].push(nftId);
-        }
-        
-        // Remove from seller's NFT list if no shares left
-        if (fromShare.shares == 0) {
-            _removeFromUserNFTList(from, nftId);
-        }
-        
-        emit ShareTransferred(nftId, from, to, shares);
-    }
-    
-    /**
-     * @notice Claim all rewards for a user
-     * @dev Internal function used during share transfers
-     * @param nftId NFT ID
-     * @param user User address
-     */
-    function _claimAllRewards(uint256 nftId, address user) internal {
-        // Claim produced
-        uint256 produced = _getPendingProduced(nftId, user);
-        if (produced > 0) {
-            UserShare storage userShare = userShares[nftId][user];
-            NFTPool storage pool = nftPools[nftId];
-            
-            uint256 accIndex = pool.status == NFTStatus.Live 
-                ? globalState.accProducedPerWeight 
-                : pool.dissolvedAccProducedPerWeight;
-            
-            userShare.producedDebt = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
-            eclvToken.transfer(user, produced);
-            emit ProducedClaimed(nftId, user, produced);
-        }
-        
-        // Claim all reward tokens
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
-            address token = rewardTokens[i];
-            uint256 reward = _getPendingReward(nftId, user, token);
-            if (reward > 0) {
-                UserShare storage userShare = userShares[nftId][user];
-                NFTPool storage pool = nftPools[nftId];
-                
-                uint256 accIndex = pool.status == NFTStatus.Live 
-                    ? globalState.accRewardPerWeight[token]
-                    : pool.dissolvedAccRewardPerWeight[token];
-                
-                userShare.rewardDebt[token] = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
-                IERC20(token).safeTransfer(user, reward);
-                emit RewardClaimed(nftId, user, token, reward);
-            }
-        }
-    }
-    
-    /**
-     * @notice Count shareholders for an NFT
-     * @dev Internal function
-     * TODO: In production, maintain a dynamic shareholders array per NFT
-     * to avoid gas issues and properly count all shareholders
-     * @return Number of shareholders (currently returns 1 as placeholder)
-     */
-    function _countShareholders(uint256 /* nftId */) internal pure returns (uint256) {
-        // Simplified implementation: return 1 for now
-        // In production, maintain a shareholders array per NFT
-        return 1;
+        return amount;
     }
 
     /* ========== VIEW FUNCTIONS ========== */
     
     /**
-     * @notice Get user share count for an NFT
+     * @notice Get pending $E production for an NFT
      * @param nftId NFT ID
-     * @param user User address
-     * @return shares Number of shares owned by user
-     */
-    function getUserShareCount(uint256 nftId, address user) external view returns (uint256) {
-        return userShares[nftId][user].shares;
-    }
-    
-    /**
-     * @notice Get list of shareholders for an NFT
-     * @param nftId NFT ID
-     * @return List of addresses holding shares
-     */
-    function getShareholders(uint256 nftId) external view returns (address[] memory) {
-        return nftPools[nftId].shareholders;
-    }
-    
-    /**
-     * @notice Add address to shareholders list if not already present
-     * @param nftId NFT ID
-     * @param user User address
-     */
-    function _addShareholder(uint256 nftId, address user) internal {
-        NFTPool storage pool = nftPools[nftId];
-        // Check if user is already in the list
-        for (uint256 i = 0; i < pool.shareholders.length; i++) {
-            if (pool.shareholders[i] == user) {
-                return; // Already in list
-            }
-        }
-        pool.shareholders.push(user);
-    }
-    
-    /**
-     * @notice Remove address from shareholders list if they have zero shares
-     * @param nftId NFT ID
-     * @param user User address
-     */
-    function _removeShareholder(uint256 nftId, address user) internal {
-        if (userShares[nftId][user].shares > 0) {
-            return; // Still has shares
-        }
-        
-        NFTPool storage pool = nftPools[nftId];
-        for (uint256 i = 0; i < pool.shareholders.length; i++) {
-            if (pool.shareholders[i] == user) {
-                // Replace with last element and pop
-                pool.shareholders[i] = pool.shareholders[pool.shareholders.length - 1];
-                pool.shareholders.pop();
-                return;
-            }
-        }
-    }
-    
-    /**
-     * @notice Remove NFT from user's NFT list
-     * @param user User address
-     * @param nftId NFT ID to remove
-     */
-    function _removeFromUserNFTList(address user, uint256 nftId) internal {
-        uint256[] storage userNFTs = userNFTList[user];
-        for (uint256 i = 0; i < userNFTs.length; i++) {
-            if (userNFTs[i] == nftId) {
-                // Replace with last element and pop
-                userNFTs[i] = userNFTs[userNFTs.length - 1];
-                userNFTs.pop();
-                return;
-            }
-        }
-    }
-    
-    /**
-     * @notice Get pending $E production for a user
-     * @param nftId NFT ID
-     * @param user User address
      * @return Pending amount
      */
-    function _getPendingProduced(uint256 nftId, address user) internal view returns (uint256) {
+    function _getPendingProduced(uint256 nftId) internal view returns (uint256) {
         NFTPool storage pool = nftPools[nftId];
-        UserShare storage userShare = userShares[nftId][user];
         
-        if (userShare.shares == 0) {
-            return 0;
-        }
-        
-        uint256 accIndex = pool.status == NFTStatus.Live 
-            ? globalState.accProducedPerWeight 
-            : pool.dissolvedAccProducedPerWeight;
-        
-        uint256 accumulatedProduced = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
-        
-        if (accumulatedProduced > userShare.producedDebt) {
-            return accumulatedProduced - userShare.producedDebt;
+        if (pool.status == NFTStatus.Active || pool.status == NFTStatus.PendingTermination) {
+            if (globalState.accProducedPerNFT > pool.producedWithdrawn) {
+                // accProducedPerNFT is already in wei (no PRECISION scaling)
+                return globalState.accProducedPerNFT - pool.producedWithdrawn;
+            }
         }
         
         return 0;
     }
     
     /**
-     * @notice Get pending reward for a user
+     * @notice Get pending reward for an NFT
      * @param nftId NFT ID
-     * @param user User address
      * @param token Reward token address
      * @return Pending amount
      */
-    function _getPendingReward(uint256 nftId, address user, address token) internal view returns (uint256) {
+    function _getPendingReward(uint256 nftId, address token) internal view returns (uint256) {
         NFTPool storage pool = nftPools[nftId];
-        UserShare storage userShare = userShares[nftId][user];
         
-        if (userShare.shares == 0) {
-            return 0;
-        }
-        
-        uint256 accIndex = pool.status == NFTStatus.Live 
-            ? globalState.accRewardPerWeight[token]
-            : pool.dissolvedAccRewardPerWeight[token];
-        
-        uint256 accumulatedReward = (userShare.shares * pool.shareWeight * accIndex) / PRECISION;
-        
-        if (accumulatedReward > userShare.rewardDebt[token]) {
-            return accumulatedReward - userShare.rewardDebt[token];
+        if (pool.status == NFTStatus.Active || pool.status == NFTStatus.PendingTermination) {
+            if (globalState.accRewardPerNFT[token] > pool.rewardWithdrawn[token]) {
+                // accRewardPerNFT is already in wei (no PRECISION scaling)
+                return globalState.accRewardPerNFT[token] - pool.rewardWithdrawn[token];
+            }
         }
         
         return 0;
     }
     
     /**
-     * @notice Get pending produced (public view)
+     * @notice Get pending $E production for an NFT (public view)
      * @param nftId NFT ID
-     * @param user User address
      * @return Pending amount
      */
-    function getPendingProduced(uint256 nftId, address user) external view returns (uint256) {
-        return _getPendingProduced(nftId, user);
+    function getPendingProduced(uint256 nftId) external view returns (uint256) {
+        return _getPendingProduced(nftId);
     }
     
     /**
-     * @notice Get pending reward (public view)
+     * @notice Get pending reward for an NFT (public view)
      * @param nftId NFT ID
-     * @param user User address
      * @param token Reward token address
      * @return Pending amount
      */
-    function getPendingReward(uint256 nftId, address user, address token) external view returns (uint256) {
-        return _getPendingReward(nftId, user, token);
+    function getPendingReward(uint256 nftId, address token) external view returns (uint256) {
+        return _getPendingReward(nftId, token);
     }
     
     /**
@@ -1199,137 +1127,499 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     }
     
     /**
-     * @notice Get NFT sell orders
+     * @notice Get NFT pool data
      * @param nftId NFT ID
-     * @return Array of order IDs
+     * @return status NFT status
+     * @return createdAt Creation timestamp
+     * @return terminationInitiatedAt Termination initiation time
+     * @return totalEclvLocked Total $E locked (always ECLV_PER_NFT = 2000 $E)
+     * @return remainingMintQuota Remaining locked quota (calculated)
+     * @return unlockedAmount Total unlocked amount (calculated from TGE and current time)
+     * @return unlockedWithdrawn Unlocked and withdrawn
+     * @return unlockedPeriods Current unlocked periods (calculated from TGE and current time)
+     * @return producedWithdrawn $E production withdrawn (accumulated)
      */
-    function getNFTSellOrders(uint256 nftId) external view returns (uint256[] memory) {
-        // 由于 Solidity 限制，不能直接返回公共映射的动态数组
-        // 使用临时解决方案：手动遍历所有订单
-        uint256[] memory tempOrders = new uint256[](10); // 假设最多10个订单
-        uint256 count = 0;
-        
-        for (uint256 orderId = 1; orderId < nextOrderId && count < 10; orderId++) {
-            SellOrder memory order = sellOrders[orderId];
-            if (order.active && order.nftId == nftId) {
-                tempOrders[count] = orderId;
-                count++;
-            }
-        }
-        
-        // 创建正确大小的数组
-        uint256[] memory result = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = tempOrders[i];
-        }
-        
-        return result;
+    function getNFTPool(uint256 nftId) external view returns (
+        NFTStatus status,
+        uint256 createdAt,
+        uint256 terminationInitiatedAt,
+        uint256 totalEclvLocked,
+        uint256 remainingMintQuota,
+        uint256 unlockedAmount,
+        uint256 unlockedWithdrawn,
+        uint256 unlockedPeriods,
+        uint256 producedWithdrawn
+    ) {
+        NFTPool storage pool = nftPools[nftId];
+        uint256 calculatedUnlocked = _calculateUnlockedAmount();
+        uint256 calculatedPeriods = _calculateUnlockedPeriods();
+        uint256 calculatedRemaining = ECLV_PER_NFT > calculatedUnlocked
+            ? ECLV_PER_NFT - calculatedUnlocked
+            : 0;
+        return (
+            pool.status,
+            pool.createdAt,
+            pool.terminationInitiatedAt,
+            ECLV_PER_NFT, // Always 2000 $E
+            calculatedRemaining,
+            calculatedUnlocked,
+            pool.unlockedWithdrawn,
+            calculatedPeriods,
+            pool.producedWithdrawn
+        );
     }
     
     /**
-     * @notice Get all reward tokens
-     * @return Array of token addresses
+     * @notice Get reward withdrawn for a specific NFT and token
+     * @param nftId NFT ID
+     * @param token Reward token address
+     * @return rewardWithdrawn Reward withdrawn (accumulated amount for this token)
      */
-    function getRewardTokens() external view returns (address[] memory) {
+    function getRewardWithdrawn(uint256 nftId, address token) external view returns (uint256) {
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.nftId == nftId, "NFT does not exist");
+        return pool.rewardWithdrawn[token];
+    }
+    
+    /**
+     * @notice Get reward debt for a specific NFT and token (deprecated, use getRewardWithdrawn)
+     * @dev Kept for backward compatibility
+     */
+    function getRewardDebt(uint256 nftId, address token) external view returns (uint256) {
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.nftId == nftId, "NFT does not exist");
+        return pool.rewardWithdrawn[token];
+    }
+    
+    /**
+     * @notice Get accumulated reward per NFT for a specific token
+     * @param token Reward token address
+     * @return accRewardPerNFT Accumulated reward per NFT for this token
+     */
+    function getAccRewardPerNFT(address token) external view returns (uint256) {
+        return globalState.accRewardPerNFT[token];
+    }
+    
+    /**
+     * @notice Get multisig reward info for a specific token
+     * @param token Reward token address
+     * @return totalDistributed Total amount distributed to multisig (20% of all distributions)
+     * @return withdrawn Amount already withdrawn by multisig
+     * @return available Available amount for multisig to claim
+     */
+    function getMultisigRewardInfo(address token) external view returns (
+        uint256 totalDistributed,
+        uint256 withdrawn,
+        uint256 available
+    ) {
+        totalDistributed = multisigRewardDistributed[token];
+        withdrawn = multisigRewardWithdrawn[token];
+        available = totalDistributed > withdrawn ? totalDistributed - withdrawn : 0;
+        return (totalDistributed, withdrawn, available);
+    }
+    
+    /**
+     * @notice Claim multisig reward for a specific token
+     * @dev Only multisig node can call
+     * @param token Reward token address
+     * @return amount Claimed amount
+     */
+    function claimMultisigReward(address token) external nonReentrant returns (uint256) {
+        require(msg.sender == multisigNode, "Only multisig node can claim");
+        require(isRewardToken[token], "Token not supported");
+        
+        // Calculate available reward
+        uint256 totalDistributed = multisigRewardDistributed[token];
+        uint256 withdrawn = multisigRewardWithdrawn[token];
+        uint256 available = totalDistributed > withdrawn ? totalDistributed - withdrawn : 0;
+        
+        require(available > 0, "No reward available");
+        
+        // Update withdrawn amount
+        multisigRewardWithdrawn[token] += available;
+        
+        // Transfer reward to multisig
+        IERC20(token).safeTransfer(multisigNode, available);
+        
+        emit MultisigRewardClaimed(token, available, block.timestamp);
+        
+        return available;
+    }
+    
+    /**
+     * @notice Claim all multisig rewards (claim all tokens at once)
+     * @dev Only multisig node can call
+     * @return tokens Array of token addresses that were claimed
+     * @return amounts Array of claimed amounts for each token
+     * @return totalClaimed Total amount claimed across all tokens
+     */
+    function claimAllMultisigRewards() external nonReentrant returns (
+        address[] memory tokens,
+        uint256[] memory amounts,
+        uint256 totalClaimed
+    ) {
+        require(msg.sender == multisigNode, "Only multisig node can claim");
+        
+        uint256 tokenCount = rewardTokens.length;
+        tokens = new address[](tokenCount);
+        amounts = new uint256[](tokenCount);
+        
+        for (uint256 i = 0; i < tokenCount; i++) {
+            address token = rewardTokens[i];
+            tokens[i] = token;
+            
+            // Calculate available reward for this token
+            uint256 totalDistributed = multisigRewardDistributed[token];
+            uint256 withdrawn = multisigRewardWithdrawn[token];
+            uint256 available = totalDistributed > withdrawn ? totalDistributed - withdrawn : 0;
+            amounts[i] = available;
+            
+            if (available > 0) {
+                // Update withdrawn amount
+                multisigRewardWithdrawn[token] += available;
+                
+                // Transfer reward to multisig
+                IERC20(token).safeTransfer(multisigNode, available);
+                
+                totalClaimed += available;
+                
+                emit MultisigRewardClaimed(token, available, block.timestamp);
+            }
+        }
+        
+        return (tokens, amounts, totalClaimed);
+    }
+    
+    /**
+     * @notice Get all reward token addresses
+     * @return tokens Array of reward token addresses
+     */
+    function getAllRewardTokens() external view returns (address[] memory) {
         return rewardTokens;
     }
     
     /**
-     * @notice Get available shares for a user (total shares - shares in active orders)
-     * @param nftId NFT ID
-     * @param user User address
-     * @return Available shares for selling
+     * @notice Get reward token count
+     * @return count Number of reward tokens
      */
-    function getAvailableShares(uint256 nftId, address user) public view returns (uint256) {
-        uint256 totalShares = userShares[nftId][user].shares;
+    function getRewardTokenCount() external view returns (uint256) {
+        return rewardTokens.length;
+    }
+
+    /* ========== MARKET FUNCTIONS ========== */
+    
+    /**
+     * @notice Set market fee rate
+     * @param feeRate Fee rate in basis points (e.g., 250 = 2.5%)
+     */
+    function setMarketFeeRate(uint256 feeRate) external onlyOwner {
+        require(feeRate <= 1000, "Fee rate too high"); // Max 10%
+        marketFeeRate = feeRate;
+        emit MarketFeeRateUpdated(feeRate);
+    }
+    
+    /**
+     * @notice Create a sell order for an NFT
+     * @param nftId NFT ID to sell
+     * @param price Price in USDT (wei)
+     * @return orderId Created order ID
+     */
+    function createSellOrder(uint256 nftId, uint256 price) external nonReentrant returns (uint256) {
+        require(transfersEnabled, "Transfers not enabled");
+        require(nodeNFT.ownerOf(nftId) == msg.sender, "Not NFT owner");
+        require(price > 0, "Price must be > 0");
+        require(nftActiveOrder[nftId] == 0, "NFT already has active order");
         
-        // If user has no shares, return 0
-        if (totalShares == 0) {
-            return 0;
+        // Check if NFT exists in pool
+        NFTPool storage pool = nftPools[nftId];
+        require(pool.nftId == nftId, "NFT not found");
+        
+        // Ensure this contract is approved to transfer the NFT when the order is filled
+        // This is required for buyNFT to successfully transfer the NFT
+        // Check current approval status
+        address currentApproval = nodeNFT.getApproved(nftId);
+        bool isApprovedForAll = nodeNFT.isApprovedForAll(msg.sender, address(this));
+        
+        // If not approved, revert with clear error message
+        // Note: The owner must call approve() on the NodeNFT contract before creating the order
+        if (currentApproval != address(this) && !isApprovedForAll) {
+            revert("NFTManager not approved. Owner must call NodeNFT.approve(NFTManager, tokenId) first");
         }
         
-        // Calculate shares already in active orders
-        // Note: We can't call getNFTSellOrders here due to function order, so we'll use a simplified approach
-        // For now, assume no active orders (this is a temporary fix)
-        // TODO: Move getNFTSellOrders before this function or create an internal version
-        uint256 sharesInOrders = 0;
+        uint256 orderId = nextOrderId;
+        nextOrderId++;
         
-        // Temporary: Check orders 1-10 manually (not ideal but works for now)
-        for (uint256 orderId = 1; orderId <= 10; orderId++) {
-            if (orderId < nextOrderId) {
-                SellOrder memory order = sellOrders[orderId];
-                if (order.active && order.seller == user && order.nftId == nftId) {
-                    sharesInOrders += order.shares;
-                }
+        sellOrders[orderId] = SellOrder({
+            orderId: orderId,
+            nftId: nftId,
+            seller: msg.sender,
+            price: price,
+            createdAt: block.timestamp,
+            status: OrderStatus.Active
+        });
+        
+        nftActiveOrder[nftId] = orderId;
+        activeOrderIds.push(orderId);
+        
+        emit SellOrderCreated(orderId, nftId, msg.sender, price, block.timestamp);
+        
+        return orderId;
+    }
+    
+    /**
+     * @notice Cancel a sell order
+     * @param orderId Order ID to cancel
+     */
+    function cancelSellOrder(uint256 orderId) external nonReentrant {
+        SellOrder storage order = sellOrders[orderId];
+        require(order.orderId == orderId, "Order does not exist");
+        require(order.seller == msg.sender, "Not order seller");
+        require(order.status == OrderStatus.Active, "Order not active");
+        
+        order.status = OrderStatus.Cancelled;
+        nftActiveOrder[order.nftId] = 0;
+        _removeFromActiveOrders(orderId);
+        
+        emit SellOrderCancelled(orderId, order.nftId, msg.sender, block.timestamp);
+    }
+    
+    /**
+     * @notice Buy an NFT from a sell order
+     * @param orderId Order ID to fill
+     */
+    function buyNFT(uint256 orderId) external nonReentrant {
+        SellOrder storage order = sellOrders[orderId];
+        require(order.orderId == orderId, "Order does not exist");
+        require(order.status == OrderStatus.Active, "Order not active");
+        require(msg.sender != order.seller, "Cannot buy own NFT");
+        
+        // Check NFT ownership hasn't changed
+        require(nodeNFT.ownerOf(order.nftId) == order.seller, "NFT ownership changed");
+        
+        // Calculate fee
+        uint256 fee = (order.price * marketFeeRate) / 10000;
+        uint256 sellerAmount = order.price - fee;
+        
+        // Transfer USDT from buyer
+        usdtToken.safeTransferFrom(msg.sender, address(this), order.price);
+        
+        // Transfer USDT to seller (minus fee)
+        usdtToken.safeTransfer(order.seller, sellerAmount);
+        
+        // Transfer fee to treasury (if any)
+        if (fee > 0) {
+            usdtToken.safeTransfer(treasury, fee);
+        }
+        
+        // Transfer NFT from seller to buyer
+        // NOTE: This will trigger NodeNFT._update, which calls onNFTTransfer
+        // onNFTTransfer automatically syncs userNFTList, so we don't need to update it manually
+        nodeNFT.transferFrom(order.seller, msg.sender, order.nftId);
+        
+        // Update order status
+        order.status = OrderStatus.Filled;
+        nftActiveOrder[order.nftId] = 0;
+        _removeFromActiveOrders(orderId);
+        
+        // NOTE: userNFTList is automatically updated by onNFTTransfer hook
+        // No need to manually update it here
+        
+        emit NFTBought(orderId, order.nftId, order.seller, msg.sender, order.price, block.timestamp);
+    }
+    
+    /**
+     * @notice Remove NFT from user's list (internal)
+     * @param user User address
+     * @param nftId NFT ID to remove
+     */
+    function _removeFromUserList(address user, uint256 nftId) internal {
+        uint256[] storage userNFTs = userNFTList[user];
+        for (uint256 i = 0; i < userNFTs.length; i++) {
+            if (userNFTs[i] == nftId) {
+                userNFTs[i] = userNFTs[userNFTs.length - 1];
+                userNFTs.pop();
+                break;
+            }
+        }
+    }
+    
+    /**
+     * @notice Called by NodeNFT when NFT is transferred directly
+     * @dev Only NodeNFT can call this function to sync userNFTList
+     * @param from Previous owner address
+     * @param to New owner address
+     * @param nftId NFT ID that was transferred
+     */
+    function onNFTTransfer(address from, address to, uint256 nftId) external {
+        // Only NodeNFT can call this function
+        require(msg.sender == address(nodeNFT), "Only NodeNFT can call");
+        require(from != address(0) && to != address(0), "Invalid addresses");
+        
+        // Remove from old owner's list
+        _removeFromUserList(from, nftId);
+        
+        // Add to new owner's list (if not already there)
+        uint256[] storage newOwnerNFTs = userNFTList[to];
+        bool alreadyInList = false;
+        for (uint256 i = 0; i < newOwnerNFTs.length; i++) {
+            if (newOwnerNFTs[i] == nftId) {
+                alreadyInList = true;
+                break;
+            }
+        }
+        if (!alreadyInList) {
+            newOwnerNFTs.push(nftId);
+        }
+        
+        emit UserNFTListSynced(nftId, from, to);
+    }
+    
+    /**
+     * @notice Remove order from active orders list (internal)
+     * @param orderId Order ID to remove
+     */
+    function _removeFromActiveOrders(uint256 orderId) internal {
+        for (uint256 i = 0; i < activeOrderIds.length; i++) {
+            if (activeOrderIds[i] == orderId) {
+                activeOrderIds[i] = activeOrderIds[activeOrderIds.length - 1];
+                activeOrderIds.pop();
+                break;
+            }
+        }
+    }
+    
+    /**
+     * @notice Get order details
+     * @param orderId Order ID
+     * @return order Order details
+     */
+    function getOrder(uint256 orderId) external view returns (SellOrder memory) {
+        return sellOrders[orderId];
+    }
+    
+    /**
+     * @notice Get active order ID for an NFT
+     * @param nftId NFT ID
+     * @return orderId Active order ID, 0 if none
+     */
+    function getActiveOrderByNFT(uint256 nftId) external view returns (uint256) {
+        return nftActiveOrder[nftId];
+    }
+    
+    /**
+     * @notice Get total number of active orders
+     * @return count Total active orders count
+     */
+    function getActiveOrdersCount() external view returns (uint256) {
+        return activeOrderIds.length;
+    }
+    
+    /**
+     * @notice Get active orders with pagination
+     * @param offset Starting index
+     * @param limit Maximum number of orders to return
+     * @return orders Array of active orders
+     * @return total Total number of active orders
+     */
+    function getActiveOrders(uint256 offset, uint256 limit) external view returns (SellOrder[] memory orders, uint256 total) {
+        total = activeOrderIds.length;
+        require(offset < total, "Offset out of range");
+        
+        uint256 end = offset + limit;
+        if (end > total) {
+            end = total;
+        }
+        
+        uint256 count = end - offset;
+        orders = new SellOrder[](count);
+        
+        for (uint256 i = 0; i < count; i++) {
+            uint256 orderId = activeOrderIds[offset + i];
+            SellOrder storage order = sellOrders[orderId];
+            // Only return if still active (in case of race condition)
+            if (order.status == OrderStatus.Active) {
+                orders[i] = order;
             }
         }
         
-        return totalShares >= sharesInOrders ? totalShares - sharesInOrders : 0;
+        return (orders, total);
+    }
+    
+    /**
+     * @notice Get all active orders (use with caution - may exceed gas limit)
+     * @return orders Array of all active orders
+     */
+    function getAllActiveOrders() external view returns (SellOrder[] memory) {
+        uint256 count = activeOrderIds.length;
+        SellOrder[] memory orders = new SellOrder[](count);
+        
+        for (uint256 i = 0; i < count; i++) {
+            uint256 orderId = activeOrderIds[i];
+            SellOrder storage order = sellOrders[orderId];
+            if (order.status == OrderStatus.Active) {
+                orders[i] = order;
+            }
+        }
+        
+        return orders;
+    }
+    
+    /**
+     * @notice Get orders by seller with pagination
+     * @param seller Seller address
+     * @param offset Starting index
+     * @param limit Maximum number of orders to return
+     * @return orders Array of orders
+     * @return total Total number of orders by this seller
+     */
+    function getOrdersBySeller(address seller, uint256 offset, uint256 limit) external view returns (SellOrder[] memory orders, uint256 total) {
+        // First, count total orders by seller
+        uint256 count = 0;
+        for (uint256 i = 1; i < nextOrderId; i++) {
+            if (sellOrders[i].seller == seller) {
+                count++;
+            }
+        }
+        
+        total = count;
+        if (offset >= total) {
+            return (new SellOrder[](0), total);
+        }
+        
+        uint256 end = offset + limit;
+        if (end > total) {
+            end = total;
+        }
+        
+        uint256 resultCount = end - offset;
+        orders = new SellOrder[](resultCount);
+        uint256 currentIndex = 0;
+        uint256 found = 0;
+        
+        for (uint256 i = 1; i < nextOrderId && found < end; i++) {
+            if (sellOrders[i].seller == seller) {
+                if (found >= offset) {
+                    orders[currentIndex] = sellOrders[i];
+                    currentIndex++;
+                }
+                found++;
+            }
+        }
+        
+        return (orders, total);
     }
 
-    /* ========== ADMIN FUNCTIONS ========== */
+    /* ========== UUPS UPGRADE ========== */
     
     /**
-     * @notice Set oracle address
-     * @param oracle_ New oracle address
-     */
-    function setOracle(address oracle_) external onlyOwner {
-        require(oracle_ != address(0), "Invalid address");
-        oracle = oracle_;
-    }
-    
-    /**
-     * @notice Set treasury address
-     * @param treasury_ New treasury address
-     */
-    function setTreasury(address treasury_) external onlyOwner {
-        require(treasury_ != address(0), "Invalid address");
-        treasury = treasury_;
-    }
-    
-    /**
-     * @notice Add reward token
-     * @param token Token address
-     */
-    function addRewardToken(address token) external onlyOwner {
-        require(token != address(0), "Invalid address");
-        require(!isRewardToken[token], "Already added");
-        
-        rewardTokens.push(token);
-        isRewardToken[token] = true;
-    }
-    
-    /**
-     * @notice Update NFT configuration
-     * @param nftType_ NFT type
-     * @param mintPrice_ New mint price
-     * @param eclvLockAmount_ New $E lock amount
-     * @param shareWeight_ New share weight
-     */
-    function updateNFTConfig(
-        NFTType nftType_,
-        uint256 mintPrice_,
-        uint256 eclvLockAmount_,
-        uint256 shareWeight_
-    ) external onlyOwner {
-        require(shareWeight_ > 0, "Weight must be positive");
-        
-        nftConfigs[nftType_] = NFTConfig({
-            nftType: nftType_,
-            mintPrice: mintPrice_,
-            eclvLockAmount: eclvLockAmount_,
-            shareWeight: shareWeight_
-        });
-    }
-    
-
-    /* ========== UPGRADE AUTHORIZATION ========== */
-    
-    /**
-     * @notice Authorize upgrade
-     * @dev Required by UUPSUpgradeable
-     * @param newImplementation New implementation address
+     * @notice Authorize upgrade (only owner)
      */
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
 }
-

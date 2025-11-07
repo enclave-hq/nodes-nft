@@ -25,8 +25,8 @@
   },
   "home": {
     "hero": {
-      "title": "去中心化节点 NFT 平台",
-      "subtitle": "拥有网络的一部分。通过 $E 代币分发和交易手续费赚取被动收益。加入去中心化基础设施的未来。",
+      "title": "Enclave 节点 NFT 平台",
+      "subtitle": "成为网络的一部分。获得Enclave的代币产出和交易手续费。共同构建隐私计算的未来。",
       "mintButton": "铸造节点 NFT",
       "viewNftsButton": "查看我的 NFT",
       "connectWallet": "连接您的钱包以开始"
@@ -34,26 +34,32 @@
     "stats": {
       "myNfts": "我的 NFT",
       "eclvBalance": "$E 余额",
-      "usdtBalance": "USDT 余额"
+      "usdtBalance": "USDT 余额",
+      "eclvLocked": "$E 锁仓中",
+      "totalShares": "总份额",
+      "listedShares": "挂单中",
+      "notListed": "未挂单",
+      "standard": "标准",
+      "premium": "高级"
     },
     "howItWorks": {
-      "title": "运作方式",
-      "subtitle": "简单、透明且有利可图。加入去中心化节点网络。",
+      "title": "操作方式",
+      "subtitle": "简单、透明且有利可图。成为Enclave去中心化隐私网络的一部分。",
       "step1": {
         "title": "铸造 NFT",
-        "description": "支付 USDT 并锁定 $E 代币购买节点 NFT"
+        "description": "支付 USDT 铸造节点 NFT，同时获得$E额外"
       },
       "step2": {
-        "title": "赚取奖励",
-        "description": "每日自动接收 $E 产出和 USDT 奖励"
+        "title": "手续费分成",
+        "description": "每日自动接收USDT 奖励"
       },
       "step3": {
-        "title": "解锁代币",
-        "description": "一年后，锁定的 $E 每月解锁 4%，持续 25 个月"
+        "title": "质押产出",
+        "description": "自动质押到隐私计算的PoW网络，每日获得$E奖励"
       },
       "step4": {
         "title": "交易份额",
-        "description": "随时在市场上买卖 NFT 份额"
+        "description": "一个NFT拆成多个份额，随时在市场上交易份额"
       }
     },
     "nftTypes": {
@@ -97,6 +103,25 @@
       "github": "GitHub",
       "twitter": "Twitter",
       "rights": "© 2025 Enclave. 版权所有"
+    },
+    "batch": {
+      "activeBatch": "当前激活批次",
+      "activeBatchDescription": "当前可铸造的NFT批次信息",
+      "loadingBatchInfo": "加载批次信息中...",
+      "noActiveBatch": "暂无激活批次",
+      "noActiveBatchDescription": "当前没有激活的批次，请等待管理员创建新批次",
+      "batchId": "批次 #{id}",
+      "progress": "进度",
+      "connectWalletFirst": "请先连接钱包",
+      "noActiveBatchMint": "当前没有激活的批次，无法铸造NFT",
+      "batchSoldOutMint": "当前批次已售罄，无法铸造NFT"
+    },
+    "mint": {
+      "whitelistRequired": "您需要先加入白名单才能铸造NFT",
+      "insufficientUsdt": "USDT余额不足。需要 {amount}",
+      "mintSuccess": "NFT铸造成功！",
+      "minting": "铸造中...",
+      "mintNFT": "铸造NFT"
     }
   },
   "mint": {
@@ -158,14 +183,67 @@
       "premium": "高级",
       "live": "活跃",
       "dissolved": "已解散",
+      "terminating": "终止中",
+      "terminated": "已终止",
       "lockedEclv": "锁定 $E",
       "unlocked": "已解锁",
+      "notUnlocked": "未解锁",
+      "withdrawn": "已提取",
       "pendingEclv": "待领取 $E",
       "pendingUsdt": "待领取 USDT",
       "created": "创建时间：{date}",
-      "claim": "领取"
+      "claim": "领取",
+      "eclvLocked": "$E锁仓",
+      "eclvProduced": "$E产出",
+      "totalProduced": "总产出",
+      "availableForWithdrawal": "可提取",
+      "withdrawnAmount": "已提取",
+      "claimProduced": "提取产出",
+      "claiming": "提取中...",
+      "usdtReward": "USDT收益",
+      "totalReward": "总收益",
+      "availableReward": "可提取",
+      "claimReward": "提取收益",
+      "claimingReward": "提取中..."
     },
-    "created": "创建时间"
+    "created": "创建时间",
+    "termination": {
+      "initiated": "终止请求已提交！",
+      "initiateFailed": "发起终止失败",
+      "confirmed": "终止已确认！",
+      "confirmFailed": "确认终止失败",
+      "cancelled": "终止已取消！",
+      "cancelFailed": "取消终止失败",
+      "withdrawn": "已提取解锁金额！",
+      "withdrawFailed": "提取失败",
+      "cooldownInfo": "发起终止后进入 1 天冷静期",
+      "autoTerminationInfo": "冷静期后可以确认终止，或等待 30 天后自动终止",
+      "terminationWarning": "终止 NFT 后，将无法再获得新的产出和收益。",
+      "terminationProcess": "终止流程：",
+      "cooldownCancel": "冷静期内可以取消终止",
+      "withdrawAfterTermination": "终止后可以提取已解锁的 $E",
+      "confirmTermination": "确认终止",
+      "initiateTermination": "发起终止",
+      "terminationInProgress": "终止进行中",
+      "cooldownRemaining": "冷静期：剩余 {time}",
+      "processing": "处理中...",
+      "resumeProduction": "恢复产出",
+      "confirmDuringCooldown": "确认中止（冷静期中）",
+      "autoConfirmCountdown": "自动确认倒计时：剩余 {time}",
+      "autoTerminated": "已自动终止",
+      "autoTerminatedDescription": "NFT 已自动终止，可以提取已解锁的 $E",
+      "unlockedWithdrawable": "已解锁可提取",
+      "withdrawing": "提取中...",
+      "withdrawUnlockedAmount": "提取解锁金额",
+      "terminate": "终止",
+      "cooldown": "冷静期",
+      "afterCooldown": "冷静期后"
+    },
+    "time": {
+      "days": "天",
+      "hours": "小时",
+      "minutes": "分钟"
+    }
   },
   "marketplace": {
     "title": "市场",
@@ -175,7 +253,7 @@
       "description": "请连接钱包以访问市场"
     },
     "sidebar": {
-      "title": "我的 NFT",
+      "title": "我的挂单",
       "subtitle": "为您的份额创建出售订单",
       "empty": "没有可出售的 NFT"
     },
@@ -197,10 +275,18 @@
       "seller": "卖家：",
       "you": "您",
       "listed": "上架时间：{time}",
-      "cancelOrder": "取消订单",
+      "cancelOrder": "撤销挂单",
       "cancelling": "取消中...",
       "buyShares": "购买份额",
-      "buying": "购买中..."
+      "buying": "购买中...",
+      "nftPrice": "NFT 价格",
+      "orderId": "订单ID",
+      "listedTime": "上架时间",
+      "buyNFT": "购买 NFT",
+      "createdTime": "创建时间",
+      "onSale": "已挂单",
+      "revoking": "撤销中...",
+      "revokeListing": "撤销挂单"
     },
     "createOrder": {
       "title": "创建出售订单",
@@ -214,7 +300,29 @@
       "totalValue": "总价值",
       "creating": "创建中...",
       "createButton": "创建订单",
-      "cancel": "取消"
+      "cancel": "取消",
+      "nftPriceLabel": "NFT 价格 (USDT)",
+      "nftPricePlaceholder": "输入 NFT 价格",
+      "nftPriceNote": "这是整个 NFT 的出售价格"
+    },
+    "myNFTs": {
+      "title": "我的NFT",
+      "noNFTs": "暂无NFT",
+      "noNFTsDescription": "您还没有任何 NFT，请先铸造一个 NFT 才能挂单出售",
+      "loadingOrders": "加载订单信息中...",
+      "onSale": "挂单中",
+      "onSaleCount": "共有 {count} 个NFT正在挂单",
+      "notOnSale": "未挂单",
+      "notOnSaleCount": "共有 {count} 个NFT可以挂单出售",
+      "noData": "暂无数据",
+      "orderRevoked": "订单已撤销",
+      "revokeOrderFailed": "撤销订单失败",
+      "listForSale": "挂单出售",
+      "loadingOrdersError": "加载订单中...",
+      "loadOrdersFailed": "加载订单失败",
+      "retry": "重试",
+      "refreshing": "刷新中...",
+      "refreshOrders": "刷新订单"
     }
   },
   "status": {
@@ -234,6 +342,61 @@
     "insufficientBalance": "余额不足",
     "transactionFailed": "交易失败",
     "tryAgain": "请重试"
-  }
+  },
+  "whitelist": {
+    "title": "白名单管理",
+    "currentAddress": "当前连接地址",
+    "applyWhitelist": "申请白名单",
+    "whitelisted": "已加入白名单",
+    "whitelistedDescription": "您已成功加入白名单，可以铸造NFT",
+    "enterInviteCode": "请输入邀请码以加入白名单",
+    "inviteCodePlaceholder": "输入邀请码",
+    "register": "注册",
+    "myInviteCodes": "我的邀请码",
+    "loading": "加载中...",
+    "approved": "审核通过",
+    "activeDescription": "已激活，可用于邀请他人",
+    "pending": "等待审核",
+    "pendingDescription": "您的邀请码申请正在审核中，请耐心等待",
+    "noInviteCode": "您还没有邀请码，申请后可用于邀请他人加入白名单",
+    "applying": "申请中...",
+    "applyInviteCode": "申请邀请码",
+    "close": "关闭",
+    "connectWalletFirst": "请先连接钱包",
+    "enterInviteCodeError": "请输入邀请码",
+    "invalidInviteCode": "邀请码无效或已被撤销",
+    "inviteCodeUsed": "邀请码使用成功！",
+    "whitelistRegistered": "白名单注册成功！",
+    "registerFailed": "注册失败",
+    "applicationSubmitted": "邀请码申请已提交，请等待审核",
+    "applicationFailed": "申请失败"
+  },
+  "mintStatus": {
+    "applyWhitelistFirst": "请先",
+    "applyWhitelist": "申请白名单",
+    "batchMintable": "本批次可铸造的数量:",
+    "waitForNextBatch": "请耐心等待下次开放铸造"
+  },
+    "myNfts": {
+      "whitelistRequired": "您需要先加入白名单才能铸造NFT",
+      "connectWalletFirst": "请先连接钱包",
+      "joinWhitelistFirst": "请先加入白名单",
+      "noActiveBatch": "暂无激活批次",
+      "batchSoldOut": "当前批次已售罄",
+      "quickMint": "快速铸造",
+      "whitelisted": "✅ 您已加入白名单",
+      "viewMyInviteCodes": "查看我的邀请码",
+      "loadingBatchInfo": "加载批次信息中...",
+      "noActiveBatchDescription": "当前没有激活的批次，请等待管理员创建新批次",
+      "currentBatchInfo": "当前批次信息",
+      "batchId": "批次ID",
+      "mintPrice": "铸造价格",
+      "progress": "进度",
+      "minted": "已铸造",
+      "eachNFTContains": "每个NFT包含",
+      "unlockMethod": "解锁方式",
+      "monthsLinearUnlock": "25个月线性解锁，每月解锁 4%",
+      "mintFailed": "铸造失败"
+    }
 }
 

@@ -6,20 +6,33 @@ All scripts for deploying and testing the Enclave Node NFT system on BSC Testnet
 
 ## 📋 Script Index
 
-### 🚀 Deployment Scripts
+### 🚀 Production Deployment Scripts (Testnet/Mainnet)
 
 | Script | Purpose | Prerequisites | Runtime |
 |--------|---------|---------------|---------|
 | `01-deploy-usdt.ts` | Deploy Test USDT token | Private key, BNB | ~1 min |
 | `02-deploy-main.ts` | Deploy all main contracts | USDT address | ~3 min |
+| `upgrade-nftmanager.ts` | Upgrade NFTManager contract | MANAGER_ADDRESS in .env | ~2 min |
 
-### 🧪 Testing Scripts
+### 🧪 Production Testing Scripts
 
 | Script | Purpose | Prerequisites | Runtime |
 |--------|---------|---------------|---------|
 | `03-setup-test-accounts.ts` | Distribute USDT to test accounts | Deployed USDT | ~2 min |
 | `04-test-mint.ts` | Test NFT minting | Deployed contracts, USDT | ~2 min |
 | `05-test-distribute-and-claim.ts` | Test distribution & claiming | Minted NFTs | ~3 min |
+
+### 🏠 Local Development Scripts
+
+| Script | Purpose | Prerequisites | Runtime |
+|--------|---------|---------------|---------|
+| `local-01-deploy-all.ts` | Deploy all contracts locally | Hardhat node running | ~30 sec |
+| `local-02-test-mint.ts` | Test NFT minting locally | Contracts deployed | ~10 sec |
+| `local-03-test-distribution.ts` | Test distribution locally | NFTs minted | ~15 sec |
+| `local-04-test-marketplace.ts` | Test marketplace locally | NFTs minted | ~20 sec |
+| `local-05-test-unlock.ts` | Test unlock mechanism locally | NFTs minted | ~15 sec |
+| `local-06-test-v4-features.ts` | Test v4 features locally | Contracts deployed | ~20 sec |
+| `run-all-local-tests.sh` | Run all local tests sequentially | Hardhat node running | ~2 min |
 
 ---
 
@@ -58,6 +71,30 @@ npx hardhat run scripts/04-test-mint.ts --network bscTestnet
 # Test distribution and claiming
 npx hardhat run scripts/05-test-distribute-and-claim.ts --network bscTestnet
 ```
+
+---
+
+## 🏠 Local Development
+
+For local testing, start a Hardhat node first:
+
+```bash
+# Terminal 1: Start local Hardhat node
+npx hardhat node
+
+# Terminal 2: Run local tests
+# Option 1: Run all tests sequentially
+./scripts/run-all-local-tests.sh
+
+# Option 2: Run individual tests
+npx hardhat run scripts/local-01-deploy-all.ts --network localhost
+npx hardhat run scripts/local-02-test-mint.ts --network localhost
+# ... etc
+```
+
+**Local scripts vs Production scripts:**
+- **Local scripts** (`local-XX-*`): Quick deployment and testing on local Hardhat node, no real gas costs
+- **Production scripts** (`01-05-*`): Full deployment and testing on testnet/mainnet, uses real gas
 
 ---
 
@@ -194,6 +231,37 @@ const testAccounts = [
 - Pending rewards calculate correctly
 - Claim operations work
 - Token balances update correctly
+
+---
+
+### upgrade-nftmanager.ts
+
+**Purpose:** Upgrade the NFTManager proxy contract to a new implementation.
+
+**What it does:**
+1. Reads MANAGER_ADDRESS from .env
+2. Deploys new NFTManager implementation
+3. Upgrades the proxy to new implementation
+4. Verifies upgrade and tests basic functions
+
+**Requirements:**
+- MANAGER_ADDRESS set in .env
+- Deployer must be proxy owner
+- Sufficient gas balance
+
+**Usage:**
+```bash
+npx hardhat run scripts/upgrade-nftmanager.ts --network bscTestnet
+```
+
+**Output:**
+```
+✅ New implementation deployed: 0x...
+✅ Proxy upgraded successfully!
+✅ Upgrade verified successfully!
+```
+
+**Next step:** Verify new implementation on BSCScan.
 
 ---
 

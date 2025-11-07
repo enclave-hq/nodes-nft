@@ -74,20 +74,20 @@ export function useBalances() {
       console.log('✅ $E decimals:', eDecimals);
       
       // Format balances (convert from wei to token units)
-      // 使用字符串处理避免精度丢失
+      // Use string processing to avoid precision loss
       const formatTokenAmount = (amount: bigint, decimals: number): string => {
         const amountStr = amount.toString();
         const decimalsInt = Math.pow(10, decimals);
         const decimalsStr = decimalsInt.toString();
         
         if (amountStr.length <= decimals) {
-          // 如果金额小于1个token，返回小数
+          // If amount is less than 1 token, return decimal
           const padded = amountStr.padStart(decimals, '0');
           const integerPart = '0';
           const decimalPart = padded.slice(-decimals).replace(/0+$/, '') || '0';
           return decimalPart === '0' ? integerPart : `${integerPart}.${decimalPart}`;
         } else {
-          // 如果金额大于等于1个token
+          // If amount is greater than or equal to 1 token
           const integerPart = amountStr.slice(0, -decimals);
           const decimalPart = amountStr.slice(-decimals).replace(/0+$/, '');
           return decimalPart ? `${integerPart}.${decimalPart}` : integerPart;
@@ -112,7 +112,7 @@ export function useBalances() {
         stack: (error as Error).stack,
         name: (error as Error).name
       });
-      // 不设置Mock数据，让错误显示出来
+      // Don't set mock data, let error show
       setBalances({
         usdt: '0',
         e: '0',

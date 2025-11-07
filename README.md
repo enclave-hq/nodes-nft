@@ -1,45 +1,45 @@
-# Node NFT 代币生态系统
+# Node NFT Token Ecosystem
 
-基于 BSC 的 NFT 代币分发平台，支持份额分割、双重收益机制、O(1) 全局索引优化。
+> **Languages:** [English](README.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
-## 项目结构
+BSC-based NFT token distribution platform with share splitting, dual reward mechanism, and O(1) global index optimization.
+
+## Project Structure
 
 ```
 node-nft/
-├── contracts/          # 智能合约（Hardhat 项目）
-│   ├── contracts/      # Solidity 合约源码
-│   ├── scripts/        # 部署脚本
-│   ├── test/          # 合约测试
+├── contracts/          # Smart Contracts (Hardhat project)
+│   ├── contracts/      # Solidity contract source code
+│   ├── scripts/        # Deployment scripts
+│   ├── test/          # Contract tests
 │   └── hardhat.config.ts
 │
-├── frontend/          # 前端应用（Next.js + wallet-sdk）
-│   ├── src/
-│   │   ├── components/  # React 组件
-│   │   ├── hooks/       # 自定义 Hooks
-│   │   ├── lib/         # 工具函数
-│   │   └── pages/       # 页面
+├── frontend/          # Frontend Application (Next.js + wallet-sdk)
+│   ├── app/           # Next.js App Router
+│   ├── components/    # React components
+│   ├── lib/           # Utility functions, hooks, stores
 │   └── package.json
 │
-└── docs/              # 设计文档
-    ├── design-story.md
-    ├── scenario-walkthrough.md
-    ├── requirements.md
-    ├── contract-spec.md
-    ├── technical-faq.md
-    └── summary.md
+├── backend/           # Management Backend Service (NestJS/Express)
+│   ├── src/           # Backend source code
+│   │   ├── modules/   # Feature modules (auth, invite-codes, users, etc.)
+│   │   └── config/    # Configuration files
+│   └── package.json
+│
+└── docs/              # Design documentation (in frontend/docs/ directory)
 ```
 
-## 核心特性
+## Core Features
 
-- ✅ **O(1) 全局索引** - 预言机分发 Gas 固定 ~30k
-- ✅ **双重收益机制** - TKN 产出 + USDT 奖励
-- ✅ **NFT 状态管理** - Live/Dissolved 双状态
-- ✅ **链上份额市场** - P2P 转让 + 订单簿交易
-- ✅ **分期解锁** - 1年后开始，25个月完成
+- ✅ **O(1) Global Index** - Oracle distribution with fixed ~30k Gas
+- ✅ **Dual Reward Mechanism** - TKN production + USDT rewards
+- ✅ **NFT Status Management** - Live/Dissolved dual states
+- ✅ **On-chain Share Market** - P2P transfer + order book trading
+- ✅ **Phased Unlock** - Starts after 1 year, completes in 25 months
 
-## 快速开始
+## Quick Start
 
-### 合约开发
+### Contract Development
 
 ```bash
 cd contracts
@@ -48,7 +48,7 @@ npx hardhat compile
 npx hardhat test
 ```
 
-### 前端开发
+### Frontend Development
 
 ```bash
 cd frontend
@@ -56,14 +56,22 @@ npm install
 npm run dev
 ```
 
-## 文档
+### Backend Development (Management)
 
-详细设计文档请查看 `../docs/node-nft/` 目录：
-- [设计文档](../docs/node-nft/design-story.md)
-- [场景演练](../docs/node-nft/scenario-walkthrough.md)
-- [需求规格](../docs/node-nft/requirements.md)
-- [合约规格](../docs/node-nft/contract-spec.md)
-- [技术问答](../docs/node-nft/technical-faq.md)
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+## Documentation
+
+For detailed design documentation, please refer to the `../docs/node-nft/` directory:
+- [Design Document](../docs/node-nft/design-story.md)
+- [Scenario Walkthrough](../docs/node-nft/scenario-walkthrough.md)
+- [Requirements Specification](../docs/node-nft/requirements.md)
+- [Contract Specification](../docs/node-nft/contract-spec.md)
+- [Technical FAQ](../docs/node-nft/technical-faq.md)
 
 ## License
 

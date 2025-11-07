@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useWallet } from '../providers/WalletProvider';
 import { useWeb3Store, callContractWithFallback } from '../stores/web3Store';
-import { CONTRACT_ADDRESSES, NFTType, GAS_CONFIG } from '../contracts/config';
-import { NFT_MANAGER_ABI, ERC20_ABI } from '../contracts/abis';
+import { CONTRACT_ADDRESSES, GAS_CONFIG } from '../contracts/config';
+import { NFT_MANAGER_ABI, ERC20_ABI, NODE_NFT_ABI } from '../contracts/abis';
 
 export function useUserNFTs() {
   const { address, isConnected } = useWallet();
@@ -72,7 +72,7 @@ export function useMintNFT() {
   const [minting, setMinting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const mintNFT = async (nftType: number, recipient: string) => {
+  const mintNFT = async () => {
     if (!isConnected || !address || !walletManager) {
       throw new Error('Wallet not connected');
     }
@@ -81,20 +81,59 @@ export function useMintNFT() {
     setError(null);
 
     try {
-      // Get mint price
-      const mintPrice = nftType === NFTType.Premium ? "50000" : "10000";
-      const mintPriceWei = BigInt(mintPrice) * BigInt(10 ** 18); // Convert to wei
+      console.log('🚀 Starting NFT mint process...');
       
-      console.log('🚀 Starting NFT mint process:');
-      console.log('- NFT Type:', nftType);
-      console.log('- Recipient:', recipient);
-      console.log('- Mint Price:', mintPrice, 'USDT');
+      // 1. Check if there's an active batch
+      console.log('🔍 Step 1: Checking for active batch...');
+      let activeBatchId: bigint;
+      try {
+        activeBatchId = await walletManager.readContract(
+          CONTRACT_ADDRESSES.nftManager,
+          NFT_MANAGER_ABI as unknown[],
+          'getActiveBatch',
+          []
+        ) as bigint;
+      } catch (contractError: unknown) {
+        // If contract reverts (e.g., no active batch or contract not initialized), treat as no active batch
+        const errorMessage = contractError instanceof Error ? contractError.message : String(contractError);
+        const isContractRevert = errorMessage.includes('reverted') ||
+                                 errorMessage.includes('execution reverted') ||
+                                 errorMessage.includes('ContractFunctionExecutionError');
+
+        if (isContractRevert) {
+          console.log('⚠️ Contract reverted for getActiveBatch, treating as no active batch');
+          throw new Error('No active batch found, cannot mint NFT');
+        }
+        // If it's another error, rethrow it
+        throw contractError;
+      }
+      
+      if (activeBatchId === 0n) {
+        throw new Error('No active batch found, cannot mint NFT');
+      }
+      
+      console.log('✅ Active batch found:', activeBatchId.toString());
+      
+      // 2. Get batch details to get mint price
+      console.log('🔍 Step 2: Getting batch details...');
+      const batchData = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as unknown[],
+        'batches',
+        [activeBatchId]
+      ) as [bigint, bigint, bigint, bigint, boolean, bigint];
+      
+      // batchData: [batchId, maxMintable, currentMinted, mintPrice, active, createdAt]
+      const [, , , mintPriceWei, , ] = batchData;
+      
+      console.log('✅ Batch details retrieved:');
+      console.log('- Batch ID:', activeBatchId.toString());
       console.log('- Mint Price (wei):', mintPriceWei.toString());
-      console.log('- Gas Price: Handled automatically by Wallet SDK');
+      console.log('- Mint Price (USDT):', (Number(mintPriceWei) / 1e18).toFixed(2));
       console.log('');
       
-      // First check current allowance amount
-      console.log('🔍 Step 1: Checking current USDT allowance...');
+      // 3. Check current allowance amount
+      console.log('🔍 Step 3: Checking current USDT allowance...');
       console.log('- User Address:', address);
       console.log('- NFT Manager Address:', CONTRACT_ADDRESSES.nftManager);
       console.log('- Required Allowance:', mintPriceWei.toString());
@@ -115,43 +154,43 @@ export function useMintNFT() {
 
       // Only approve if allowance is insufficient
       if (allowanceBigInt < requiredBigInt) {
-        console.log('📝 Step 2: Approving USDT spending (current allowance insufficient)...');
+        console.log('📝 Step 4: Approving USDT spending (current allowance insufficient)...');
         const approveTxHash = await walletManager.writeContract(
           CONTRACT_ADDRESSES.usdt,
           ERC20_ABI as unknown[],
           'approve',
           [CONTRACT_ADDRESSES.nftManager, mintPriceWei.toString()],
         {
-          gas: GAS_CONFIG.gasLimits.erc20Approve, // 设置gas limit
-          gasPrice: 'auto', // 使用自动 Gas Price
+          gas: GAS_CONFIG.gasLimits.erc20Approve, // Set gas limit
+          gasPrice: 'auto', // Use automatic Gas Price
         }
         );
         
-        console.log('✅ USDT授权交易哈希:', approveTxHash);
+        console.log('✅ USDT approval transaction hash:', approveTxHash);
         
         // Wait for approval transaction
-        console.log('⏳ 等待USDT授权确认...');
+        console.log('⏳ Waiting for USDT approval confirmation...');
         const approveReceipt = await walletManager.waitForTransaction(approveTxHash);
-        console.log('✅ USDT授权确认完成');
+        console.log('✅ USDT approval confirmed');
         
-        // 额外等待确保状态更新
-        console.log('⏳ 等待状态更新...');
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 等待2秒
-        console.log('📋 USDT授权交易详情:', {
+        // Additional wait to ensure state update
+        console.log('⏳ Waiting for state update...');
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+        console.log('📋 USDT approval transaction details:', {
           hash: approveTxHash,
           status: approveReceipt.status,
           gasUsed: approveReceipt.gasUsed?.toString(),
           blockNumber: approveReceipt.blockNumber?.toString()
         });
         
-        // 检查授权是否成功
-        console.log('🔍 检查授权交易状态:', approveReceipt.status);
+        // Check if approval was successful
+        console.log('🔍 Checking approval transaction status:', approveReceipt.status);
         if ((approveReceipt as { status: string }).status !== '0x1' && approveReceipt.status !== 'success') {
-          throw new Error('USDT授权交易失败');
+          throw new Error('USDT approval transaction failed');
         }
         
-        // 验证新的授权金额
-        console.log('🔍 验证新的USDT授权金额...');
+        // Verify new allowance amount
+        console.log('🔍 Verifying new USDT allowance...');
         const newAllowance = await walletManager.readContract(
           CONTRACT_ADDRESSES.usdt,
           ERC20_ABI as unknown[],
@@ -160,97 +199,95 @@ export function useMintNFT() {
         );
         
         const newAllowanceBigInt = BigInt(newAllowance.toString());
-        console.log('✅ 新授权金额:', newAllowanceBigInt.toString());
+        console.log('✅ New allowance amount:', newAllowanceBigInt.toString());
         
         if (newAllowanceBigInt < requiredBigInt) {
-          console.error('❌ 授权后金额仍然不足:', {
+          console.error('❌ Allowance still insufficient after approval:', {
             current: newAllowanceBigInt.toString(),
             required: requiredBigInt.toString(),
             difference: (requiredBigInt - newAllowanceBigInt).toString()
           });
-          throw new Error(`USDT授权金额不足: 当前${newAllowanceBigInt.toString()}, 需要${requiredBigInt.toString()}`);
+          throw new Error(`USDT allowance insufficient: current ${newAllowanceBigInt.toString()}, required ${requiredBigInt.toString()}`);
         }
         
-        console.log('✅ USDT授权金额验证通过');
+        console.log('✅ USDT allowance verification passed');
       } else {
-        console.log('✅ 当前授权金额足够，跳过授权步骤');
+        console.log('✅ Current allowance is sufficient, skipping approval step');
       }
 
-      // Mint NFT using wallet SDK with explicit gasPrice and gas limit
-      console.log('🎨 步骤2: 铸造NFT...');
-      console.log('📋 铸造参数详情:');
-      console.log('- 合约地址:', CONTRACT_ADDRESSES.nftManager);
-      console.log('- 函数名: mintNFT');
-      console.log('- NFT类型:', nftType, '(0=Standard, 1=Premium)');
+      // 5. Mint NFT (no parameters, price comes from batch)
+      console.log('🎨 Step 5: Minting NFT...');
+      console.log('📋 Mint parameters:');
+      console.log('- Contract Address:', CONTRACT_ADDRESSES.nftManager);
+      console.log('- Function: mintNFT()');
       console.log('- Gas limit:', GAS_CONFIG.gasLimits.mintNFT);
-      console.log('- Gas price: 0.3 Gwei (配置值)');
-      console.log('- 用户地址:', address);
-      console.log('- USDT授权金额:', allowanceBigInt.toString());
-      console.log('- 合约函数签名: mintNFT(uint8 nftType_)');
+      console.log('- User Address:', address);
+      console.log('- USDT Allowance:', allowanceBigInt.toString());
+      console.log('- Contract Function Signature: mintNFT()');
       
-      console.log('📞 调用合约函数...');
+      console.log('📞 Calling contract function...');
       const mintTxHash = await walletManager.writeContract(
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
         'mintNFT',
-        [nftType], // 只有一个参数：nftType (0=Standard, 1=Premium)
+        [], // No parameters - price comes from active batch
         {
-          gas: GAS_CONFIG.gasLimits.mintNFT, // 使用配置的gas limit
-          gasPrice: 'auto', // 使用自动 Gas Price
+          gas: GAS_CONFIG.gasLimits.mintNFT,
+          gasPrice: 'auto',
         }
       );
       
-      console.log('✅ NFT铸造交易哈希:', mintTxHash);
-      console.log('🔗 交易链接: https://testnet.bscscan.com/tx/' + mintTxHash);
+      console.log('✅ NFT minting transaction hash:', mintTxHash);
+      console.log('🔗 Transaction link: https://testnet.bscscan.com/tx/' + mintTxHash);
       
       // Wait for mint transaction
-      console.log('⏳ 等待NFT铸造确认...');
-      console.log('📋 等待交易详情:');
-      console.log('- 交易哈希:', mintTxHash);
-      console.log('- 网络: BSC Testnet');
-      console.log('- 区块浏览器: https://testnet.bscscan.com');
+      console.log('⏳ Waiting for NFT minting confirmation...');
+      console.log('📋 Waiting for transaction details:');
+      console.log('- Transaction Hash:', mintTxHash);
+      console.log('- Network: BSC Testnet');
+      console.log('- Block Explorer: https://testnet.bscscan.com');
       
       const receipt = await walletManager.waitForTransaction(mintTxHash);
       
-      console.log('✅ NFT铸造确认完成');
-      console.log('📋 交易确认详情:');
-      console.log('- 状态:', receipt.status);
-      console.log('- Gas使用:', receipt.gasUsed?.toString());
-      console.log('- Gas价格:', (receipt as { gasPrice?: string }).gasPrice?.toString());
-      console.log('- 区块号:', receipt.blockNumber?.toString());
-      console.log('- 区块哈希:', receipt.blockHash);
-      console.log('- 交易索引:', (receipt as { transactionIndex?: string }).transactionIndex?.toString());
+      console.log('✅ NFT minting confirmed');
+      console.log('📋 Transaction confirmation details:');
+      console.log('- Status:', receipt.status);
+      console.log('- Gas Used:', receipt.gasUsed?.toString());
+      console.log('- Gas Price:', (receipt as { gasPrice?: string }).gasPrice?.toString());
+      console.log('- Block Number:', receipt.blockNumber?.toString());
+      console.log('- Block Hash:', receipt.blockHash);
+      console.log('- Transaction Index:', (receipt as { transactionIndex?: string }).transactionIndex?.toString());
       
-      // 检查交易状态
+      // Check transaction status
       if (receipt.status === 'success' || (receipt as { status: string }).status === '0x1') {
-        console.log('🎉 NFT铸造成功！');
+        console.log('🎉 NFT minting successful!');
       } else {
-        console.log('❌ NFT铸造失败，状态:', receipt.status);
-        throw new Error(`NFT铸造失败: 交易状态 ${receipt.status}`);
+        console.log('❌ NFT minting failed, status:', receipt.status);
+        throw new Error(`NFT minting failed: transaction status ${receipt.status}`);
       }
       
-      // 分析交易日志
+      // Analyze transaction logs
       if (receipt.logs && receipt.logs.length > 0) {
-        console.log('📋 交易事件日志:');
-        console.log('- 事件数量:', receipt.logs.length);
+        console.log('📋 Transaction event logs:');
+        console.log('- Event count:', receipt.logs.length);
         receipt.logs.forEach((log, index) => {
-          console.log(`- 事件${index}:`, {
+          console.log(`- Event ${index}:`, {
             address: log.address,
             topics: log.topics,
             data: log.data,
           });
         });
       } else {
-        console.log('⚠️ 没有交易事件日志');
+        console.log('⚠️ No transaction event logs');
       }
       
       // Extract NFT ID from events (simplified for now)
       const nftId = "1"; // In real implementation, parse from receipt logs
       
-      // 🔄 更新web3Store数据
-      console.log('🔄 更新Web3数据...');
+      // 🔄 Update web3Store data
+      console.log('🔄 Updating Web3 data...');
       await web3Store.refreshData();
-      console.log('✅ Web3数据更新完成');
+      console.log('✅ Web3 data update completed');
       
       return {
         success: true,
@@ -258,29 +295,29 @@ export function useMintNFT() {
         nftId: parseInt(nftId),
       };
     } catch (err) {
-      console.error('❌ NFT铸造过程中发生错误:');
-      console.error('❌ 错误对象:', err);
-      console.error('❌ 错误类型:', typeof err);
-      console.error('❌ 错误名称:', err instanceof Error ? err.name : 'Unknown');
-      console.error('❌ 错误消息:', err instanceof Error ? err.message : 'Unknown error');
-      console.error('❌ 错误堆栈:', err instanceof Error ? err.stack : 'No stack trace');
+      console.error('❌ Error occurred during NFT minting:');
+      console.error('❌ Error object:', err);
+      console.error('❌ Error type:', typeof err);
+      console.error('❌ Error name:', err instanceof Error ? err.name : 'Unknown');
+      console.error('❌ Error message:', err instanceof Error ? err.message : 'Unknown error');
+      console.error('❌ Error stack:', err instanceof Error ? err.stack : 'No stack trace');
       
-      // 检查是否是特定的错误类型
+      // Check if it's a specific error type
       if (err instanceof Error) {
         if (err.message.includes('Transaction reverted')) {
-          console.error('🔍 交易被revert，可能的原因:');
-          console.error('- 合约逻辑检查失败');
-          console.error('- 用户余额不足');
-          console.error('- 授权金额不足');
-          console.error('- 合约状态不正确');
-          console.error('- Gas limit不足');
-          console.error('- 合约函数参数错误');
+          console.error('🔍 Transaction reverted, possible reasons:');
+          console.error('- Contract logic check failed');
+          console.error('- Insufficient user balance');
+          console.error('- Insufficient allowance');
+          console.error('- Incorrect contract state');
+          console.error('- Insufficient gas limit');
+          console.error('- Incorrect contract function parameters');
         } else if (err.message.includes('insufficient funds')) {
-          console.error('🔍 资金不足错误:');
-          console.error('- 检查BNB余额是否足够支付Gas费用');
+          console.error('🔍 Insufficient funds error:');
+          console.error('- Check if BNB balance is sufficient to pay gas fees');
         } else if (err.message.includes('user rejected')) {
-          console.error('🔍 用户拒绝错误:');
-          console.error('- 用户在钱包中拒绝了交易');
+          console.error('🔍 User rejection error:');
+          console.error('- User rejected the transaction in wallet');
         }
       }
       
@@ -302,16 +339,19 @@ export function useMintNFT() {
 export function useNFTPool(nftId: number) {
   const { walletManager } = useWallet();
   const [pool, setPool] = useState<{
-    nftType: number;
     status: number;
     createdAt: string;
+    terminationInitiatedAt: string;
+    totalEclvLocked: string;
     remainingMintQuota: string;
-    unlockedNotWithdrawn: string;
+    unlockedAmount: string;
+    unlockedWithdrawn: string;
     unlockedPeriods: string;
+    producedDebt: string; // Withdrawn $E production
   } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 使用 useCallback 缓存函数
+  // Use useCallback to cache function
   const fetchPool = useCallback(async () => {
     if (!walletManager) return;
     
@@ -321,50 +361,73 @@ export function useNFTPool(nftId: number) {
         walletManager,
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
-        'nftPools',
+        'getNFTPool',
         [nftId],
-        `nftPools(${nftId})`
+        `getNFTPool(${nftId})`
       );
       
-      // 检查 poolData 是否为有效数组
+      // Check if poolData is a valid array
       if (!poolData || !Array.isArray(poolData)) {
-        console.error('❌ Invalid poolData received:', poolData);
-        throw new Error('Invalid pool data received from contract');
+        console.warn('⚠️ Invalid poolData received:', poolData, '- Using default values');
+        // Set default values instead of throwing error
+        setPool({
+          status: 0,
+          createdAt: new Date().toISOString(),
+          terminationInitiatedAt: "0",
+          totalEclvLocked: "0",
+          remainingMintQuota: "0",
+          unlockedAmount: "0",
+          unlockedWithdrawn: "0",
+          unlockedPeriods: "0",
+          producedDebt: "0",
+        });
+        return;
       }
       
-      // poolData 是一个数组，包含所有结构体字段
-      // 根据 ABI 顺序：nftId, nftType, status, createdAt, dissolvedAt, totalEclvLocked, remainingMintQuota, unlockedNotWithdrawn, lastUnlockTime, unlockedPeriods, totalShares, shareWeight
+      // getNFTPool returns: status, createdAt, terminationInitiatedAt, totalEclvLocked, remainingMintQuota, unlockedAmount, unlockedWithdrawn, unlockedPeriods, producedDebt
       const [
-        , // nftIdFromPool (未使用)
-        nftType,
         status,
         createdAt,
-        , // dissolvedAt (未使用)
-        , // totalEclvLocked (未使用)
+        terminationInitiatedAt,
+        totalEclvLocked,
         remainingMintQuota,
-        unlockedNotWithdrawn,
-        , // lastUnlockTime (未使用)
+        unlockedAmount,
+        unlockedWithdrawn,
         unlockedPeriods,
-        , // totalShares (未使用)
-        , // shareWeight (未使用)
+        producedDebt,
       ] = poolData;
       
       setPool({
-        nftType: Number(nftType),
         status: Number(status),
         createdAt: Number(createdAt) > 0 ? new Date(Number(createdAt) * 1000).toISOString() : new Date().toISOString(),
+        terminationInitiatedAt: terminationInitiatedAt ? String(terminationInitiatedAt) : "0",
+        totalEclvLocked: totalEclvLocked ? String(totalEclvLocked) : "0",
         remainingMintQuota: remainingMintQuota ? String(remainingMintQuota) : "0",
-        unlockedNotWithdrawn: unlockedNotWithdrawn ? String(unlockedNotWithdrawn) : "0",
+        unlockedAmount: unlockedAmount ? String(unlockedAmount) : "0",
+        unlockedWithdrawn: unlockedWithdrawn ? String(unlockedWithdrawn) : "0",
         unlockedPeriods: unlockedPeriods ? String(unlockedPeriods) : "0",
+        producedDebt: producedDebt ? String(producedDebt) : "0",
       });
     } catch (error) {
-      console.error('Error fetching NFT pool:', error);
+      console.warn('⚠️ Error fetching NFT pool:', error, '- Using default values');
+      // Set default values on error instead of leaving state as null
+      setPool({
+        status: 0,
+        createdAt: new Date().toISOString(),
+        terminationInitiatedAt: "0",
+        totalEclvLocked: "0",
+        remainingMintQuota: "0",
+        unlockedAmount: "0",
+        unlockedWithdrawn: "0",
+        unlockedPeriods: "0",
+        producedDebt: "0",
+      });
     } finally {
       setLoading(false);
     }
   }, [walletManager, nftId]);
 
-  // 使用 useMemo 缓存依赖条件
+  // Use useMemo to cache dependency conditions
   const shouldFetch = useMemo(() => 
     nftId && walletManager, 
     [nftId, walletManager]
@@ -376,7 +439,7 @@ export function useNFTPool(nftId: number) {
     }
   }, [shouldFetch, fetchPool]);
 
-  // 使用 useMemo 缓存返回值
+  // Use useMemo to cache return value
   return useMemo(() => ({ 
     data: pool, 
     loading, 
@@ -384,77 +447,72 @@ export function useNFTPool(nftId: number) {
   }), [pool, loading, fetchPool]);
 }
 
-export function useUserShare(nftId: number) {
-  const { address, walletManager } = useWallet();
-  const [userShare, setUserShare] = useState<{
-    shares: string;
-    debtProduced: string;
-    withdrawnAfterDissolve: string;
+export function useGlobalState() {
+  const { walletManager } = useWallet();
+  const [globalState, setGlobalState] = useState<{
+    accProducedPerNFT: string;
+    totalActiveNFTs: string;
+    lastUpdateTime: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // 使用 useCallback 缓存函数
-  const fetchUserShare = useCallback(async () => {
-    if (!address || !walletManager) return;
+  const fetchGlobalState = useCallback(async () => {
+    if (!walletManager) return;
     
     setLoading(true);
     try {
-      // 使用 web3Store 中的 callContractWithFallback 机制
-      const shareData = await callContractWithFallback(
+      const stateData = await callContractWithFallback(
         walletManager,
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
-        'userShares',
-        [BigInt(nftId), address],
-        `userShares(${nftId})`
+        'globalState',
+        [],
+        'globalState()'
       );
       
-      // 检查 shareData 是否为有效数组
-      if (!shareData || !Array.isArray(shareData)) {
-        console.log(`ℹ️ No shares found for NFT ${nftId} and user ${address}`);
-        // 用户没有该NFT的份额，返回默认值
-        setUserShare({
-          shares: "0",
-          debtProduced: "0",
-          withdrawnAfterDissolve: "0",
+      if (!stateData || !Array.isArray(stateData)) {
+        console.warn('⚠️ Invalid globalState data received:', stateData, '- Using default values');
+        // Set default values instead of throwing error
+        setGlobalState({
+          accProducedPerNFT: "0",
+          totalActiveNFTs: "0",
+          lastUpdateTime: "0",
         });
         return;
       }
       
-      // shareData 是一个数组，包含所有结构体字段
-      // 根据 ABI 顺序：shares, producedDebt, withdrawnAfterDissolve
-      const [shares, producedDebt, withdrawnAfterDissolve] = shareData;
+      // globalState returns: [accProducedPerNFT, totalActiveNFTs, lastUpdateTime]
+      const [accProducedPerNFT, totalActiveNFTs, lastUpdateTime] = stateData;
       
-      setUserShare({
-        shares: shares ? String(shares) : "0",
-        debtProduced: producedDebt ? String(producedDebt) : "0",
-        withdrawnAfterDissolve: withdrawnAfterDissolve ? String(withdrawnAfterDissolve) : "0",
+      setGlobalState({
+        accProducedPerNFT: accProducedPerNFT ? String(accProducedPerNFT) : "0",
+        totalActiveNFTs: totalActiveNFTs ? String(totalActiveNFTs) : "0",
+        lastUpdateTime: lastUpdateTime ? String(lastUpdateTime) : "0",
       });
     } catch (error) {
-      console.error('Error fetching user share:', error);
+      console.warn('⚠️ Error fetching global state:', error, '- Using default values');
+      // Set default values on error instead of leaving state as null
+      setGlobalState({
+        accProducedPerNFT: "0",
+        totalActiveNFTs: "0",
+        lastUpdateTime: "0",
+      });
     } finally {
       setLoading(false);
     }
-  }, [address, walletManager, nftId]);
-
-  // 使用 useMemo 缓存依赖条件
-  const shouldFetch = useMemo(() => 
-    nftId && address && walletManager, 
-    [nftId, address, walletManager]
-  );
+  }, [walletManager]);
 
   useEffect(() => {
-    if (shouldFetch) {
-      fetchUserShare();
+    if (walletManager) {
+      fetchGlobalState();
     }
-  }, [shouldFetch, fetchUserShare]);
+  }, [walletManager, fetchGlobalState]);
 
-  // 使用 useMemo 缓存返回值
   return useMemo(() => ({ 
-    data: userShare, 
+    data: globalState, 
     loading, 
-    refetch: fetchUserShare 
-  }), [userShare, loading, fetchUserShare]);
+    refetch: fetchGlobalState 
+  }), [globalState, loading, fetchGlobalState]);
 }
 
 export function usePendingProduced(nftId: number) {
@@ -462,7 +520,7 @@ export function usePendingProduced(nftId: number) {
   const [pendingProduced, setPendingProduced] = useState<string>("0");
   const [loading, setLoading] = useState(false);
 
-  // 使用 useCallback 缓存函数
+  // Use useCallback to cache function
   const fetchPendingProduced = useCallback(async () => {
     if (!address || !walletManager) return;
     
@@ -473,7 +531,7 @@ export function usePendingProduced(nftId: number) {
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
         'getPendingProduced',
-        [nftId, address],
+        [nftId],
         `getPendingProduced(${nftId})`
       );
       setPendingProduced(pending ? String(pending) : "0");
@@ -484,7 +542,7 @@ export function usePendingProduced(nftId: number) {
     }
   }, [address, walletManager, nftId]);
 
-  // 使用 useMemo 缓存依赖条件
+  // Use useMemo to cache dependency conditions
   const shouldFetch = useMemo(() => 
     nftId && address && walletManager, 
     [nftId, address, walletManager]
@@ -496,7 +554,7 @@ export function usePendingProduced(nftId: number) {
     }
   }, [shouldFetch, fetchPendingProduced]);
 
-  // 使用 useMemo 缓存返回值
+  // Use useMemo to cache return value
   return useMemo(() => ({ 
     data: pendingProduced, 
     loading, 
@@ -509,7 +567,7 @@ export function usePendingReward(nftId: number, tokenAddress: string) {
   const [pendingReward, setPendingReward] = useState<string>("0");
   const [loading, setLoading] = useState(false);
 
-  // 使用 useCallback 缓存函数
+  // Use useCallback to cache function
   const fetchPendingReward = useCallback(async () => {
     if (!address || !walletManager || !tokenAddress) return;
     
@@ -520,7 +578,7 @@ export function usePendingReward(nftId: number, tokenAddress: string) {
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
         'getPendingReward',
-        [nftId, address, tokenAddress],
+        [nftId, tokenAddress],
         `getPendingReward(${nftId})`
       );
       setPendingReward(pending ? String(pending) : "0");
@@ -531,7 +589,7 @@ export function usePendingReward(nftId: number, tokenAddress: string) {
     }
   }, [address, walletManager, nftId, tokenAddress]);
 
-  // 使用 useMemo 缓存依赖条件
+  // Use useMemo to cache dependency conditions
   const shouldFetch = useMemo(() => 
     nftId && address && walletManager && tokenAddress, 
     [nftId, address, walletManager, tokenAddress]
@@ -543,13 +601,103 @@ export function usePendingReward(nftId: number, tokenAddress: string) {
     }
   }, [shouldFetch, fetchPendingReward]);
 
-  // 使用 useMemo 缓存返回值
+  // Use useMemo to cache return value
   return useMemo(() => ({ 
     data: pendingReward, 
     loading, 
     refetch: fetchPendingReward 
   }), [pendingReward, loading, fetchPendingReward]);
 }
+
+/**
+ * Hook to get reward debt (withdrawn amount) for a specific NFT and token
+ * @param nftId NFT ID
+ * @param tokenAddress Token address (e.g., USDT)
+ */
+export function useRewardDebt(nftId: number, tokenAddress: string) {
+  const { walletManager } = useWallet();
+  const [rewardDebt, setRewardDebt] = useState<string>("0");
+  const [loading, setLoading] = useState(false);
+
+  const fetchRewardDebt = useCallback(async () => {
+    if (!walletManager || !tokenAddress) return;
+    
+    setLoading(true);
+    try {
+      const debt = await callContractWithFallback(
+        walletManager,
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as unknown[],
+        'getRewardDebt',
+        [nftId, tokenAddress],
+        `getRewardDebt(${nftId}, ${tokenAddress})`
+      );
+      setRewardDebt(debt ? String(debt) : "0");
+    } catch (error) {
+      console.warn('⚠️ Error fetching reward debt:', error);
+      setRewardDebt("0");
+    } finally {
+      setLoading(false);
+    }
+  }, [walletManager, nftId, tokenAddress]);
+
+  useEffect(() => {
+    if (walletManager && tokenAddress) {
+      fetchRewardDebt();
+    }
+  }, [walletManager, tokenAddress, fetchRewardDebt]);
+
+  return useMemo(() => ({ 
+    data: rewardDebt, 
+    loading, 
+    refetch: fetchRewardDebt 
+  }), [rewardDebt, loading, fetchRewardDebt]);
+}
+
+/**
+ * Hook to get accumulated reward per NFT for a specific token (total reward)
+ * @param tokenAddress Token address (e.g., USDT)
+ */
+export function useAccRewardPerNFT(tokenAddress: string) {
+  const { walletManager } = useWallet();
+  const [accReward, setAccReward] = useState<string>("0");
+  const [loading, setLoading] = useState(false);
+
+  const fetchAccReward = useCallback(async () => {
+    if (!walletManager || !tokenAddress) return;
+    
+    setLoading(true);
+    try {
+      const reward = await callContractWithFallback(
+        walletManager,
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as unknown[],
+        'getAccRewardPerNFT',
+        [tokenAddress],
+        `getAccRewardPerNFT(${tokenAddress})`
+      );
+      setAccReward(reward ? String(reward) : "0");
+    } catch (error) {
+      console.warn('⚠️ Error fetching accRewardPerNFT:', error);
+      setAccReward("0");
+    } finally {
+      setLoading(false);
+    }
+  }, [walletManager, tokenAddress]);
+
+  useEffect(() => {
+    if (walletManager && tokenAddress) {
+      fetchAccReward();
+    }
+  }, [walletManager, tokenAddress, fetchAccReward]);
+
+  return useMemo(() => ({ 
+    data: accReward, 
+    loading, 
+    refetch: fetchAccReward 
+  }), [accReward, loading, fetchAccReward]);
+}
+
 
 export function useClaimProduced() {
   const { address, walletManager } = useWallet();
@@ -569,17 +717,17 @@ export function useClaimProduced() {
         'claimProduced',
         [nftId],
         {
-          gasPrice: 'auto', // 使用自动 Gas Price
-          gas: GAS_CONFIG.gasLimits.contractCall, // 设置gas limit
+          gasPrice: 'auto', // Use automatic Gas Price
+          gas: GAS_CONFIG.gasLimits.contractCall, // Set gas limit
         }
       );
       
       await walletManager.waitForTransaction(txHash);
       
-      // 🔄 更新web3Store数据
-      console.log('🔄 更新Web3数据...');
+      // 🔄 Update web3Store data
+      console.log('🔄 Updating Web3 data...');
       await web3Store.refreshData();
-      console.log('✅ Web3数据更新完成');
+      console.log('✅ Web3 data update completed');
       
       return { success: true, transactionHash: txHash };
     } catch (error) {
@@ -611,17 +759,17 @@ export function useClaimReward() {
         'claimReward',
         [nftId, token],
         {
-          gasPrice: 'auto', // 使用自动 Gas Price
-          gas: GAS_CONFIG.gasLimits.contractCall, // 设置gas limit
+          gasPrice: 'auto', // Use automatic Gas Price
+          gas: GAS_CONFIG.gasLimits.contractCall, // Set gas limit
         }
       );
       
       await walletManager.waitForTransaction(txHash);
       
-      // 🔄 更新web3Store数据
-      console.log('🔄 更新Web3数据...');
+      // 🔄 Update web3Store data
+      console.log('🔄 Updating Web3 data...');
       await web3Store.refreshData();
-      console.log('✅ Web3数据更新完成');
+      console.log('✅ Web3 data update completed');
       
       return { success: true, transactionHash: txHash };
     } catch (error) {
@@ -653,17 +801,17 @@ export function useBatchClaimProduced() {
         'batchClaimProduced',
         [nftIds],
         {
-          gasPrice: 'auto', // 使用自动 Gas Price
-          gas: GAS_CONFIG.gasLimits.contractCall, // 设置gas limit
+          gasPrice: 'auto', // Use automatic Gas Price
+          gas: GAS_CONFIG.gasLimits.contractCall, // Set gas limit
         }
       );
       
       await walletManager.waitForTransaction(txHash);
       
-      // 🔄 更新web3Store数据
-      console.log('🔄 更新Web3数据...');
+      // 🔄 Update web3Store data
+      console.log('🔄 Updating Web3 data...');
       await web3Store.refreshData();
-      console.log('✅ Web3数据更新完成');
+      console.log('✅ Web3 data update completed');
       
       return { success: true, transactionHash: txHash };
     } catch (error) {
@@ -677,121 +825,6 @@ export function useBatchClaimProduced() {
   return { mutateAsync: batchClaimProduced, isLoading: claiming };
 }
 
-export function useAvailableShares(nftId: number) {
-  const { address, walletManager } = useWallet();
-  const [availableShares, setAvailableShares] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchAvailableShares = useCallback(async () => {
-    if (!address || !walletManager || !nftId) {
-      setAvailableShares(0);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 暂时简化：直接获取总份额作为可用份额
-      const shareData = await callContractWithFallback(
-        walletManager,
-        CONTRACT_ADDRESSES.nftManager,
-        NFT_MANAGER_ABI as unknown[],
-        'userShares',
-        [BigInt(nftId), address],
-        `userShares(${nftId})`
-      );
-      
-      // 检查 shareData 是否为有效数组
-      if (!shareData || !Array.isArray(shareData) || shareData.length === 0) {
-        console.log(`ℹ️ No shares found for NFT ${nftId} and user ${address}`);
-        setAvailableShares(0);
-        return;
-      }
-      
-      const totalShares = Number(shareData[0].toString());
-      setAvailableShares(totalShares);
-    } catch (error) {
-      console.error('Failed to fetch available shares:', error);
-      setAvailableShares(0);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [address, walletManager, nftId]);
-
-  useEffect(() => {
-    fetchAvailableShares();
-  }, [fetchAvailableShares]);
-
-  return { availableShares, isLoading, refetch: fetchAvailableShares };
-}
-
-export function useUserSharesInfo(nftId: number) {
-  const { address, walletManager } = useWallet();
-  const [totalShares, setTotalShares] = useState<number>(0);
-  const [availableShares, setAvailableShares] = useState<number>(0);
-  const [listedShares, setListedShares] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const fetchSharesInfo = useCallback(async () => {
-    if (!address || !walletManager || !nftId) {
-      setTotalShares(0);
-      setAvailableShares(0);
-      setListedShares(0);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // 获取总份额 - 使用 web3Store 的 callContractWithFallback 机制
-      const shareData = await callContractWithFallback(
-        walletManager,
-        CONTRACT_ADDRESSES.nftManager,
-        NFT_MANAGER_ABI as unknown[],
-        'userShares',
-        [BigInt(nftId), address],
-        `userShares(${nftId})`
-      );
-
-      // 检查 shareData 是否为有效数组
-      if (!shareData || !Array.isArray(shareData) || shareData.length === 0) {
-        console.log(`ℹ️ No shares found for NFT ${nftId} and user ${address}`);
-        setTotalShares(0);
-        setAvailableShares(0);
-        setListedShares(0);
-        return;
-      }
-
-      const totalNum = Number(shareData[0].toString()); // shares 是第一个字段
-      
-      // 暂时简化：假设没有挂单，所有份额都可出售
-      // TODO: 修复 getAvailableShares 函数后再启用
-      const availableNum = totalNum;
-      const listedNum = 0;
-
-      setTotalShares(totalNum);
-      setAvailableShares(availableNum);
-      setListedShares(listedNum);
-    } catch (error) {
-      console.error('Failed to fetch shares info:', error);
-      setTotalShares(0);
-      setAvailableShares(0);
-      setListedShares(0);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [address, walletManager, nftId]);
-
-  useEffect(() => {
-    fetchSharesInfo();
-  }, [fetchSharesInfo]);
-
-  return { 
-    totalShares, 
-    availableShares, 
-    listedShares, 
-    isLoading, 
-    refetch: fetchSharesInfo 
-  };
-}
 
 export function useCreateSellOrder() {
   const { address, walletManager } = useWallet();
@@ -800,8 +833,7 @@ export function useCreateSellOrder() {
 
   const createSellOrder = useCallback(async (params: {
     nftId: number;
-    shares: number;
-    pricePerShare: bigint;
+    price: bigint; // Price for the whole NFT in USDT wei
   }) => {
     if (!address || !walletManager) {
       throw new Error('Wallet not connected');
@@ -809,43 +841,236 @@ export function useCreateSellOrder() {
 
     setIsLoading(true);
     try {
-      console.log('📝 创建出售订单...');
-      console.log('📋 订单参数:');
+      console.log('📝 Creating sell order...');
+      console.log('📋 Order parameters:');
       console.log('- NFT ID:', params.nftId);
-      console.log('- 份额数量:', params.shares);
-      console.log('- 每份额价格:', params.pricePerShare.toString(), 'wei');
+      console.log('- NFT Price:', params.price.toString(), 'wei');
       console.log('- Gas limit:', GAS_CONFIG.gasLimits.createSellOrder);
-      console.log('- Gas price: 自动获取 (Wallet SDK)');
+      console.log('- Gas price: Auto (Wallet SDK)');
 
-      // 🔍 调试：检查用户份额情况
-      console.log('🔍 检查用户份额情况...');
+      // Step 1: Check if transfers are enabled
+      console.log('🔍 Step 1: Checking if transfers are enabled...');
       try {
-        const userShareCount = await callContractWithFallback(
+        const transfersEnabled = await callContractWithFallback(
           walletManager,
           CONTRACT_ADDRESSES.nftManager,
           NFT_MANAGER_ABI as unknown[],
-          'getUserShareCount',
-          [BigInt(params.nftId), address],
-          `getUserShareCount(${params.nftId})`
-        );
-        console.log('📊 用户总份额:', userShareCount ? String(userShareCount) : "0");
+          'transfersEnabled',
+          [],
+          'transfersEnabled()'
+        ) as boolean;
+        
+        if (!transfersEnabled) {
+          throw new Error('Transfers not enabled, cannot create order');
+        }
+        console.log('✅ Transfers are enabled');
+      } catch (error) {
+        console.error('❌ Transfer check failed:', error);
+        throw error;
+      }
 
-        const availableShares = await callContractWithFallback(
+      // Step 2: Check if user owns the NFT (use ownerOf directly from NodeNFT)
+      console.log('🔍 Step 2: Checking if user owns the NFT...');
+      try {
+        const ownerOf = await callContractWithFallback(
+          walletManager,
+          CONTRACT_ADDRESSES.nodeNFT,
+          NODE_NFT_ABI as unknown[],
+          'ownerOf',
+          [BigInt(params.nftId)],
+          `ownerOf(${params.nftId})`
+        ) as string;
+        
+        console.log('📋 NFT ownership:');
+        console.log('- NFT Owner:', ownerOf);
+        console.log('- Current User:', address);
+        console.log('- Match:', ownerOf.toLowerCase() === address.toLowerCase());
+        
+        if (ownerOf.toLowerCase() !== address.toLowerCase()) {
+          throw new Error(`You are not the owner of NFT #${params.nftId} (Owner: ${ownerOf})`);
+        }
+        console.log('✅ User owns the NFT');
+      } catch (error) {
+        console.error('❌ NFT ownership check failed:', error);
+        throw error;
+      }
+
+      // Step 3: Check if NFT already has an active order
+      console.log('🔍 Step 3: Checking if NFT already has an active order...');
+      try {
+        const activeOrderId = await callContractWithFallback(
           walletManager,
           CONTRACT_ADDRESSES.nftManager,
           NFT_MANAGER_ABI as unknown[],
-          'getAvailableShares',
-          [BigInt(params.nftId), address],
-          `getAvailableShares(${params.nftId})`
-        );
-        const availableSharesStr = availableShares ? String(availableShares) : "0";
-        console.log('📊 可用份额:', availableSharesStr);
+          'getActiveOrderByNFT',
+          [params.nftId],
+          `getActiveOrderByNFT(${params.nftId})`
+        ) as bigint;
 
-        if (BigInt(availableSharesStr) < BigInt(params.shares)) {
-          throw new Error(`可用份额不足: 需要 ${params.shares} 份额，但只有 ${availableSharesStr} 份额可用`);
+        if (activeOrderId && activeOrderId !== 0n) {
+          throw new Error(`NFT #${params.nftId} already has an active order (Order ID: ${activeOrderId.toString()})`);
+        }
+        console.log('✅ NFT has no active order');
+      } catch (error) {
+        console.error('❌ Order check failed:', error);
+        throw error;
+      }
+
+      // Step 4: Check and handle NFT approval
+      console.log('🔍 Step 4: Checking NFT approval status...');
+      try {
+        const currentApproval = await callContractWithFallback(
+          walletManager,
+          CONTRACT_ADDRESSES.nodeNFT,
+          NODE_NFT_ABI as unknown[],
+          'getApproved',
+          [BigInt(params.nftId)],
+          `getApproved(${params.nftId})`
+        ) as string;
+
+        const isApprovedForAll = await callContractWithFallback(
+          walletManager,
+          CONTRACT_ADDRESSES.nodeNFT,
+          NODE_NFT_ABI as unknown[],
+          'isApprovedForAll',
+          [address, CONTRACT_ADDRESSES.nftManager],
+          `isApprovedForAll(${address}, ${CONTRACT_ADDRESSES.nftManager})`
+        ) as boolean;
+
+        console.log('📋 Approval status:');
+        console.log('- Current approval address:', currentApproval);
+        console.log('- NFTManager address:', CONTRACT_ADDRESSES.nftManager);
+        console.log('- Approved for all:', isApprovedForAll);
+
+        const needsApproval = currentApproval.toLowerCase() !== CONTRACT_ADDRESSES.nftManager.toLowerCase() && !isApprovedForAll;
+
+        if (needsApproval) {
+          console.log('📝 NFT not approved, starting approval process...');
+          console.log('📋 Approval parameters:');
+          console.log('- NFT Contract:', CONTRACT_ADDRESSES.nodeNFT);
+          console.log('- Approve to:', CONTRACT_ADDRESSES.nftManager);
+          console.log('- Token ID:', params.nftId);
+          console.log('- Function signature: approve(address to, uint256 tokenId) [ERC721]');
+          console.log('- MethodID: 0x095ea7b3 (same as ERC20, but different parameter meaning)');
+
+          // Verify NFT ownership
+          console.log('🔍 Verifying NFT ownership...');
+          try {
+            const ownerOf = await callContractWithFallback(
+              walletManager,
+              CONTRACT_ADDRESSES.nodeNFT,
+              NODE_NFT_ABI as unknown[],
+              'ownerOf',
+              [BigInt(params.nftId)],
+              `ownerOf(${params.nftId})`
+            ) as string;
+            
+            console.log('📋 NFT ownership:');
+            console.log('- NFT Owner:', ownerOf);
+            console.log('- Current User:', address);
+            console.log('- Match:', ownerOf.toLowerCase() === address.toLowerCase());
+            
+            if (ownerOf.toLowerCase() !== address.toLowerCase()) {
+              throw new Error(`You are not the owner of NFT #${params.nftId} (Owner: ${ownerOf})`);
+            }
+            console.log('✅ NFT ownership verified');
+          } catch (error) {
+            console.error('❌ NFT ownership verification failed:', error);
+            throw error;
+          }
+
+          const approveTxHash = await walletManager.writeContract(
+            CONTRACT_ADDRESSES.nodeNFT,
+            NODE_NFT_ABI as unknown[],
+            'approve',
+            [CONTRACT_ADDRESSES.nftManager, BigInt(params.nftId)], // ERC721: approve(address to, uint256 tokenId)
+            {
+              gas: GAS_CONFIG.gasLimits.erc20Approve, // Use similar gas limit
+              // Don't set gasPrice, let Wallet SDK auto-fetch
+            }
+          );
+
+          console.log('✅ Approval transaction submitted:', approveTxHash);
+          console.log('⏳ Waiting for approval transaction confirmation...');
+
+          const approveReceipt = await walletManager.waitForTransaction(approveTxHash);
+          
+          // Check transaction status
+          const receiptStatus = approveReceipt.status;
+          const isSuccess = receiptStatus === 'success' || receiptStatus === '0x1' || (receiptStatus as any) === 1;
+          
+          console.log('📋 Approval transaction details:', {
+            hash: approveReceipt.transactionHash || approveTxHash,
+            status: receiptStatus,
+            isSuccess: isSuccess,
+            blockNumber: approveReceipt.blockNumber?.toString(),
+          });
+
+          if (!isSuccess) {
+            throw new Error(`Approval transaction failed, status: ${receiptStatus}`);
+          }
+          
+          console.log('✅ Approval transaction confirmed and successful');
+
+          // Wait for state sync (after approval transaction confirmation, state may need time to sync)
+          console.log('⏳ Waiting for state sync...');
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+
+          // Verify approval success (with retry mechanism)
+          console.log('🔍 Verifying approval status...');
+          let newApproval: string | null = null;
+          const maxRetries = 3;
+          
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              newApproval = await callContractWithFallback(
+                walletManager,
+                CONTRACT_ADDRESSES.nodeNFT,
+                NODE_NFT_ABI as unknown[],
+                'getApproved',
+                [BigInt(params.nftId)],
+                `getApproved(${params.nftId})`
+              ) as string;
+
+              console.log(`📋 Verification attempt ${attempt}/${maxRetries}:`);
+              console.log('- Retrieved approval address:', newApproval);
+              console.log('- Expected approval address:', CONTRACT_ADDRESSES.nftManager);
+              console.log('- Address match:', newApproval.toLowerCase() === CONTRACT_ADDRESSES.nftManager.toLowerCase());
+
+              // Normalize address comparison (remove 0x prefix, convert to lowercase)
+              const normalizedNewApproval = newApproval.toLowerCase().replace(/^0x/, '');
+              const normalizedExpected = CONTRACT_ADDRESSES.nftManager.toLowerCase().replace(/^0x/, '');
+
+              if (normalizedNewApproval === normalizedExpected || newApproval.toLowerCase() === CONTRACT_ADDRESSES.nftManager.toLowerCase()) {
+                console.log('✅ NFT approval verification successful');
+                break;
+              }
+
+              // If last attempt still fails
+              if (attempt === maxRetries) {
+                console.error('❌ Approval verification failed:');
+                console.error('- Retrieved approval address:', newApproval);
+                console.error('- Expected approval address:', CONTRACT_ADDRESSES.nftManager);
+                console.error('- Is zero address:', newApproval === '0x0000000000000000000000000000000000000000' || newApproval === '0x0');
+                throw new Error(`Approval verification failed: Retrieved approval address (${newApproval}) does not match expected address (${CONTRACT_ADDRESSES.nftManager})`);
+              }
+
+              // Wait before retry
+              console.log(`⏳ Approval status not synced, waiting before retry (${attempt}/${maxRetries})...`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+              if (attempt === maxRetries) {
+                throw error;
+              }
+              console.warn(`⚠️ Verification attempt ${attempt} failed, retrying...`, error);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          }
+        } else {
+          console.log('✅ NFT already approved, skipping approval step');
         }
       } catch (error) {
-        console.error('❌ 份额检查失败:', error);
+        console.error('❌ NFT approval check/processing failed:', error);
         throw error;
       }
 
@@ -853,49 +1078,49 @@ export function useCreateSellOrder() {
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
         'createSellOrder',
-        [BigInt(params.nftId), BigInt(params.shares), params.pricePerShare],
+        [BigInt(params.nftId), params.price],
         {
           gas: GAS_CONFIG.gasLimits.createSellOrder,
-          gasPrice: 'auto', // 使用自动 Gas Price
+          gasPrice: 'auto', // Use automatic Gas Price
         }
       );
 
-      console.log('✅ 创建订单交易哈希:', txHash);
-      console.log('⏳ 等待交易确认...');
+      console.log('✅ Create order transaction hash:', txHash);
+      console.log('⏳ Waiting for transaction confirmation...');
 
       const receipt = await walletManager.waitForTransaction(txHash);
-      console.log('✅ 订单创建确认完成');
-      console.log('📋 交易详情:', {
+      console.log('✅ Order creation confirmed');
+      console.log('📋 Transaction details:', {
         hash: receipt.transactionHash,
         status: receipt.status,
         gasUsed: receipt.gasUsed?.toString(),
         blockNumber: receipt.blockNumber?.toString(),
       });
 
-      // 刷新数据
+      // Refresh data
       await web3Store.refreshData();
 
-      // 从交易日志中解析Order ID
+      // Parse Order ID from transaction logs
       let orderId = 'unknown';
       if (receipt.logs && receipt.logs.length > 0) {
-        console.log('📋 交易事件日志:', receipt.logs.length, '个事件');
+        console.log('📋 Transaction event logs:', receipt.logs.length, 'events');
         
-        // 查找 SellOrderCreated 事件
-        // SellOrderCreated(uint256,uint256,address,uint256,uint256) 的事件签名哈希
+        // Find SellOrderCreated event
+        // Event signature hash for SellOrderCreated(uint256,uint256,address,uint256,uint256)
         const sellOrderCreatedTopic = '0x019885652a4a8dfdfca02c68db30c0e34d05185a6ffcd7779d140e33d1a2a90c';
         
         for (let i = 0; i < receipt.logs.length; i++) {
           const log = receipt.logs[i];
-          console.log(`📋 事件${i}:`, {
+          console.log(`📋 Event ${i}:`, {
             address: log.address,
             topics: log.topics,
             data: log.data
           });
           
           if (log.topics && log.topics[0] === sellOrderCreatedTopic) {
-            // orderId 是第一个 indexed 参数，在 topics[1] 中
+            // orderId is the first indexed parameter, in topics[1]
             orderId = BigInt(log.topics[1]).toString();
-            console.log('✅ 解析到Order ID:', orderId);
+            console.log('✅ Parsed Order ID:', orderId);
             break;
           }
         }
@@ -907,7 +1132,35 @@ export function useCreateSellOrder() {
         orderId: orderId
       };
     } catch (error: unknown) {
-      console.error('❌ 创建订单失败:', error);
+      console.error('❌ Create order failed:', error);
+      
+      // Provide more detailed error information
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Check common failure reasons
+      if (errorMessage.includes('Transaction reverted') || errorMessage.includes('execution reverted')) {
+        // Try to extract revert reason
+        let detailedError = 'Transaction reverted';
+        
+        if (errorMessage.includes('Transfers not enabled')) {
+          detailedError = 'Transfers not enabled, cannot create order';
+        } else if (errorMessage.includes('Not NFT owner')) {
+          detailedError = 'You are not the owner of this NFT';
+        } else if (errorMessage.includes('Price must be > 0')) {
+          detailedError = 'Price must be greater than 0';
+        } else if (errorMessage.includes('NFT already has active order')) {
+          detailedError = 'This NFT already has an active order';
+        } else if (errorMessage.includes('NFT not found')) {
+          detailedError = 'NFT does not exist in pool';
+        } else if (errorMessage.includes('NFTManager not approved')) {
+          detailedError = 'NFTManager not approved, please approve NFT first';
+        } else if (errorMessage.includes('ERC721InsufficientApproval')) {
+          detailedError = 'NFT approval insufficient, please approve NFT to NFTManager first';
+        }
+        
+        throw new Error(detailedError);
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -920,236 +1173,167 @@ export function useCreateSellOrder() {
   };
 }
 
-export function useTransferShares() {
+/**
+ * Hook to initiate NFT termination
+ */
+export function useInitiateTermination() {
   const { address, walletManager } = useWallet();
   const web3Store = useWeb3Store();
   const [isLoading, setIsLoading] = useState(false);
 
-  const transferShares = useCallback(async (params: {
-    nftId: number;
-    recipient: string;
-    shares: number;
-  }) => {
+  const initiateTermination = useCallback(async (nftId: number) => {
     if (!walletManager || !address) {
-      throw new Error('钱包未连接');
+      throw new Error('Wallet not connected');
     }
 
     setIsLoading(true);
-
     try {
-      console.log('🔄 开始转让份额:', params);
-
       const txHash = await walletManager.writeContract(
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
-        'transferShares',
-        [BigInt(params.nftId), params.recipient, BigInt(params.shares)],
+        'initiateTermination',
+        [nftId],
         {
           gas: GAS_CONFIG.gasLimits.contractCall,
           gasPrice: 'auto',
         }
       );
 
-      console.log('✅ 转让交易已提交:', txHash);
-
-      // 等待交易确认
-      const receipt = await walletManager.waitForTransaction(txHash);
-      console.log('✅ 转让交易已确认:', receipt);
-
-      // 刷新数据
+      await walletManager.waitForTransaction(txHash);
       await web3Store.refreshData();
 
-      return txHash;
+      return { success: true, transactionHash: txHash };
     } catch (error: unknown) {
-      console.error('❌ 转让失败:', error);
+      console.error('❌ Initiate termination failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   }, [address, walletManager, web3Store]);
 
-  return {
-    mutateAsync: transferShares,
-    isLoading,
-  };
+  return { mutateAsync: initiateTermination, isLoading };
 }
 
 /**
- * Hook to get dissolution proposal for an NFT
+ * Hook to confirm termination (after cooldown)
  */
-export function useDissolutionProposal(nftId: number) {
-  const { walletManager } = useWallet();
-  const [data, setData] = useState<{
-    nftId: number;
-    proposer: string;
-    createdAt: number;
-    approvalCount: number;
-    totalShareholderCount: number;
-    executed: boolean;
-    exists: boolean;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchProposal = useCallback(async () => {
-    if (!walletManager) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const proposal = await callContractWithFallback(
-        walletManager,
-        CONTRACT_ADDRESSES.nftManager,
-        NFT_MANAGER_ABI as unknown[],
-        'getDissolutionProposal',
-        [BigInt(nftId)]
-      );
-      
-      // 检查 proposal 是否为有效数组
-      if (!proposal || !Array.isArray(proposal) || proposal.length < 6) {
-        console.error('❌ Invalid proposal data received:', proposal);
-        throw new Error('Invalid proposal data received from contract');
-      }
-      
-      const [proposalNftId, proposer, createdAt, approvalCount, totalShareholderCount, executed] = proposal;
-      
-      setData({
-        nftId: Number(proposalNftId),
-        proposer,
-        createdAt: Number(createdAt),
-        approvalCount: Number(approvalCount),
-        totalShareholderCount: Number(totalShareholderCount),
-        executed,
-        exists: proposer !== '0x0000000000000000000000000000000000000000'
-      });
-    } catch (err: unknown) {
-      console.error('Failed to fetch dissolution proposal:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [walletManager, nftId]);
-
-  useEffect(() => {
-    // 添加防抖，避免频繁调用
-    const timeoutId = setTimeout(() => {
-      fetchProposal();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [fetchProposal]);
-
-  return {
-    data,
-    isLoading,
-    error,
-    refetch: fetchProposal,
-  };
-}
-
-/**
- * Hook to propose NFT dissolution
- */
-export function useProposeDissolution() {
+export function useConfirmTermination() {
   const { address, walletManager } = useWallet();
   const web3Store = useWeb3Store();
   const [isLoading, setIsLoading] = useState(false);
 
-  const proposeDissolution = useCallback(async (nftId: number) => {
+  const confirmTermination = useCallback(async (nftId: number) => {
     if (!walletManager || !address) {
-      throw new Error('钱包未连接');
+      throw new Error('Wallet not connected');
     }
 
     setIsLoading(true);
-
     try {
-      console.log('🗳️ 提议解散 NFT:', nftId);
-
       const txHash = await walletManager.writeContract(
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
-        'proposeDissolution',
-        [BigInt(nftId)],
+        'confirmTermination',
+        [nftId],
         {
           gas: GAS_CONFIG.gasLimits.contractCall,
           gasPrice: 'auto',
         }
       );
 
-      console.log('✅ 解散提议交易已提交:', txHash);
-
-      // 等待交易确认
-      const receipt = await walletManager.waitForTransaction(txHash);
-      console.log('✅ 解散提议交易已确认:', receipt);
-
-      // 刷新数据
+      await walletManager.waitForTransaction(txHash);
       await web3Store.refreshData();
 
-      return txHash;
+      return { success: true, transactionHash: txHash };
     } catch (error: unknown) {
-      console.error('❌ 解散提议失败:', error);
+      console.error('❌ Confirm termination failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   }, [address, walletManager, web3Store]);
 
-  return {
-    mutateAsync: proposeDissolution,
-    isLoading,
-  };
+  return { mutateAsync: confirmTermination, isLoading };
 }
 
 /**
- * Hook to approve dissolution proposal
+ * Hook to cancel termination
  */
-export function useApproveDissolution() {
+export function useCancelTermination() {
   const { address, walletManager } = useWallet();
   const web3Store = useWeb3Store();
   const [isLoading, setIsLoading] = useState(false);
 
-  const approveDissolution = useCallback(async (nftId: number) => {
+  const cancelTermination = useCallback(async (nftId: number) => {
     if (!walletManager || !address) {
-      throw new Error('钱包未连接');
+      throw new Error('Wallet not connected');
     }
 
     setIsLoading(true);
-
     try {
-      console.log('✅ 同意解散提议 NFT:', nftId);
-
       const txHash = await walletManager.writeContract(
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
-        'approveDissolution',
-        [BigInt(nftId)],
+        'cancelTermination',
+        [nftId],
         {
           gas: GAS_CONFIG.gasLimits.contractCall,
           gasPrice: 'auto',
         }
       );
 
-      console.log('✅ 同意解散交易已提交:', txHash);
-
-      // 等待交易确认
-      const receipt = await walletManager.waitForTransaction(txHash);
-      console.log('✅ 同意解散交易已确认:', receipt);
-
-      // 刷新数据
+      await walletManager.waitForTransaction(txHash);
       await web3Store.refreshData();
 
-      return txHash;
+      return { success: true, transactionHash: txHash };
     } catch (error: unknown) {
-      console.error('❌ 同意解散失败:', error);
+      console.error('❌ Cancel termination failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
     }
   }, [address, walletManager, web3Store]);
 
-  return {
-    mutateAsync: approveDissolution,
-    isLoading,
-  };
+  return { mutateAsync: cancelTermination, isLoading };
+}
+
+/**
+ * Hook to withdraw unlocked $E (only for Terminated NFTs)
+ */
+export function useWithdrawUnlocked() {
+  const { address, walletManager } = useWallet();
+  const web3Store = useWeb3Store();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const withdrawUnlocked = useCallback(async (nftId: number, amount?: string) => {
+    if (!walletManager || !address) {
+      throw new Error('Wallet not connected');
+    }
+
+    setIsLoading(true);
+    try {
+      const amountBigInt = amount ? BigInt(amount) : BigInt(0);
+      const txHash = await walletManager.writeContract(
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as unknown[],
+        'withdrawUnlocked',
+        [nftId, amountBigInt],
+        {
+          gas: GAS_CONFIG.gasLimits.contractCall,
+          gasPrice: 'auto',
+        }
+      );
+
+      await walletManager.waitForTransaction(txHash);
+      await web3Store.refreshData();
+
+      return { success: true, transactionHash: txHash };
+    } catch (error: unknown) {
+      console.error('❌ Claim unlocked amount failed:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [address, walletManager, web3Store]);
+
+  return { mutateAsync: withdrawUnlocked, isLoading };
 }

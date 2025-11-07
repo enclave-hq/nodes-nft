@@ -1,13 +1,14 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { WalletManager, WalletType } from '@enclave-hq/wallet-sdk';
+import { WalletManager, WalletType, Account } from '@enclave-hq/wallet-sdk';
 
 interface WalletContextType {
   address: string | null;
   account: string | null; // Alias for address
   isConnected: boolean;
   isConnecting: boolean;
+  isRestoring: boolean; // Whether connection is being restored
   connect: () => Promise<void>;
   disconnect: () => void;
   chainId: number | null;
@@ -27,6 +28,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [walletManager, setWalletManager] = useState<WalletManager | null>(null);
   const [hasWallet, setHasWallet] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [isRestoring, setIsRestoring] = useState(true);
 
   const checkConnection = useCallback(async () => {
     try {
@@ -87,15 +89,134 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       setWalletManager(manager);
     } catch (error) {
       console.error('❌ Failed to create WalletManager:', error);
+      setIsRestoring(false);
     }
   }, []);
 
+  // Auto-restore connection from storage (only once on mount)
+  useEffect(() => {
+    if (!walletManager) return;
+
+    const restoreConnection = async () => {
+      try {
+        console.log('🔄 Attempting to restore wallet connection from storage...');
+        setIsRestoring(true);
+        
+        // Try to restore connection from localStorage
+        const restoredAccount = await walletManager.restoreFromStorage();
+        
+        if (restoredAccount) {
+          console.log('✅ Wallet connection restored:', {
+            address: restoredAccount.nativeAddress,
+            chainId: restoredAccount.chainId,
+          });
+          
+          setAddress(restoredAccount.nativeAddress);
+          setIsConnected(true);
+          setChainId(restoredAccount.chainId);
+          
+          // Ensure connection to BSC Testnet if needed
+          if (restoredAccount.chainId !== 97) {
+            console.log('🔄 Restored wallet is on different chain, switching to BSC Testnet...');
+            try {
+              await walletManager.requestSwitchChain(97, {
+                addChainIfNotExists: true,
+                chainConfig: {
+                  chainId: 97,
+                  chainName: 'BNB Smart Chain Testnet',
+                  nativeCurrency: {
+                    name: 'BNB',
+                    symbol: 'BNB',
+                    decimals: 18,
+                  },
+                  rpcUrls: [
+                    'https://data-seed-prebsc-2-s1.binance.org:8545',
+                    'https://data-seed-prebsc-1-s2.binance.org:8545',
+                    'https://data-seed-prebsc-2-s2.binance.org:8545'
+                  ],
+                  blockExplorerUrls: ['https://testnet.bscscan.com'],
+                }
+              });
+              
+              // Update account information after chain switch
+              const updatedAccount = walletManager.getPrimaryAccount();
+              if (updatedAccount) {
+                setChainId(updatedAccount.chainId);
+                console.log('✅ Switched to BSC Testnet, new chainId:', updatedAccount.chainId);
+              }
+            } catch (switchError) {
+              console.warn('⚠️ Failed to switch to BSC Testnet during restore:', switchError);
+              // Continue with current chain
+            }
+          }
+        } else {
+          console.log('ℹ️ No stored wallet connection found');
+          // Check existing connection
+          checkConnection();
+        }
+      } catch (error) {
+        console.error('❌ Error restoring wallet connection:', error);
+        // Check existing connection as fallback
+        checkConnection();
+      } finally {
+        setIsRestoring(false);
+      }
+    };
+
+    restoreConnection();
+  }, [walletManager, checkConnection]);
+
+  useEffect(() => {
+    if (!walletManager) return;
+
+    // Listen to wallet SDK events
+    const handleAccountChanged = (account: Account | null) => {
+      if (account) {
+        console.log('🔔 Account changed:', account.nativeAddress);
+        setAddress(account.nativeAddress);
+        setIsConnected(true);
+        setChainId(account.chainId);
+      } else {
+        console.log('🔔 Account disconnected');
+        setAddress(null);
+        setIsConnected(false);
+        setChainId(null);
+      }
+    };
+
+    const handleChainChanged = (chainId: number, account: Account) => {
+      console.log('🔔 Chain changed:', chainId);
+      setChainId(chainId);
+      if (account) {
+        setAddress(account.nativeAddress);
+        setIsConnected(true);
+      }
+    };
+
+    const handleDisconnected = () => {
+      console.log('🔔 Wallet disconnected');
+      setAddress(null);
+      setIsConnected(false);
+      setChainId(null);
+    };
+
+    walletManager.on('accountChanged', handleAccountChanged);
+    walletManager.on('chainChanged', handleChainChanged);
+    walletManager.on('disconnected', handleDisconnected);
+
+    return () => {
+      walletManager.off('accountChanged', handleAccountChanged);
+      walletManager.off('chainChanged', handleChainChanged);
+      walletManager.off('disconnected', handleDisconnected);
+    };
+  }, [walletManager]);
+
   useEffect(() => {
     // Check connection after wallet manager is initialized
-    if (walletManager) {
+    if (walletManager && !isRestoring) {
       checkConnection();
     }
-  }, [walletManager, checkConnection]);
+  }, [walletManager, checkConnection, isRestoring]);
 
   const connect = async () => {
     try {
@@ -306,6 +427,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       account: address, // Alias for address
       isConnected,
       isConnecting,
+      isRestoring,
       connect,
       disconnect,
       chainId,

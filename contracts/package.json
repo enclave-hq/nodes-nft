@@ -4,15 +4,19 @@
   "description": "Node NFT Smart Contracts",
   "main": "index.js",
   "scripts": {
+    "upgrade:nftmanager": "hardhat run scripts/upgrade-nftmanager.ts --network bscTestnet",
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
-    "deploy:testnet": "hardhat run scripts/deploy.ts --network bscTestnet",
-    "deploy:mainnet": "hardhat run scripts/deploy.ts --network bscMainnet",
+    "deploy:testnet": "hardhat run scripts/02-deploy-main.ts --network bscTestnet",
+    "deploy:mainnet": "hardhat run scripts/deploy-mainnet.ts --network bscMainnet",
+    "deploy:usdt:testnet": "hardhat run scripts/01-deploy-usdt.ts --network bscTestnet",
+    "deploy:usdt:interactive": "hardhat run scripts/deploy-usdt-interactive.ts --network bscMainnet",
     "verify": "hardhat verify",
     "clean": "hardhat clean",
     "lint": "solhint 'contracts/**/*.sol'",
-    "format": "prettier --write 'contracts/**/*.sol'"
+    "format": "prettier --write 'contracts/**/*.sol'",
+    "update:deployment-date": "ts-node scripts/update-deployment-date.ts"
   },
   "keywords": [
     "nft",

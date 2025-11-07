@@ -5,15 +5,22 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
+ * @notice Interface for NFTManager to sync userNFTList on direct transfers
+ */
+interface INFTManager {
+    function onNFTTransfer(address from, address to, uint256 nftId) external;
+}
+
+/**
  * @title NodeNFT
  * @notice Node NFT contract for Enclave ecosystem
  * @dev ERC-721 implementation with transfer restrictions
  * 
  * Key Features:
  * - Only NFTManager can mint NFTs
- * - Transfers are disabled (except mint/burn)
- * - All share trading happens through NFTManager
+ * - Transfers are controlled by NFTManager (default disabled)
  * - Prevents listing on OpenSea and other marketplaces
+ * - Business data stored in NFTManager contract
  */
 contract NodeNFT is ERC721, Ownable {
     /// @notice NFT Manager contract address (only address allowed to mint)
@@ -51,6 +58,18 @@ contract NodeNFT is ERC721, Ownable {
     function setNFTManager(address manager_) external onlyOwner {
         require(manager_ != address(0), "Invalid manager address");
         require(nftManager == address(0), "Manager already set");
+        nftManager = manager_;
+        emit NFTManagerSet(manager_);
+    }
+    
+    /**
+     * @notice Update NFT Manager address
+     * @dev Only owner can call this function, allows updating existing manager
+     * @param manager_ New NFT Manager contract address
+     */
+    function updateNFTManager(address manager_) external onlyOwner {
+        require(manager_ != address(0), "Invalid manager address");
+        require(nftManager != address(0), "Manager not set, use setNFTManager instead");
         nftManager = manager_;
         emit NFTManagerSet(manager_);
     }
@@ -119,9 +138,9 @@ contract NodeNFT is ERC721, Ownable {
     
     /**
      * @notice Hook that is called before any token transfer
-     * @dev Prevents all transfers except mint and burn
-     * This ensures NFTs cannot be listed on OpenSea or other marketplaces
-     * All share trading must go through NFTManager contract
+     * @dev Checks if transfers are enabled via NFTManager
+     * This ensures NFTs cannot be listed on OpenSea or other marketplaces by default
+     * All business logic is in NFTManager contract
      * 
      * @param to Destination address (address(0) for burn)
      * @param firstTokenId First token ID
@@ -133,10 +152,29 @@ contract NodeNFT is ERC721, Ownable {
         address from
     ) internal virtual override returns (address) {
         // Only allow mint (from == address(0)) and burn (to == address(0))
-        require(
-            from == address(0) || to == address(0),
-            "Direct transfers not allowed"
-        );
+        // Regular transfers are controlled by NFTManager.transfersEnabled
+        if (from != address(0) && to != address(0)) {
+            // Check if transfers are enabled in NFTManager
+            require(nftManager != address(0), "NFT Manager not set");
+            (bool success, bytes memory data) = nftManager.staticcall(
+                abi.encodeWithSignature("transfersEnabled()")
+            );
+            require(success, "Failed to check transfers enabled");
+            bool transfersEnabled = abi.decode(data, (bool));
+            require(transfersEnabled, "Transfers not enabled");
+            
+            // IMPORTANT: Notify NFTManager to sync userNFTList when NFT is transferred directly
+            // This ensures userNFTList stays in sync even when transfers bypass NFTManager functions
+            // Note: We use call() instead of direct interface call to ensure msg.sender is this contract
+            (bool syncSuccess, ) = nftManager.call(
+                abi.encodeWithSignature("onNFTTransfer(address,address,uint256)", from, to, firstTokenId)
+            );
+            if (!syncSuccess) {
+                // If sync fails, revert the transfer to ensure data consistency
+                // This is critical - we cannot allow transfers without syncing userNFTList
+                revert("Failed to sync userNFTList on transfer");
+            }
+        }
         
         return super._update(to, firstTokenId, from);
     }

@@ -25,8 +25,8 @@
   },
   "home": {
     "hero": {
-      "title": "Decentralized Node NFT Platform",
-      "subtitle": "Own a piece of the network. Earn passive rewards through $E token distribution and transaction fees. Join the future of decentralized infrastructure.",
+      "title": "Enclave Node NFT Platform",
+      "subtitle": "Become part of the network. Get Enclave's token production and transaction fees. Together building the future of privacy computing.",
       "mintButton": "Mint Node NFT",
       "viewNftsButton": "View My NFTs",
       "connectWallet": "Connect your wallet to get started"
@@ -34,26 +34,31 @@
     "stats": {
       "myNfts": "My NFTs",
       "eclvBalance": "$E Balance",
-      "usdtBalance": "USDT Balance"
+      "usdtBalance": "USDT Balance",
+      "eclvLocked": "$E Locked",
+      "totalShares": "Total Shares",
+      "listedShares": "Listed Shares",
+      "standard": "Standard",
+      "premium": "Premium"
     },
     "howItWorks": {
       "title": "How It Works",
-      "subtitle": "Simple, transparent, and profitable. Join the decentralized node network.",
+      "subtitle": "Simple, transparent, and profitable. Become part of Enclave's decentralized privacy network.",
       "step1": {
         "title": "Mint NFT",
-        "description": "Purchase a Node NFT by paying USDT and locking $E tokens"
+        "description": "Pay USDT to mint a Node NFT and receive additional $E"
       },
       "step2": {
-        "title": "Earn Rewards",
-        "description": "Receive daily $E production and USDT rewards automatically"
+        "title": "Fee Sharing",
+        "description": "Automatically receive daily USDT rewards"
       },
       "step3": {
-        "title": "Unlock Tokens",
-        "description": "After 1 year, 4% of locked $E unlocks monthly for 25 months"
+        "title": "Staking Rewards",
+        "description": "Automatically stake to privacy computing PoW network, receive daily $E rewards"
       },
       "step4": {
         "title": "Trade Shares",
-        "description": "Buy and sell NFT shares on our marketplace at any time"
+        "description": "One NFT is split into multiple shares, trade shares on the marketplace anytime"
       }
     },
     "nftTypes": {
@@ -97,6 +102,17 @@
       "github": "GitHub",
       "twitter": "Twitter",
       "rights": "© 2025 Enclave. All rights reserved"
+    },
+    "batch": {
+      "activeBatch": "Active Batch",
+      "activeBatchDescription": "Current mintable NFT batch information",
+      "loadingBatchInfo": "Loading batch information...",
+      "noActiveBatch": "No Active Batch",
+      "noActiveBatchDescription": "There is no active batch currently. Please wait for the administrator to create a new batch",
+      "batchId": "Batch #{id}",
+      "progress": "Progress",
+      "connectWalletFirst": "Please connect your wallet first",
+      "noActiveBatchMint": "There is no active batch currently. Cannot mint NFT"
     }
   },
   "mint": {
@@ -121,7 +137,9 @@
       "insufficientBalance": "Insufficient Balance",
       "needMoreUsdt": "You need more USDT.",
       "needMoreEclv": "You need more $E.",
-      "confirmTransaction": "Please confirm the transaction in your wallet"
+      "confirmTransaction": "Please confirm the transaction in your wallet",
+      "note": "Note: {amount} $E quota is only for accounting records, no actual tokens will be transferred from your wallet or contract reserves",
+      "needAmount": "You need {amount} USDT to mint this NFT"
     },
     "nftCard": {
       "lockAmount": "Lock {amount} $E",
@@ -156,14 +174,47 @@
       "premium": "Premium",
       "live": "Live",
       "dissolved": "Dissolved",
+      "terminating": "Terminating",
+      "terminated": "Terminated",
       "lockedEclv": "Locked $E",
       "unlocked": "Unlocked",
+      "notUnlocked": "Not Unlocked",
+      "withdrawn": "Withdrawn",
       "pendingEclv": "Pending $E",
       "pendingUsdt": "Pending USDT",
       "created": "Created: {date}",
-      "claim": "Claim"
+      "claim": "Claim",
+      "eclvLocked": "$E Locked",
+      "eclvProduced": "$E Produced",
+      "totalProduced": "Total Produced",
+      "availableForWithdrawal": "Available for Withdrawal",
+      "withdrawnAmount": "Withdrawn",
+      "claimProduced": "Claim Produced",
+      "claiming": "Claiming...",
+      "usdtReward": "USDT Reward",
+      "totalReward": "Total Reward",
+      "availableReward": "Available Reward",
+      "claimReward": "Claim Reward",
+      "claimingReward": "Claiming..."
     },
-    "created": "Created"
+    "created": "Created",
+    "termination": {
+      "initiated": "Termination request submitted!",
+      "initiateFailed": "Failed to initiate termination",
+      "confirmed": "Termination confirmed!",
+      "confirmFailed": "Failed to confirm termination",
+      "cancelled": "Termination cancelled!",
+      "cancelFailed": "Failed to cancel termination",
+      "withdrawn": "Unlocked amount withdrawn!",
+      "withdrawFailed": "Withdrawal failed",
+      "cooldownInfo": "After initiating termination, there is a 1-day cooldown period",
+      "autoTerminationInfo": "After the cooldown period, you can confirm termination, or wait 30 days for automatic termination"
+    },
+    "time": {
+      "days": "days",
+      "hours": "hours",
+      "minutes": "minutes"
+    }
   },
   "marketplace": {
     "title": "Marketplace",
@@ -173,7 +224,7 @@
       "description": "Please connect your wallet to access the marketplace"
     },
     "sidebar": {
-      "title": "My NFTs",
+      "title": "My Orders",
       "subtitle": "Create sell orders for your shares",
       "empty": "No NFTs to list"
     },
@@ -198,7 +249,15 @@
       "cancelOrder": "Cancel Order",
       "cancelling": "Cancelling...",
       "buyShares": "Buy Shares",
-      "buying": "Buying..."
+      "buying": "Buying...",
+      "nftPrice": "NFT Price",
+      "orderId": "Order ID",
+      "listedTime": "Listed Time",
+      "buyNFT": "Buy NFT",
+      "createdTime": "Created Time",
+      "onSale": "On Sale",
+      "revoking": "Revoking...",
+      "revokeListing": "Revoke Listing"
     },
     "createOrder": {
       "title": "Create Sell Order",
@@ -212,7 +271,29 @@
       "totalValue": "Total Value",
       "creating": "Creating...",
       "createButton": "Create Order",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "nftPriceLabel": "NFT Price (USDT)",
+      "nftPricePlaceholder": "Enter NFT price",
+      "nftPriceNote": "This is the selling price for the entire NFT"
+    },
+    "myNFTs": {
+      "title": "My NFTs",
+      "noNFTs": "No NFTs",
+      "noNFTsDescription": "You don't have any NFTs yet. Please mint an NFT first to list it for sale",
+      "loadingOrders": "Loading order information...",
+      "onSale": "On Sale",
+      "onSaleCount": "{count} NFTs are currently listed",
+      "notOnSale": "Not On Sale",
+      "notOnSaleCount": "{count} NFTs can be listed for sale",
+      "noData": "No data",
+      "orderRevoked": "Order revoked",
+      "revokeOrderFailed": "Failed to revoke order",
+      "listForSale": "List for Sale",
+      "loadingOrdersError": "Loading orders...",
+      "loadOrdersFailed": "Failed to load orders",
+      "retry": "Retry",
+      "refreshing": "Refreshing...",
+      "refreshOrders": "Refresh Orders"
     }
   },
   "status": {
@@ -232,6 +313,40 @@
     "insufficientBalance": "Insufficient balance",
     "transactionFailed": "Transaction failed",
     "tryAgain": "Please try again"
+  },
+  "whitelist": {
+    "title": "Whitelist Management",
+    "currentAddress": "Current Connected Address",
+    "applyWhitelist": "Apply for Whitelist",
+    "whitelisted": "Whitelisted",
+    "whitelistedDescription": "You have successfully joined the whitelist and can mint NFTs",
+    "enterInviteCode": "Please enter an invite code to join the whitelist",
+    "inviteCodePlaceholder": "Enter invite code",
+    "register": "Register",
+    "myInviteCodes": "My Invite Codes",
+    "loading": "Loading...",
+    "approved": "Approved",
+    "activeDescription": "Activated, can be used to invite others",
+    "pending": "Pending Review",
+    "pendingDescription": "Your invite code application is under review, please wait patiently",
+    "noInviteCode": "You don't have an invite code yet. After applying, you can use it to invite others to join the whitelist",
+    "applying": "Applying...",
+    "applyInviteCode": "Apply for Invite Code",
+    "close": "Close",
+    "connectWalletFirst": "Please connect your wallet first",
+    "enterInviteCodeError": "Please enter an invite code",
+    "invalidInviteCode": "Invalid invite code or it has been revoked",
+    "inviteCodeUsed": "Invite code used successfully!",
+    "whitelistRegistered": "Whitelist registration successful!",
+    "registerFailed": "Registration failed",
+    "applicationSubmitted": "Invite code application submitted, please wait for review",
+    "applicationFailed": "Application failed"
+  },
+  "mintStatus": {
+    "applyWhitelistFirst": "Please",
+    "applyWhitelist": "apply for whitelist",
+    "batchMintable": "This batch can mint:",
+    "waitForNextBatch": "Please wait patiently for the next batch to open for minting"
   }
 }
 
