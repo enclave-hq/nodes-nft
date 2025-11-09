@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 export function BottomNav() {
   const t = useTranslations('navbar');
   const pathname = usePathname();
+  const isMyNFTsPage = pathname === '/my-nfts' || pathname?.startsWith('/my-nfts');
 
   const navItems = [
     { href: "/", label: t('home'), icon: Home },
@@ -19,7 +20,10 @@ export function BottomNav() {
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center pb-6 px-6">
       {/* Floating Navigation Container - Rounded Style */}
-      <div className="flex items-center bg-gray-100/80 backdrop-blur-lg rounded-[28px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden min-w-[280px]">
+      <div className={cn(
+        "flex items-center backdrop-blur-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden min-w-[280px]",
+        isMyNFTsPage ? "bg-[#242424]/90" : "bg-[#3A3A3A]/80"
+      )} style={{ height: '64.524px', borderRadius: '25919828px' }}>
         {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || 
@@ -34,22 +38,30 @@ export function BottomNav() {
               href={item.href}
               className={cn(
                 "flex items-center justify-center transition-all duration-200 relative",
-                "flex-1 h-16 min-w-[80px]",
-                isFirst && "rounded-l-[28px]",
-                isLast && "rounded-r-[28px]"
+                "flex-1 min-w-[80px]",
+                isFirst && "rounded-l-[25919828px]",
+                isLast && "rounded-r-[25919828px]"
               )}
+              style={{ height: '64.524px' }}
             >
               {/* Semi-transparent Background for Active State */}
               {isActive && (
-                <div className="absolute inset-0 bg-white/80 rounded-full" />
+                <div className={cn(
+                  "absolute inset-0 rounded-full flex items-center justify-center",
+                  isMyNFTsPage ? "bg-[#CEF248]" : "bg-[#CEF248]/80"
+                )} style={{ width: '41.48px', height: '41.48px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
               )}
               
               <Icon
                 className={cn(
-                  "relative z-10 transition-colors",
-                  isActive ? "h-7 w-7 text-blue-600" : "h-6 w-6 text-gray-500"
+                  "relative z-10 transition-colors"
                 )}
-                strokeWidth={isActive ? 2.5 : 2}
+                style={{ 
+                  width: '20.75px', 
+                  height: '20.75px',
+                  color: isActive ? '#000000' : '#939393'
+                }}
+                strokeWidth={2}
               />
             </Link>
           );

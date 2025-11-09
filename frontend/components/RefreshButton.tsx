@@ -60,7 +60,7 @@ export function RefreshButton({
         onClick={handleRefresh}
         disabled={isRefreshing || !web3Data.isConnected}
         className={cn(
-          "inline-flex items-center justify-center space-x-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all",
+          "inline-flex items-center justify-center space-x-2 rounded-[20px] border border-gray-300 bg-[#CEF248] px-3 py-1.5 text-sm font-medium text-black shadow-sm hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all",
           buttonSizeClasses[size],
           className
         )}
@@ -84,7 +84,7 @@ export function RefreshButton({
       onClick={handleRefresh}
       disabled={isRefreshing || !web3Data.isConnected}
       className={cn(
-        "inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all",
+        "inline-flex items-center justify-center rounded-[20px] p-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all",
         className
       )}
       title={t('refreshChainData', { defaultValue: 'Refresh on-chain data' })}

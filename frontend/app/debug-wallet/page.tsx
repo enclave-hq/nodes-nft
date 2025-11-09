@@ -94,20 +94,20 @@ export default function WalletDebugPage() {
             <button
               onClick={handleConnect}
               disabled={isConnecting || !hasWallet || isConnected}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isConnecting ? '连接中...' : '连接钱包'}
             </button>
             <button
               onClick={handleDisconnect}
               disabled={!isConnected}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               断开连接
             </button>
             <button
               onClick={clearLogs}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238]"
             >
               清除日志
             </button>
