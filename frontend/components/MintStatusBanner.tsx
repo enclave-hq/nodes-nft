@@ -6,6 +6,7 @@ import { useWallet } from "@/lib/providers/WalletProvider";
 import { AlertTriangle, Shield } from "lucide-react";
 import { useTranslations } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
+import { MintIcon } from "@/components/icons/MintIcon";
 
 /**
  * Mint Status Banner - Displays minting status at the top of the page
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
  */
 export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
   const t = useTranslations('mintStatus');
+  const tBatch = useTranslations('home.batch');
   const { isConnected } = useWallet();
   const web3Data = useWeb3Data();
   const { batch: activeBatch } = useActiveBatch();
@@ -51,7 +53,7 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
       )}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Shield className={cn(
+            <MintIcon className={cn(
               "h-4 w-4",
               isLight ? "text-[#000000]" : "text-[#FFFFFF]"
             )} />
@@ -79,7 +81,7 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
       <div className="flex items-center justify-center space-x-2">
         <AlertTriangle className="h-4 w-4 text-gray-600" />
         <span className="text-[14px] font-medium text-gray-900">
-          {t('waitForNextBatch')}
+          {tBatch('waitForNextBatch')}
         </span>
       </div>
     </div>

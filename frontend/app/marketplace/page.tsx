@@ -13,6 +13,7 @@ import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp, ChevronDown, Ch
 import { RefreshButton } from "@/components/RefreshButton";
 import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
+import { ListIcon } from "@/components/icons/ListIcon";
 
 function SellOrderCard({ 
   order, 
@@ -55,15 +56,17 @@ function SellOrderCard({
   };
 
   return (
-    <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/30 p-4 shadow-sm hover:shadow-md transition-shadow">
       {/* First Row: NFT ID (left) and Order ID (right) */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-[#000000]">
           NFT #{order.nftId}
         </h3>
-        <span className="text-sm text-[#000000]">
-          ID: #{order.orderId}
-        </span>
+        {isOwnOrder && (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#CEF248] text-[#000000]">
+            我的
+          </span>
+        )}
       </div>
 
       {/* Price - Centered in gray card */}
@@ -74,19 +77,16 @@ function SellOrderCard({
       </div>
 
       {/* Seller Info */}
-      <div className="mb-2 text-sm">
-        <span className="text-[#000000]">{t('seller')} </span>
-        {isOwnOrder ? (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#CEF248] text-[#000000]">
-            我的
-          </span>
-        ) : (
-          <span className="text-[#000000]">{formatAddress(order.seller)}</span>
-        )}
+      <div className="mb-2 text-sm flex items-center justify-between whitespace-nowrap">
+        <span className="text-[#000000]">{t('seller')}</span>
+        <span className="text-[#000000] truncate">{formatAddress(order.seller)}</span>
       </div>
 
-      {/* Listed Date - Right Aligned */}
-      <div className="mb-4 text-sm text-right">
+      <div className="border-t border-[#000000]/10 my-2"></div>
+
+      {/* Order ID and Listed Date - Right Aligned */}
+      <div className="mb-4 text-xs flex justify-between">
+        <span className="text-[#000000]">ID: #{order.orderId}</span>
         <span className="text-[#000000]">{order.createdAtDisplay}</span>
       </div>
 
@@ -372,9 +372,9 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-[#FFFFFF]">
       <Navbar />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: 'calc(65px + 2rem)' }}>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: 'calc(65px + 1rem)' }}>
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-8">
           <div className="flex items-center gap-2">
             <h1 className="text-base font-bold text-[#000000]">{t('title')}</h1>
             <span className="text-sm text-gray-700">-</span>
@@ -386,12 +386,11 @@ export default function MarketplacePage() {
 
         {!isConnected ? (
           /* Not Connected State */
-          <div className="rounded-[28px] border-2 border-dashed border-gray-700 bg-[#000000] p-12 text-center">
-            <Store className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-white">
+          <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 text-center">
+            <h3 className="text-base font-medium text-[#000000]">
               {t('connectWallet.title')}
             </h3>
-            <p className="mt-2 text-sm text-gray-400">
+            <p className="mt-2 text-sm text-[#000000]">
               {t('connectWallet.description')}
             </p>
           </div>
@@ -400,54 +399,56 @@ export default function MarketplacePage() {
             {/* Tabs - Outside the card */}
             <div className="mb-4">
               <nav className="flex items-center gap-4" aria-label="Tabs">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleTabChange('orders');
-                  }}
-                  className={cn(
-                    "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
-                    activeTab === 'orders'
-                      ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
-                      : "bg-[#000000] text-white hover:bg-gray-700"
-                  )}
-                >
-                  <span>{t('orders.title')}</span>
-                  {allOrders.data && allOrders.data.length > 0 && (
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
+                <div className="relative inline-flex items-center rounded-full bg-[#FFFFFF] border border-[#000000]/10 h-10">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleTabChange('orders');
+                    }}
+                    className={cn(
+                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors",
                       activeTab === 'orders'
-                        ? "bg-black text-white"
-                        : "bg-gray-700 text-gray-300"
-                    )}>
-                      {allOrders.data.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleTabChange('my-nfts');
-                  }}
-                  className={cn(
-                    "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
-                    activeTab === 'my-nfts'
-                      ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
-                      : "bg-[#000000] text-white hover:bg-gray-700"
-                  )}
-                >
-                  <span>{t('sidebar.title')}</span>
-                  {web3Data.nfts && web3Data.nfts.length > 0 && (
-                    <span className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
+                        ? "bg-[#CEF248] text-black h-10"
+                        : "bg-transparent text-black hover:bg-gray-100 h-10"
+                    )}
+                  >
+                    <span>{t('orders.title')}</span>
+                    {allOrders.data && allOrders.data.length > 0 && (
+                      <span className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
+                        activeTab === 'orders'
+                          ? "bg-black text-white"
+                          : "bg-[#CEF248] text-black"
+                      )}>
+                        {allOrders.data.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleTabChange('my-nfts');
+                    }}
+                    className={cn(
+                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors",
                       activeTab === 'my-nfts'
-                        ? "bg-black text-white"
-                        : "bg-gray-700 text-gray-300"
-                    )}>
-                      {web3Data.nfts.length}
-                    </span>
-                  )}
-                </button>
+                        ? "bg-[#CEF248] text-black h-10"
+                        : "bg-transparent text-black hover:bg-gray-100 h-10"
+                    )}
+                  >
+                    <span>{t('sidebar.title')}</span>
+                    {web3Data.nfts && web3Data.nfts.length > 0 && (
+                      <span className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
+                        activeTab === 'my-nfts'
+                          ? "bg-black text-white"
+                          : "bg-[#CEF248] text-black"
+                      )}>
+                        {web3Data.nfts.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
                 {/* Refresh Button */}
                 {isConnected && (
                   <div className="ml-auto">
@@ -462,9 +463,9 @@ export default function MarketplacePage() {
               /* Active Orders Tab - individual cards */
               <>
                 {allOrders.isLoading ? (
-                  <div className="flex items-center justify-center rounded-[28px] bg-[#000000] p-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                    <span className="ml-2 text-gray-300">{tMyNFTs('loadingOrdersError')}</span>
+                  <div className="flex items-center justify-center rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#000000]" />
+                    <span className="ml-2 text-[#000000]">{tMyNFTs('loadingOrdersError')}</span>
                   </div>
                 ) : allOrders.error ? (
                   <div className="rounded-lg border border-red-800 bg-red-900/30 p-6 text-center">
@@ -483,12 +484,12 @@ export default function MarketplacePage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-[28px] border-2 border-dashed border-gray-700 bg-[#000000] p-12 text-center">
-                    <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-4 text-lg font-medium text-white">
+                  <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12 text-center">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-[#000000]" />
+                    <h3 className="mt-4 text-base font-medium text-[#000000]">
                       {t('orders.empty.title')}
                     </h3>
-                    <p className="mt-2 text-sm text-gray-400">
+                    <p className="mt-2 text-sm text-[#000000]">
                       {t('orders.empty.description')}
                     </p>
                   </div>
@@ -576,12 +577,12 @@ function MyNFTsSection({
         <div className="mb-6">
           <h2 className="text-base font-bold text-white">{tMyNFTs('title')}</h2>
         </div>
-        <div className="rounded-lg border-2 border-dashed border-gray-700 bg-[#000000] p-12 text-center">
-          <Tag className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-white">
+        <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12 text-center">
+          <Tag className="mx-auto h-12 w-12 text-[#000000]" />
+          <h3 className="mt-4 text-base font-medium text-[#000000]">
             {tMyNFTs('noNFTs')}
           </h3>
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="mt-2 text-sm text-[#000000]">
             {tMyNFTs('noNFTsDescription')}
           </p>
         </div>
@@ -592,9 +593,9 @@ function MyNFTsSection({
   return (
     <div>
       {allOrders.isLoading ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-700 bg-[#000000] p-12 text-center">
-          <Loader2 className="mx-auto h-12 w-12 text-gray-400 animate-spin" />
-          <h3 className="mt-4 text-lg font-medium text-white">
+        <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12 text-center">
+          <Loader2 className="mx-auto h-12 w-12 text-[#000000] animate-spin" />
+          <h3 className="mt-4 text-base font-medium text-[#000000]">
             {tMyNFTs('loadingOrders')}
           </h3>
         </div>
@@ -602,10 +603,10 @@ function MyNFTsSection({
         <div>
           {/* Not On Sale Card */}
           {nftsWithoutOrders.length > 0 && (
-            <div className="mb-4 rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-6">
+            <div className="mb-4 rounded-[20px] bg-[#000000] px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-[#000000]">{tMyNFTs('notOnSale')}</h3>
+                  <h3 className="text-lg font-semibold text-[#FFFFFF]">{tMyNFTs('notOnSale')}</h3>
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#CEF248] text-[#000000] text-xs font-bold">
                     {nftsWithoutOrders.length}
                   </span>
@@ -614,7 +615,7 @@ function MyNFTsSection({
                   onClick={() => onCreateOrder(nftsWithoutOrders[0])}
                   className="rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-[#000000] hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <ListIcon className="h-4 w-4 mr-2" />
                   挂单出售
                 </button>
               </div>
@@ -700,7 +701,7 @@ function NFTListItem({
 
   // All NFTs now have the same configuration
   return (
-    <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-sm hover:shadow-md transition-shadow">
+    <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/30 p-4 shadow-sm hover:shadow-md transition-shadow">
       {/* Order Status */}
       {ordersLoading ? (
         <div className="mt-4 flex items-center justify-center py-2">
@@ -755,7 +756,7 @@ function NFTListItem({
             onClick={() => onCreateOrder(nftId)}
             className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <ListIcon className="h-4 w-4 mr-2" />
             {tMyNFTs('listForSale')}
           </button>
         </div>
@@ -845,7 +846,7 @@ function NFTListItemSimple({
               onClick={() => onCreateOrder(nftId)}
               className="rounded-[20px] bg-[#CEF248] px-4 py-2 text-[14px] font-medium text-[#000000] hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <ListIcon className="h-4 w-4 mr-2" />
               {tMyNFTs('listForSale')}
             </button>
           )}

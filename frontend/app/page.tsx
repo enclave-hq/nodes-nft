@@ -390,6 +390,88 @@ export default function Home() {
         )}
       </div>
 
+      {/* Active Batch Section */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="mx-auto max-w-2xl text-left">
+          <h2 className="text-base font-bold tracking-tight text-[#000000]">
+            {tBatch('activeBatch')}
+          </h2>
+        </div>
+
+        <div className="mx-auto mt-4 max-w-2xl">
+          {batchLoading ? (
+            <div className="rounded-[28px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-xl text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-black mx-auto" />
+              <p className="mt-2 text-sm text-black">{tBatch('loadingBatchInfo')}</p>
+            </div>
+          ) : !activeBatch ? (
+            <div className="rounded-[28px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-xl text-center">
+              <AlertCircle className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
+              <h3 className="text-base font-bold text-black mb-1">{tBatch('noActiveBatch')}</h3>
+              <p className="text-sm text-black">{tBatch('noActiveBatchDescription')}</p>
+            </div>
+          ) : (
+            <div className="rounded-[28px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-sm">
+              {/* Simplified batch information */}
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-black">
+                    {tBatch('batchId').replace('{id}', String(activeBatch.batchId))}
+                  </h3>
+                  <p className="text-sm text-black mt-1">
+                    {formatUSD(Number(activeBatch.mintPrice) / 1e18)} USDT
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-black">{tBatch('progress')}</p>
+                  <p className="text-sm font-semibold text-black">
+                    {activeBatch.currentMinted} / {activeBatch.maxMintable}
+                  </p>
+                </div>
+              </div>
+
+              {/* 铸造按钮 */}
+              {!isConnected ? (
+                <button
+                  className="w-full rounded-[20px] bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"
+                  disabled
+                >
+                  {tBatch('connectWalletFirst')}
+                </button>
+              ) : isWhitelisted && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-black">
+                    <span>{t('stats.usdtBalance')}</span>
+                    <span className="font-medium text-black">
+                      {web3Data.balances?.usdt || "0"} USDT
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleMint}
+                    disabled={minting || !activeBatch || (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) < Number(activeBatch.mintPrice) / 1e18}
+                    className={cn(
+                      "w-full rounded-[20px] px-4 py-2 text-sm font-medium transition-all",
+                      (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) >= Number(activeBatch.mintPrice) / 1e18 && !minting && activeBatch
+                        ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    )}
+                  >
+                    {minting ? (
+                      <span className="flex items-center justify-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {tMint('minting')}
+                      </span>
+                    ) : (
+                      tMint('mintNFT')
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Features Section */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 bg-[#FFFFFF]">
         <div className="mx-auto max-w-2xl text-left">
@@ -482,88 +564,6 @@ export default function Home() {
               </div>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Active Batch Section */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="mx-auto max-w-2xl text-left">
-          <h2 className="text-base font-bold tracking-tight text-[#000000]">
-            {tBatch('activeBatch')}
-          </h2>
-        </div>
-
-        <div className="mx-auto mt-4 max-w-2xl">
-          {batchLoading ? (
-            <div className="rounded-[28px] bg-[#000000] p-4 shadow-xl  text-center">
-              <Loader2 className="h-6 w-6 animate-spin text-white mx-auto" />
-              <p className="mt-2 text-sm text-white">{tBatch('loadingBatchInfo')}</p>
-            </div>
-          ) : !activeBatch ? (
-            <div className="rounded-[28px] bg-[#000000] p-4 shadow-xl  text-center">
-              <AlertCircle className="h-6 w-6 text-yellow-500 mx-auto mb-2" />
-              <h3 className="text-base font-bold text-white mb-1">{tBatch('noActiveBatch')}</h3>
-              <p className="text-sm text-white">{tBatch('noActiveBatchDescription')}</p>
-            </div>
-          ) : (
-            <div className="rounded-[28px] bg-[#000000]  p-4 shadow-sm">
-              {/* Simplified batch information */}
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    {tBatch('batchId').replace('{id}', String(activeBatch.batchId))}
-                  </h3>
-                  <p className="text-sm text-white mt-1">
-                    {formatUSD(Number(activeBatch.mintPrice) / 1e18)} USDT
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-white">{tBatch('progress')}</p>
-                  <p className="text-sm font-semibold text-white">
-                    {activeBatch.currentMinted} / {activeBatch.maxMintable}
-                  </p>
-                </div>
-              </div>
-
-              {/* 铸造按钮 */}
-              {!isConnected ? (
-                <button
-                  className="w-full rounded-[20px] bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition"
-                  disabled
-                >
-                  {tBatch('connectWalletFirst')}
-                </button>
-              ) : isWhitelisted && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-white">
-                    <span>{t('stats.usdtBalance')}</span>
-                    <span className="font-medium text-[#CEF248]">
-                      {web3Data.balances?.usdt || "0"} USDT
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleMint}
-                    disabled={minting || !activeBatch || (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) < Number(activeBatch.mintPrice) / 1e18}
-                    className={cn(
-                      "w-full rounded-[20px] px-4 py-2 text-sm font-medium transition-all",
-                      (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) >= Number(activeBatch.mintPrice) / 1e18 && !minting && activeBatch
-                        ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    )}
-                  >
-                    {minting ? (
-                      <span className="flex items-center justify-center">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {tMint('minting')}
-                      </span>
-                    ) : (
-                      tMint('mintNFT')
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
