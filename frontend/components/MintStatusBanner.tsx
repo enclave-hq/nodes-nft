@@ -75,10 +75,10 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
 
   // State 3: No mintable quota
   return (
-    <div className="mb-4 sm:mb-6 rounded-lg bg-gray-50 border border-gray-200 p-3 sm:p-4">
+    <div className="rounded-[20px] bg-gray-50 border border-gray-200 px-4 py-2">
       <div className="flex items-center justify-center space-x-2">
-        <AlertTriangle className="h-5 w-5 text-gray-600" />
-        <span className="text-sm sm:text-base font-medium text-gray-900">
+        <AlertTriangle className="h-4 w-4 text-gray-600" />
+        <span className="text-[14px] font-medium text-gray-900">
           {t('waitForNextBatch')}
         </span>
       </div>
