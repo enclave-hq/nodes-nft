@@ -668,8 +668,8 @@ export default function MyNFTsPage() {
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-8" style={{ paddingTop: 'calc(65px + 1rem)' }}>
         {/* Header */}
         <div className="mb-4 sm:mb-8">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div className="flex-1 min-w-0 flex items-center gap-2">
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-4">
               <h1 className="text-base font-bold text-[#000000]">{tMyNFTs('title')}</h1>
               <span className="text-sm text-gray-700">-</span>
               <p className="text-sm text-gray-700">
@@ -677,41 +677,33 @@ export default function MyNFTsPage() {
               </p>
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Refresh Button */}
-              {isConnected && (
-                <RefreshButton size="sm" />
-              )}
-              
-              {/* Quick Mint Button - Responsive */}
-              <button
-                onClick={handleQuickMint}
-                disabled={!isConnected || !isWhitelisted || !activeBatch || !canMint || minting}
-                className="shrink-0 inline-flex items-center justify-center space-x-1 sm:space-x-2 rounded-[20px] bg-[#CEF248] px-2 sm:px-4 py-2 text-sm font-semibold text-black shadow-sm hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title={!isConnected ? tMyNFTs('connectWalletFirst') : !isWhitelisted ? tMyNFTs('joinWhitelistFirst') : !activeBatch ? tBatch('noActiveBatch') : !canMint ? tMyNFTs('batchSoldOut') : tMyNFTs('quickMint')}
-              >
-                {minting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="hidden sm:inline">{tMint('minting')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    <span className="hidden sm:inline">{tMyNFTs('quickMint')}</span>
-                  </>
-                )}
-              </button>
-            </div>
+            {/* Mint Status Banner and Action Buttons - Same row */}
+            {isConnected && (
+              <div className="flex items-center justify-between gap-4">
+                <MintStatusBanner />
+                
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
+                  {/* Refresh Button */}
+                  <RefreshButton size="sm" />
+                  
+                  {/* Quick Mint Button - Icon only, same style as RefreshButton */}
+                  <button
+                    onClick={handleQuickMint}
+                    disabled={!isConnected || !isWhitelisted || !activeBatch || !canMint || minting}
+                    className="inline-flex items-center justify-center rounded-full p-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    title={!isConnected ? tMyNFTs('connectWalletFirst') : !isWhitelisted ? tMyNFTs('joinWhitelistFirst') : !activeBatch ? tBatch('noActiveBatch') : !canMint ? tMyNFTs('batchSoldOut') : tMyNFTs('quickMint')}
+                  >
+                    {minting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          
-          {/* Mint Status Banner - Separate row */}
-          {isConnected && (
-            <div className="mb-4">
-              <MintStatusBanner />
-            </div>
-          )}
         </div>
 
         {!isConnected ? (
