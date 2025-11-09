@@ -84,7 +84,7 @@ export function RefreshButton({
       onClick={handleRefresh}
       disabled={isRefreshing || !web3Data.isConnected}
       className={cn(
-        "inline-flex items-center justify-center rounded-[20px] p-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all",
+        "inline-flex items-center justify-center rounded-full p-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all",
         className
       )}
       title={t('refreshChainData', { defaultValue: 'Refresh on-chain data' })}
