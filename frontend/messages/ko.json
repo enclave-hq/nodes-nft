@@ -43,7 +43,7 @@
       "premium": "프리미엄"
     },
     "howItWorks": {
-      "title": "작동 방식",
+      "title": "Enclave 탈중앙화 네트워크 참여",
       "subtitle": "간단하고 투명하며 수익성이 높습니다. Enclave의 탈중앙화 프라이버시 네트워크의 일부가 되세요.",
       "step1": {
         "title": "NFT 민팅",
@@ -58,8 +58,8 @@
         "description": "프라이버시 컴퓨팅 PoW 네트워크에 자동 스테이킹하고 매일 $E 보상 획득"
       },
       "step4": {
-        "title": "지분 거래",
-        "description": "하나의 NFT를 여러 지분으로 분할하고 언제든지 마켓플레이스에서 지분 거래"
+        "title": "노드 거래",
+        "description": "언제든지 마켓플레이스에서 노드 NFT 거래 가능"
       }
     },
     "nftTypes": {
@@ -165,19 +165,19 @@
     "insufficientUsdt": "USDT 잔액이 부족합니다. {amount}가 필요합니다"
   },
   "myNfts": {
-    "title": "내 NFT",
-    "subtitle": "노드 NFT를 관리하고 보상 청구",
+    "title": "내 노드",
+    "subtitle": "노드를 관리하고 보상 청구",
     "connectWallet": {
       "title": "지갑을 연결하세요",
-      "description": "NFT를 보려면 지갑을 연결해주세요"
+      "description": "노드를 보려면 지갑을 연결해주세요"
     },
     "empty": {
-      "title": "NFT가 없습니다",
-      "description": "첫 번째 노드 NFT를 민팅하여 시작하세요",
-      "cta": "NFT 민팅"
+      "title": "노드가 없습니다",
+      "description": "첫 번째 노드를 민팅하여 시작하세요",
+      "cta": "노드 민팅"
     },
     "batchActions": {
-      "nftsFound": "{count}개의 NFT 발견",
+      "nftsFound": "{count}개의 노드 발견",
       "claimAll": "모든 대기 중인 보상을 한 번에 청구",
       "batchClaim": "$E 일괄 청구",
       "claiming": "청구 중..."
@@ -222,7 +222,7 @@
       "withdrawFailed": "인출 실패",
       "cooldownInfo": "종료를 시작한 후 1일의 쿨다운 기간이 있습니다",
       "autoTerminationInfo": "쿨다운 기간 후 종료를 확인하거나 30일을 기다려 자동 종료할 수 있습니다",
-      "terminationWarning": "NFT를 종료한 후에는 더 이상 새로운 생산과 보상을 받을 수 없습니다.",
+      "terminationWarning": "노드를 종료한 후에는 더 이상 새로운 생산과 보상을 받을 수 없습니다.",
       "terminationProcess": "종료 프로세스:",
       "cooldownCancel": "쿨다운 기간 동안 종료를 취소할 수 있습니다",
       "withdrawAfterTermination": "종료 후 잠금 해제된 $E를 인출할 수 있습니다",
@@ -235,7 +235,7 @@
       "confirmDuringCooldown": "종료 확인 (쿨다운 중)",
       "autoConfirmCountdown": "자동 확인 카운트다운: 남은 시간 {time}",
       "autoTerminated": "자동 종료됨",
-      "autoTerminatedDescription": "NFT가 자동 종료되었습니다. 잠금 해제된 $E를 인출할 수 있습니다",
+      "autoTerminatedDescription": "노드가 자동 종료되었습니다. 잠금 해제된 $E를 인출할 수 있습니다",
       "unlockedWithdrawable": "잠금 해제 인출 가능",
       "withdrawing": "인출 중...",
       "withdrawUnlockedAmount": "잠금 해제 금액 인출",
@@ -263,22 +263,22 @@
     "mintPrice": "민팅 가격",
     "progress": "진행률",
     "minted": "민팅됨",
-    "eachNFTContains": "각 NFT에는",
+    "eachNFTContains": "각 노드에는",
     "unlockMethod": "잠금 해제 방법",
     "monthsLinearUnlock": "25개월 선형 잠금 해제, 매월 4% 잠금 해제",
     "mintFailed": "민팅 실패"
   },
   "marketplace": {
     "title": "마켓플레이스",
-    "subtitle": "다른 사용자와 NFT 지분 거래",
+    "subtitle": "다른 사용자와 노드 거래",
     "connectWallet": {
       "title": "지갑을 연결하세요",
       "description": "마켓플레이스에 접근하려면 지갑을 연결해주세요"
     },
     "sidebar": {
       "title": "내 NFT",
-      "subtitle": "지분 판매 주문 생성",
-      "empty": "목록에 올릴 NFT 없음"
+      "subtitle": "노드를 판매하는 주문 생성",
+      "empty": "목록에 올릴 노드 없음"
     },
     "orders": {
       "title": "활성 주문",
@@ -298,10 +298,10 @@
       "cancelling": "취소 중...",
       "buyShares": "지분 구매",
       "buying": "구매 중...",
-      "nftPrice": "NFT 가격",
+      "nftPrice": "노드 가격",
       "orderId": "주문 ID",
       "listedTime": "등록 시간",
-      "buyNFT": "NFT 구매",
+      "buyNFT": "노드 구매",
       "createdTime": "생성 시간",
       "onSale": "판매 중",
       "revoking": "취소 중...",
@@ -317,19 +317,19 @@
       "totalValue": "총 가치",
       "creating": "생성 중...",
       "createButton": "주문 생성",
-      "nftPriceLabel": "NFT 가격 (USDT)",
-      "nftPricePlaceholder": "NFT 가격 입력",
-      "nftPriceNote": "이것은 전체 NFT의 판매 가격입니다"
+      "nftPriceLabel": "노드 가격 (USDT)",
+      "nftPricePlaceholder": "노드 가격 입력",
+      "nftPriceNote": "이것은 전체 노드의 판매 가격입니다"
     },
     "myNFTs": {
-      "title": "내 NFT",
-      "noNFTs": "NFT 없음",
-      "noNFTsDescription": "아직 NFT가 없습니다. 먼저 NFT를 민팅한 후 판매 목록에 올려주세요",
+      "title": "내 노드",
+      "noNFTs": "노드 없음",
+      "noNFTsDescription": "아직 노드가 없습니다. 먼저 노드를 민팅한 후 판매 목록에 올려주세요",
       "loadingOrders": "주문 정보 로딩 중...",
       "onSale": "판매 중",
-      "onSaleCount": "{count}개의 NFT가 현재 판매 중입니다",
+      "onSaleCount": "{count}개의 노드가 현재 판매 중입니다",
       "notOnSale": "미판매",
-      "notOnSaleCount": "{count}개의 NFT를 판매할 수 있습니다",
+      "notOnSaleCount": "{count}개의 노드를 판매할 수 있습니다",
       "noData": "데이터 없음",
       "orderRevoked": "주문이 취소되었습니다",
       "revokeOrderFailed": "주문 취소에 실패했습니다",

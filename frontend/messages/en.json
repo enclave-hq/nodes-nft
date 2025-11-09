@@ -42,7 +42,7 @@
       "premium": "Premium"
     },
     "howItWorks": {
-      "title": "How It Works",
+      "title": "Join Enclave Decentralized Network",
       "subtitle": "Simple, transparent, and profitable. Become part of Enclave's decentralized privacy network.",
       "step1": {
         "title": "Mint NFT",
@@ -57,8 +57,8 @@
         "description": "Automatically stake to privacy computing PoW network, receive daily $E rewards"
       },
       "step4": {
-        "title": "Trade Shares",
-        "description": "One NFT is split into multiple shares, trade shares on the marketplace anytime"
+        "title": "Node Trading",
+        "description": "Trade Node NFTs on the marketplace anytime"
       }
     },
     "nftTypes": {
@@ -128,7 +128,7 @@
       "step0": "Automatically connect to zero-knowledge proof PoW node as beneficiary",
       "step1": "Pay {price} USDT and get {amount} $E production quota",
       "step2": "Receive daily $E production and USDT rewards",
-      "step3": "After 1 year, 4% of $E quota unlocks monthly for 25 months"
+      "step3": "After 1 year, $E quota unlocks 4% monthly for 25 months"
     },
     "summary": {
       "title": "Mint Summary",
@@ -156,19 +156,19 @@
     "insufficientUsdt": "Insufficient USDT balance. Need {amount}"
   },
   "myNfts": {
-    "title": "My NFTs",
-    "subtitle": "Manage your Node NFTs and claim rewards",
+    "title": "My Nodes",
+    "subtitle": "Manage your nodes and claim rewards",
     "connectWallet": {
       "title": "Connect Your Wallet",
-      "description": "Please connect your wallet to view your NFTs"
+      "description": "Please connect your wallet to view your nodes"
     },
     "empty": {
-      "title": "No NFTs Yet",
-      "description": "Get started by minting your first Node NFT",
-      "cta": "Mint NFT"
+      "title": "No Nodes Yet",
+      "description": "Get started by minting your first node",
+      "cta": "Mint Node"
     },
     "batchActions": {
-      "nftsFound": "{count} NFTs found",
+      "nftsFound": "{count} nodes found",
       "claimAll": "Claim all pending rewards at once",
       "batchClaim": "Batch Claim $E",
       "claiming": "Claiming..."
@@ -213,7 +213,7 @@
       "withdrawFailed": "Withdrawal failed",
       "cooldownInfo": "After initiating termination, there is a 1-day cooldown period",
       "autoTerminationInfo": "After the cooldown period, you can confirm termination, or wait 30 days for automatic termination",
-      "terminationWarning": "After terminating the NFT, you will no longer receive new production and rewards.",
+      "terminationWarning": "After terminating the node, you will no longer receive new production and rewards.",
       "terminationProcess": "Termination process:",
       "cooldownCancel": "Termination can be cancelled during the cooldown period",
       "withdrawAfterTermination": "After termination, you can withdraw unlocked $E",
@@ -226,7 +226,7 @@
       "confirmDuringCooldown": "Confirm Termination (During Cooldown)",
       "autoConfirmCountdown": "Auto-confirm countdown: {time} remaining",
       "autoTerminated": "Auto-terminated",
-      "autoTerminatedDescription": "NFT has been auto-terminated, you can withdraw unlocked $E",
+      "autoTerminatedDescription": "Node has been auto-terminated, you can withdraw unlocked $E",
       "unlockedWithdrawable": "Unlocked Withdrawable",
       "withdrawing": "Withdrawing...",
       "withdrawUnlockedAmount": "Withdraw Unlocked Amount",
@@ -254,22 +254,22 @@
     "mintPrice": "Mint Price",
     "progress": "Progress",
     "minted": "Minted",
-    "eachNFTContains": "Each NFT contains",
+    "eachNFTContains": "Each node contains",
     "unlockMethod": "Unlock Method",
     "monthsLinearUnlock": "25 months linear unlock, 4% unlocked per month",
     "mintFailed": "Mint failed"
   },
   "marketplace": {
     "title": "Marketplace",
-    "subtitle": "Buy and sell NFT shares with other users",
+    "subtitle": "Trade nodes with other users",
     "connectWallet": {
       "title": "Connect Your Wallet",
       "description": "Please connect your wallet to access the marketplace"
     },
     "sidebar": {
       "title": "My Orders",
-      "subtitle": "Create sell orders for your shares",
-      "empty": "No NFTs to list"
+      "subtitle": "Create orders to sell your nodes",
+      "empty": "No nodes to list"
     },
     "orders": {
       "title": "Active Orders",
@@ -293,10 +293,10 @@
       "cancelling": "Cancelling...",
       "buyShares": "Buy Shares",
       "buying": "Buying...",
-      "nftPrice": "NFT Price",
+      "nftPrice": "Node Price",
       "orderId": "Order ID",
       "listedTime": "Listed Time",
-      "buyNFT": "Buy NFT",
+      "buyNFT": "Buy Node",
       "createdTime": "Created Time",
       "onSale": "On Sale",
       "revoking": "Revoking...",
@@ -315,19 +315,19 @@
       "creating": "Creating...",
       "createButton": "Create Order",
       "cancel": "Cancel",
-      "nftPriceLabel": "NFT Price (USDT)",
-      "nftPricePlaceholder": "Enter NFT price",
-      "nftPriceNote": "This is the selling price for the entire NFT"
+      "nftPriceLabel": "Node Price (USDT)",
+      "nftPricePlaceholder": "Enter node price",
+      "nftPriceNote": "This is the selling price for the entire node"
     },
     "myNFTs": {
-      "title": "My NFTs",
-      "noNFTs": "No NFTs",
-      "noNFTsDescription": "You don't have any NFTs yet. Please mint an NFT first to list it for sale",
+      "title": "My Nodes",
+      "noNFTs": "No Nodes",
+      "noNFTsDescription": "You don't have any nodes yet. Please mint a node first to list it for sale",
       "loadingOrders": "Loading order information...",
       "onSale": "On Sale",
-      "onSaleCount": "{count} NFTs are currently listed",
+      "onSaleCount": "{count} nodes are currently listed",
       "notOnSale": "Not On Sale",
-      "notOnSaleCount": "{count} NFTs can be listed for sale",
+      "notOnSaleCount": "{count} nodes can be listed for sale",
       "noData": "No data",
       "orderRevoked": "Order revoked",
       "revokeOrderFailed": "Failed to revoke order",

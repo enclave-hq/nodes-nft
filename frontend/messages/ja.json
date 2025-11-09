@@ -49,7 +49,7 @@
       "premium": "プレミアム"
     },
     "howItWorks": {
-      "title": "操作方式",
+      "title": "Enclave分散型ネットワークに参加",
       "subtitle": "シンプル、透明、収益性あり。Enclaveの分散型プライバシーネットワークの一部になる。",
       "step1": {
         "title": "NFT をミント",
@@ -64,8 +64,8 @@
         "description": "プライバシー計算の PoW ネットワークに自動ステーキングし、毎日 $E 報酬を獲得"
       },
       "step4": {
-        "title": "シェアを取引",
-        "description": "1つの NFT を複数のシェアに分割し、いつでもマーケットプレイスでシェアを取引"
+        "title": "ノード取引",
+        "description": "いつでもマーケットプレイスでノードNFTを取引できる"
       }
     },
     "nftTypes": {
@@ -171,19 +171,19 @@
     "insufficientUsdt": "USDT残高が不足しています。{amount}が必要です"
   },
   "myNfts": {
-    "title": "マイ NFT",
-    "subtitle": "ノード NFT を管理して報酬を請求",
+    "title": "マイノード",
+    "subtitle": "ノードを管理して報酬を請求",
     "connectWallet": {
       "title": "ウォレットを接続",
-      "description": "NFT を表示するにはウォレットを接続してください"
+      "description": "ノードを表示するにはウォレットを接続してください"
     },
     "empty": {
-      "title": "NFT がありません",
-      "description": "最初のノード NFT をミントして始めましょう",
-      "cta": "NFT をミント"
+      "title": "ノードがありません",
+      "description": "最初のノードをミントして始めましょう",
+      "cta": "ノードをミント"
     },
     "batchActions": {
-      "nftsFound": "{count} 個の NFT が見つかりました",
+      "nftsFound": "{count} 個のノードが見つかりました",
       "claimAll": "すべての保留中の報酬を一度に請求",
       "batchClaim": "$E を一括請求",
       "claiming": "請求中..."
@@ -228,7 +228,7 @@
       "withdrawFailed": "引き出しに失敗しました",
       "cooldownInfo": "終了を開始した後、1日のクールダウン期間があります",
       "autoTerminationInfo": "クールダウン期間後、終了を確認するか、30日待って自動終了することができます",
-      "terminationWarning": "NFTを終了した後、新しい生成と報酬を受け取ることができなくなります。",
+      "terminationWarning": "ノードを終了した後、新しい生成と報酬を受け取ることができなくなります。",
       "terminationProcess": "終了プロセス：",
       "cooldownCancel": "クールダウン期間中に終了をキャンセルできます",
       "withdrawAfterTermination": "終了後、アンロックされた$Eを引き出すことができます",
@@ -241,7 +241,7 @@
       "confirmDuringCooldown": "終了を確認（クールダウン中）",
       "autoConfirmCountdown": "自動確認カウントダウン：残り {time}",
       "autoTerminated": "自動終了済み",
-      "autoTerminatedDescription": "NFTが自動終了されました。アンロックされた$Eを引き出すことができます",
+      "autoTerminatedDescription": "ノードが自動終了されました。アンロックされた$Eを引き出すことができます",
       "unlockedWithdrawable": "アンロック引き出し可能",
       "withdrawing": "引き出し中...",
       "withdrawUnlockedAmount": "アンロック金額を引き出す",
@@ -269,22 +269,22 @@
     "mintPrice": "ミント価格",
     "progress": "進捗",
     "minted": "ミント済み",
-    "eachNFTContains": "各NFTには",
+    "eachNFTContains": "各ノードには",
     "unlockMethod": "アンロック方法",
     "monthsLinearUnlock": "25ヶ月のリニアアンロック、毎月4%アンロック",
     "mintFailed": "ミントに失敗しました"
   },
   "marketplace": {
     "title": "マーケットプレイス",
-    "subtitle": "他のユーザーと NFT シェアを売買",
+    "subtitle": "他のユーザーとノードを取引",
     "connectWallet": {
       "title": "ウォレットを接続",
       "description": "マーケットプレイスにアクセスするにはウォレットを接続してください"
     },
     "sidebar": {
       "title": "マイ NFT",
-      "subtitle": "シェアの売却注文を作成",
-      "empty": "リストする NFT がありません"
+      "subtitle": "ノードを売却する注文を作成",
+      "empty": "リストするノードがありません"
     },
     "orders": {
       "title": "アクティブな注文",
@@ -308,10 +308,10 @@
       "cancelling": "キャンセル中...",
       "buyShares": "シェアを購入",
       "buying": "購入中...",
-      "nftPrice": "NFT価格",
+      "nftPrice": "ノード価格",
       "orderId": "注文ID",
       "listedTime": "出品日時",
-      "buyNFT": "NFTを購入",
+      "buyNFT": "ノードを購入",
       "createdTime": "作成日時",
       "onSale": "出品中",
       "revoking": "取り消し中...",
@@ -327,19 +327,19 @@
       "totalValue": "合計価値",
       "creating": "作成中...",
       "createButton": "注文を作成",
-      "nftPriceLabel": "NFT価格（USDT）",
-      "nftPricePlaceholder": "NFT価格を入力",
-      "nftPriceNote": "これはNFT全体の販売価格です"
+      "nftPriceLabel": "ノード価格（USDT）",
+      "nftPricePlaceholder": "ノード価格を入力",
+      "nftPriceNote": "これはノード全体の販売価格です"
     },
     "myNFTs": {
-      "title": "マイNFT",
-      "noNFTs": "NFTがありません",
-      "noNFTsDescription": "まだNFTがありません。まずNFTをミントしてから出品してください",
+      "title": "マイノード",
+      "noNFTs": "ノードがありません",
+      "noNFTsDescription": "まだノードがありません。まずノードをミントしてから出品してください",
       "loadingOrders": "注文情報を読み込み中...",
       "onSale": "出品中",
-      "onSaleCount": "{count}個のNFTが現在出品中です",
+      "onSaleCount": "{count}個のノードが現在出品中です",
       "notOnSale": "未出品",
-      "notOnSaleCount": "{count}個のNFTを出品できます",
+      "notOnSaleCount": "{count}個のノードを出品できます",
       "noData": "データがありません",
       "orderRevoked": "注文が取り消されました",
       "revokeOrderFailed": "注文の取り消しに失敗しました",
