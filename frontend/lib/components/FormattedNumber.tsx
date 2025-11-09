@@ -80,7 +80,7 @@ function ValueDialog({
 
           <button
             onClick={handleCopy}
-            className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#E5F240] px-4 py-2.5 text-sm font-medium text-black hover:bg-[#D4E238] transition-colors"
           >
             {copied ? (
               <>

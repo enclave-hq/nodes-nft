@@ -237,20 +237,20 @@ export default function NFTMintDebugger() {
             <button
               onClick={testMintConditions}
               disabled={isTesting || !isConnected}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isTesting ? '检查中...' : '检查铸造条件'}
             </button>
             <button
               onClick={() => testMintNFT()}
               disabled={isTesting || !isConnected}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isTesting ? '铸造中...' : '铸造NFT'}
             </button>
             <button
               onClick={clearLogs}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238]"
             >
               清除日志
             </button>
