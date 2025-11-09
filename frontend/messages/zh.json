@@ -281,7 +281,7 @@
       "empty": "没有可出售的 NFT"
     },
     "orders": {
-      "title": "活跃订单",
+      "title": "活跃挂单",
       "viewAll": "查看全部",
       "empty": {
         "title": "未找到订单",

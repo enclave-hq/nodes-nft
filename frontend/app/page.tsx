@@ -233,10 +233,27 @@ export default function Home() {
             {t('hero.subtitle')}
           </p>
 
-          <div className="mt-4 flex items-center justify-center gap-x-4">
-            {isConnected ? (
-              <>
-                {!isWhitelisted && (
+          {!isConnected ? (
+            <div className="mt-4 flex items-center justify-center gap-x-4">
+              <button
+                onClick={connect}
+                disabled={isConnecting}
+                className={cn(
+                  "inline-flex items-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                  "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
+                  isConnecting && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <span>
+                  {isConnecting ? tCommon('loading') : t('hero.connectWallet')}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Not whitelisted: Apply Whitelist and View NFTs buttons in same row */}
+              {!isWhitelisted && (
+                <div className="mt-4 flex items-center justify-center gap-x-4">
                   <button
                     onClick={() => setIsWhitelistModalOpen(true)}
                     className={cn(
@@ -247,41 +264,38 @@ export default function Home() {
                   >
                     {tWhitelist('applyWhitelist')}
                   </button>
-                )}
-              </>
-            ) : (
-              <button
-                onClick={connect}
-                disabled={isConnecting}
-                  className={cn(
-                  "inline-flex items-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
-                  "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                  isConnecting && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <span>
-                  {isConnecting ? tCommon('loading') : t('hero.connectWallet')}
-                </span>
-              </button>
-            )}
-          </div>
-
-          {/* Mint Status Banner and View NFTs Button - Same Row */}
-          {isConnected && (
-            <div className="mt-4 flex items-center justify-center gap-x-4">
-              <MintStatusBanner variant="light" />
-              <Link
-                href="/my-nfts"
-                className={cn(
-                  "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
-                  "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                  "min-w-[140px]"
-                )}
-              >
-                <span>{t('hero.viewNftsButton')}</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
+                  <Link
+                    href="/my-nfts"
+                    className={cn(
+                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                      "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
+                      "min-w-[140px]"
+                    )}
+                  >
+                    <span>{t('hero.viewNftsButton')}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+              
+              {/* Whitelisted: Mint Status Banner and View NFTs button in same row */}
+              {isWhitelisted && (
+                <div className="mt-4 flex items-center justify-center gap-x-4">
+                  <MintStatusBanner variant="light" />
+                  <Link
+                    href="/my-nfts"
+                    className={cn(
+                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                      "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
+                      "min-w-[140px]"
+                    )}
+                  >
+                    <span>{t('hero.viewNftsButton')}</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -477,9 +491,6 @@ export default function Home() {
           <h2 className="text-base font-bold tracking-tight text-[#000000]">
             {tBatch('activeBatch')}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-gray-700">
-            {tBatch('activeBatchDescription')}
-          </p>
         </div>
 
         <div className="mx-auto mt-4 max-w-2xl">
@@ -526,12 +537,7 @@ export default function Home() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-white">
                     <span>{t('stats.usdtBalance')}</span>
-                    <span className={cn(
-                      "font-medium",
-                      (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) >= Number(activeBatch.mintPrice) / 1e18
-                        ? "text-green-400"
-                        : "text-red-400"
-                    )}>
+                    <span className="font-medium text-[#CEF248]">
                       {web3Data.balances?.usdt || "0"} USDT
                     </span>
                   </div>
