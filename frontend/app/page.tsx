@@ -334,12 +334,12 @@ export default function Home() {
               
               {/* Title and Number - Centered */}
               <div className="text-center mb-4 sm:mb-6">
-                <h3 className="text-base font-semibold text-[#FFFFFF] uppercase mb-2">
-                  {t('stats.myNfts')}
-                </h3>
-                <div className="text-2xl sm:text-3xl font-bold text-[#FFFFFF]">
+                <div className="text-2xl sm:text-3xl font-bold text-[#FFFFFF] mb-2">
                   {web3Data.nfts?.length || 0}
                 </div>
+                <h3 className="text-base font-normal text-[#FFFFFF] uppercase">
+                  {t('stats.myNfts')}
+                </h3>
               </div>
               
               {/* Divider Line */}
