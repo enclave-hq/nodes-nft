@@ -166,7 +166,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
   if (!isExpanded) {
     return (
       <div 
-        className="relative rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-sm transition-all hover:shadow-md"
+        className="relative rounded-[20px] bg-[#FFFFFF] border border-[#000000]/15 p-4 shadow-sm transition-all hover:shadow-md"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -197,7 +197,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
 
   // Expanded view - show all details
   return (
-    <div className="relative rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 shadow-sm transition-all">
+    <div className="relative rounded-[20px] bg-[#FFFFFF] border border-[#000000]/15 p-4 shadow-sm transition-all">
       {/* Header Row */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
@@ -224,321 +224,317 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
       </div>
 
       {/* $E Locked Section */}
-      <div className="mb-3 p-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
-        <p className="text-xs font-medium text-[#000000] mb-2">{t('eclvLocked')}</p>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center">
-            <p className="text-xs text-[#000000] mb-1">{t('notUnlocked')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {formatTokenAmount(pool.remainingMintQuota, 18, 6)}
-            </p>
+      <div className="space-y-4">
+        {/* $E Locked Section */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-gray-100 p-2 rounded-lg text-center">
+            <span className="text-sm font-bold text-[#000000] block">
+              {formatTokenAmount(pool.remainingMintQuota, 18, 2)}
+            </span>
+            <span className="text-xs text-[#000000] block">{t('notUnlocked')}</span>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-[#000000] mb-1">{t('unlocked')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {formatTokenAmount(BigInt(pool.totalEclvLocked) - BigInt(pool.remainingMintQuota), 18, 6)}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
-            <p className="text-sm font-bold text-[#000000]">
+          <div className="bg-gray-100 p-2 rounded-lg text-center">
+            <span className="text-sm font-bold text-[#000000] block">
               {formatTokenAmount(pool.unlockedWithdrawn, 18, 6)}
-            </p>
+            </span>
+            <span className="text-xs text-gray-600 block">{t('withdrawnAmount')}</span>
+          </div>
+          <div className="bg-gray-100 p-2 rounded-lg text-center">
+            <span className="text-sm font-bold text-[#000000] block">
+              {formatTokenAmount(BigInt(pool.totalEclvLocked) - BigInt(pool.remainingMintQuota), 18, 2)}
+            </span>
+            <span className="text-xs text-[#000000] block">{t('unlocked')}</span>
           </div>
         </div>
-      </div>
 
-      {/* $E Produced Section */}
-      <div className="mb-3 p-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-2">
-          <p className="text-xs font-medium text-[#000000]">{t('eclvProduced')}</p>
-        </div>
-        <div className="grid grid-cols-3 gap-4 mb-2">
-          <div className="text-center">
-            <p className="text-xs text-[#000000] mb-1">{t('totalProduced')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {globalState ? formatTokenAmount(globalState.accProducedPerNFT, 18, 6) : "0"}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-[#000000] mb-1">{t('availableForWithdrawal')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {pendingProduced ? formatTokenAmount(pendingProduced, 18, 6) : "0"}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {pool?.producedDebt ? formatTokenAmount(pool.producedDebt, 18, 6) : "0"}
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <button
-            onClick={handleClaimProduced}
-            disabled={!pendingProduced || pendingProduced === "0" || pendingProduced === "0.0" || parseFloat(pendingProduced) <= 0 || claimProduced.isLoading}
-            className={cn(
-              "px-3 py-1.5 rounded-[20px] text-xs font-medium transition-all",
-              pendingProduced && pendingProduced !== "0" && (isActive || isTerminating)
-                ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
-                : "bg-gray-300 text-gray-600 cursor-not-allowed"
-            )}
-            title={t('claimProduced')}
-          >
-            {claimProduced.isLoading ? (
-              <span className="flex items-center space-x-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>{t('claiming')}</span>
+        {/* $E Produced Section */}
+        <div className="mb-3 px-3 pt-1 pb-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-left">
+              <span className="text-xs text-[#000000]">{t('totalProduced')} </span>
+              <span className="text-xs text-[#000000]">
+                {globalState ? formatTokenAmount(globalState.accProducedPerNFT, 18, 2) : "0"}
               </span>
-            ) : (
-              t('claimProduced')
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* USDT Section */}
-      <div className="mb-3 p-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-2">
-          <p className="text-xs font-medium text-[#000000]">USDT</p>
-        </div>
-        <div className="grid grid-cols-3 gap-4 mb-2">
-          <div className="text-center">
-            <p className="text-xs text-[#000000] mb-1">{t('totalReward')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {totalUsdtReward ? formatTokenAmount(totalUsdtReward, 18, 6) : "0"}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-[#000000] mb-1">{t('availableReward')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 6) : "0"}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {usdtRewardDebt ? formatTokenAmount(usdtRewardDebt, 18, 6) : "0"}
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <button
-            onClick={handleClaimReward}
-            disabled={!pendingUsdt || pendingUsdt === "0" || pendingUsdt === "0.0" || parseFloat(pendingUsdt) <= 0 || claimReward.isLoading}
-            className={cn(
-              "px-3 py-1.5 rounded-[20px] text-xs font-medium transition-all",
-              pendingUsdt && pendingUsdt !== "0" && (isActive || isTerminating)
-                ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
-                : "bg-gray-300 text-gray-600 cursor-not-allowed"
-            )}
-            title={t('claimReward')}
-          >
-            {claimReward.isLoading ? (
-              <span className="flex items-center space-x-1">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>{t('claimingReward')}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-xs text-gray-600">{t('withdrawnAmount')} </span>
+              <span className="text-xs text-[#000000]">
+                {pool?.producedDebt ? formatTokenAmount(pool.producedDebt, 18, 6) : "0"}
               </span>
-            ) : (
-              t('claimReward')
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Termination Status Section */}
-      {isTerminating && terminationStatus && (
-        <div className="mb-3 p-3 bg-gray-100 border border-orange-600/50 rounded-lg" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center space-x-2 mb-2">
-            <AlertTriangle className="h-4 w-4 text-orange-400" />
-            <span className="text-sm font-medium text-orange-400">{tTermination('terminationInProgress')}</span>
+            </div>
           </div>
-          
-          {terminationStatus.phase === 'cooldown' && (
-            <div className="space-y-2">
-              <p className="text-xs text-orange-300">
-                {tTermination('cooldownRemaining').replace('{time}', formatTimeRemaining(terminationStatus.timeRemaining))}
-              </p>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleCancelTermination}
-                  disabled={cancelTermination.isLoading}
-                  className="flex-1 px-3 py-2 rounded-[20px] bg-[#CEF248] text-black text-xs font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
-                >
-                  {cancelTermination.isLoading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>{tTermination('processing')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <X className="h-3 w-3" />
-                      <span>{tTermination('resumeProduction')}</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  disabled
-                  className="flex-1 px-3 py-2 rounded-lg bg-gray-300 text-gray-600 text-xs font-medium cursor-not-allowed flex items-center justify-center space-x-1"
-                >
-                  <Lock className="h-3 w-3" />
-                  <span>{tTermination('confirmDuringCooldown')}</span>
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {terminationStatus.phase === 'afterCooldown' && (
-            <div className="space-y-2">
-              <p className="text-xs text-orange-300">
-                {tTermination('autoConfirmCountdown').replace('{time}', formatTimeRemaining(terminationStatus.timeRemaining))}
-              </p>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleCancelTermination}
-                  disabled={cancelTermination.isLoading}
-                  className="flex-1 px-3 py-2 rounded-[20px] bg-[#CEF248] text-black text-xs font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
-                >
-                  {cancelTermination.isLoading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>{tTermination('processing')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <X className="h-3 w-3" />
-                      <span>{tTermination('resumeProduction')}</span>
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleConfirmTermination}
-                  disabled={confirmTermination.isLoading}
-                  className="flex-1 px-3 py-2 rounded-[20px] bg-[#CEF248] text-black text-xs font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
-                >
-                  {confirmTermination.isLoading ? (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      <span>{tTermination('processing')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="h-3 w-3" />
-                      <span>{tTermination('confirmTermination')}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {terminationStatus.phase === 'timeout' && (
-            <div className="text-xs text-orange-600">
-              <p className="font-medium">{tTermination('autoTerminated')}</p>
-              <p className="text-[#000000] mt-1">{tTermination('autoTerminatedDescription')}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Withdraw Unlocked Section (for Terminated NFTs) */}
-      {isTerminated && parseFloat(availableUnlocked) > 0 && (
-        <div className="mb-3 p-3 bg-gray-100 border border-gray-300 rounded-lg" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <p className="text-xs font-medium text-[#000000]">{tTermination('unlockedWithdrawable')}</p>
-              <p className="text-sm font-bold text-[#000000] mt-1">
-                {formatTokenAmount(availableUnlocked, 18, 6)} $E
-              </p>
+          <div className="border-t border-[#000000]/10 mt-1 mb-2"></div>
+          <div className="flex items-center justify-between">
+            <div className="text-left">
+              <span className="text-xs text-[#000000]">{t('availableForWithdrawal')} </span>
+              <span className="text-[16px] font-bold text-[#000000]">
+                {pendingProduced ? formatTokenAmount(pendingProduced, 18, 2) : "0"}
+              </span>
             </div>
             <button
-              onClick={handleWithdrawUnlocked}
-              disabled={withdrawUnlocked.isLoading || parseFloat(availableUnlocked) <= 0}
+              onClick={handleClaimProduced}
+              disabled={!pendingProduced || pendingProduced === "0" || pendingProduced === "0.0" || parseFloat(pendingProduced) <= 0 || claimProduced.isLoading}
               className={cn(
-                "px-4 py-2 rounded-[20px] text-xs font-medium transition-all",
-                parseFloat(availableUnlocked) > 0
+                "px-3 py-1.5 rounded-[20px] text-xs font-medium transition-all",
+                pendingProduced && pendingProduced !== "0" && (isActive || isTerminating)
                   ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
                   : "bg-gray-300 text-gray-600 cursor-not-allowed"
               )}
+              title={t('claimProduced')}
             >
-              {withdrawUnlocked.isLoading ? (
+              {claimProduced.isLoading ? (
                 <span className="flex items-center space-x-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>{tTermination('withdrawing')}</span>
+                  <span>{t('claiming')}</span>
                 </span>
               ) : (
-                tTermination('withdrawUnlockedAmount')
+                t('claimProduced')
               )}
             </button>
           </div>
         </div>
-      )}
 
-      {/* Actions Row */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300" onClick={(e) => e.stopPropagation()}>
-        <span className="text-xs text-[#000000]">
-          {formatDate(pool.createdAt)}
-        </span>
-        
-        <div className="flex items-center space-x-2">
-          {/* Terminate Button - only show if NFT is active */}
-          {isActive && (
-            <button
-              onClick={() => setShowTerminateDialog(true)}
-              disabled={initiateTermination.isLoading}
-              className="px-3 py-1.5 rounded-[20px] bg-[#000000] text-[#FFFFFF] text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 transition-colors"
-            >
-              <AlertTriangle className="h-3 w-3" />
-              <span>{tTermination('terminate')}</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Termination Confirmation Dialog */}
-      {showTerminateDialog && (
-        <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
-          <div className="bg-[#FFFFFF] rounded-t-[28px] p-4 w-full max-h-[59.5vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
-            <h3 className="text-lg font-bold text-[#000000] mb-3">{tTermination('confirmTermination')} NFT</h3>
-            <div className="space-y-2 mb-4">
-              <p className="text-sm text-gray-700">
-                {tTermination('terminationWarning')}
-              </p>
-              <div className="bg-yellow-50 border border-yellow-600/50 rounded-lg p-2.5">
-                <p className="text-xs text-yellow-700 font-medium mb-1">{tTermination('terminationProcess')}</p>
-                <ul className="text-xs text-yellow-800 space-y-0.5 list-disc list-inside">
-                  <li>{tTermination('cooldownInfo')}</li>
-                  <li>{tTermination('cooldownCancel')}</li>
-                  <li>{tTermination('autoTerminationInfo')}</li>
-                  <li>{tTermination('withdrawAfterTermination')}</li>
-                </ul>
-              </div>
+        {/* USDT Section */}
+        <div className="mb-3 px-3 pt-1 pb-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-left">
+              <span className="text-xs text-[#000000]">{t('totalReward')} </span>
+              <span className="text-xs text-[#000000]">
+                {totalUsdtReward ? formatTokenAmount(totalUsdtReward, 18, 2) : "0"}
+              </span>
             </div>
-            <div className="flex space-x-3">
+            <div className="text-right">
+              <span className="text-xs text-gray-600">{t('withdrawnAmount')} </span>
+              <span className="text-xs text-[#000000]">
+                {usdtRewardDebt ? formatTokenAmount(usdtRewardDebt, 18, 6) : "0"}
+              </span>
+            </div>
+          </div>
+          <div className="border-t border-[#000000]/10 mt-1 mb-2"></div>
+          <div className="flex items-center justify-between">
+            <div className="text-left">
+              <span className="text-xs text-[#000000]">{t('availableReward')} </span>
+              <span className="text-[16px] font-bold text-[#000000]">
+                {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 2) : "0"}
+              </span>
+            </div>
+            <button
+              onClick={handleClaimReward}
+              disabled={!pendingUsdt || pendingUsdt === "0" || pendingUsdt === "0.0" || parseFloat(pendingUsdt) <= 0 || claimReward.isLoading}
+              className={cn(
+                "px-3 py-1.5 rounded-[20px] text-xs font-medium transition-all",
+                pendingUsdt && pendingUsdt !== "0" && (isActive || isTerminating)
+                  ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              )}
+              title={t('claimReward')}
+            >
+              {claimReward.isLoading ? (
+                <span className="flex items-center space-x-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>{t('claimingReward')}</span>
+                </span>
+              ) : (
+                t('claimReward')
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Termination Status Section */}
+        {isTerminating && terminationStatus && (
+          <div className="mb-3 p-3 bg-gray-100 border border-orange-600/50 rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center space-x-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-orange-400" />
+              <span className="text-sm font-medium text-orange-400">{tTermination('terminationInProgress')}</span>
+            </div>
+            
+            {terminationStatus.phase === 'cooldown' && (
+              <div className="space-y-2">
+                <p className="text-xs text-orange-300">
+                  {tTermination('cooldownRemaining').replace('{time}', formatTimeRemaining(terminationStatus.timeRemaining))}
+                </p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleCancelTermination}
+                    disabled={cancelTermination.isLoading}
+                    className="flex-1 px-3 py-2 rounded-[20px] bg-[#CEF248] text-black text-xs font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
+                  >
+                    {cancelTermination.isLoading ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>{tTermination('processing')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <X className="h-3 w-3" />
+                        <span>{tTermination('resumeProduction')}</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    disabled
+                    className="flex-1 px-3 py-2 rounded-lg bg-gray-300 text-gray-600 text-xs font-medium cursor-not-allowed flex items-center justify-center space-x-1"
+                  >
+                    <Lock className="h-3 w-3" />
+                    <span>{tTermination('confirmDuringCooldown')}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {terminationStatus.phase === 'afterCooldown' && (
+              <div className="space-y-2">
+                <p className="text-xs text-orange-300">
+                  {tTermination('autoConfirmCountdown').replace('{time}', formatTimeRemaining(terminationStatus.timeRemaining))}
+                </p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleCancelTermination}
+                    disabled={cancelTermination.isLoading}
+                    className="flex-1 px-3 py-2 rounded-[20px] bg-[#CEF248] text-black text-xs font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
+                  >
+                    {cancelTermination.isLoading ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>{tTermination('processing')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <X className="h-3 w-3" />
+                        <span>{tTermination('resumeProduction')}</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleConfirmTermination}
+                    disabled={confirmTermination.isLoading}
+                    className="flex-1 px-3 py-2 rounded-[20px] bg-[#CEF248] text-black text-xs font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1"
+                  >
+                    {confirmTermination.isLoading ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>{tTermination('processing')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-3 w-3" />
+                        <span>{tTermination('confirmTermination')}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {terminationStatus.phase === 'timeout' && (
+              <div className="text-xs text-orange-600">
+                <p className="font-medium">{tTermination('autoTerminated')}</p>
+                <p className="text-[#000000] mt-1">{tTermination('autoTerminatedDescription')}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Withdraw Unlocked Section (for Terminated NFTs) */}
+        {isTerminated && parseFloat(availableUnlocked) > 0 && (
+          <div className="mb-3 p-3 bg-gray-100 border border-gray-300 rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <p className="text-xs font-medium text-[#000000]">{tTermination('unlockedWithdrawable')}</p>
+                <p className="text-sm font-bold text-[#000000] mt-1">
+                  {formatTokenAmount(availableUnlocked, 18, 6)} $E
+                </p>
+              </div>
               <button
-                onClick={() => setShowTerminateDialog(false)}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 text-sm font-medium text-[#000000] hover:bg-gray-200"
+                onClick={handleWithdrawUnlocked}
+                disabled={withdrawUnlocked.isLoading || parseFloat(availableUnlocked) <= 0}
+                className={cn(
+                  "px-4 py-2 rounded-[20px] text-xs font-medium transition-all",
+                  parseFloat(availableUnlocked) > 0
+                    ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
+                    : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                )}
               >
-                {tCommon('cancel')}
-              </button>
-              <button
-                onClick={handleInitiateTermination}
-                disabled={initiateTermination.isLoading}
-                className="flex-1 px-4 py-2 rounded-[20px] bg-[#CEF248] text-black text-sm font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {initiateTermination.isLoading ? (
-                  <span className="flex items-center justify-center space-x-1">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>{tCommon('loading')}</span>
+                {withdrawUnlocked.isLoading ? (
+                  <span className="flex items-center space-x-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>{tTermination('withdrawing')}</span>
                   </span>
                 ) : (
-                  tTermination('confirmTermination')
+                  tTermination('withdrawUnlockedAmount')
                 )}
               </button>
             </div>
           </div>
+        )}
+
+        {/* Actions Row */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-300" onClick={(e) => e.stopPropagation()}>
+          <span className="text-xs text-[#000000]">
+            {formatDate(pool.createdAt)}
+          </span>
+          
+          <div className="flex items-center space-x-2">
+            {/* Terminate Button - only show if NFT is active */}
+            {isActive && (
+              <button
+                onClick={() => setShowTerminateDialog(true)}
+                disabled={initiateTermination.isLoading}
+                className="px-3 py-1.5 rounded-[20px] bg-[#000000] text-[#FFFFFF] text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1 transition-colors"
+              >
+                <AlertTriangle className="h-3 w-3" />
+                <span>{tTermination('terminate')}</span>
+              </button>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Termination Confirmation Dialog */}
+        {showTerminateDialog && (
+          <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
+            <div className="bg-[#FFFFFF] rounded-t-[28px] p-4 w-full max-h-[59.5vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+              <h3 className="text-lg font-bold text-[#000000] mb-3">{tTermination('confirmTermination')} NFT</h3>
+              <div className="space-y-2 mb-4">
+                <p className="text-sm text-gray-700">
+                  {tTermination('terminationWarning')}
+                </p>
+                <div className="bg-yellow-50 border border-yellow-600/50 rounded-lg p-2.5">
+                  <p className="text-xs text-yellow-700 font-medium mb-1">{tTermination('terminationProcess')}</p>
+                  <ul className="text-xs text-yellow-800 space-y-0.5 list-disc list-inside">
+                    <li>{tTermination('cooldownInfo')}</li>
+                    <li>{tTermination('cooldownCancel')}</li>
+                    <li>{tTermination('autoTerminationInfo')}</li>
+                    <li>{tTermination('withdrawAfterTermination')}</li>
+                  </ul>
+                </div>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowTerminateDialog(false)}
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 bg-gray-100 text-sm font-medium text-[#000000] hover:bg-gray-200"
+                >
+                  {tCommon('cancel')}
+                </button>
+                <button
+                  onClick={handleInitiateTermination}
+                  disabled={initiateTermination.isLoading}
+                  className="flex-1 px-4 py-2 rounded-[20px] bg-[#CEF248] text-black text-sm font-medium hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {initiateTermination.isLoading ? (
+                    <span className="flex items-center justify-center space-x-1">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>{tCommon('loading')}</span>
+                    </span>
+                  ) : (
+                    tTermination('confirmTermination')
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -582,6 +578,7 @@ export default function MyNFTsPage() {
   const tBatch = useTranslations('home.batch');
   const tMint = useTranslations('home.mint');
   const tWhitelist = useTranslations('whitelist');
+  const tMarketplace = useTranslations('marketplace');
   const tCommon = useTranslations('common');
   const { isConnected, address } = useWallet();
   const web3Data = useWeb3Data();
@@ -691,7 +688,7 @@ export default function MyNFTsPage() {
                   <button
                     onClick={handleQuickMint}
                     disabled={!isConnected || !isWhitelisted || !activeBatch || !canMint || minting}
-                    className="inline-flex items-center justify-center rounded-full p-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex items-center justify-center rounded-full h-10 w-10 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     title={!isConnected ? tMyNFTs('connectWalletFirst') : !isWhitelisted ? tMyNFTs('joinWhitelistFirst') : !activeBatch ? tBatch('noActiveBatch') : !canMint ? tMyNFTs('batchSoldOut') : tMyNFTs('quickMint')}
                   >
                     {minting ? (
@@ -708,13 +705,12 @@ export default function MyNFTsPage() {
 
         {!isConnected ? (
           /* Not Connected State */
-          <div className="rounded-[28px] border-2 border-dashed border-gray-700 bg-[#000000] p-6 sm:p-12 text-center">
-            <Shield className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400" />
-            <h3 className="mt-2 sm:mt-4 text-base sm:text-lg font-medium text-white">
-              {tMyNFTs('connectWalletFirst')}
+          <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 text-center">
+            <h3 className="text-base font-medium text-[#000000]">
+              {tMarketplace('connectWallet.title')}
             </h3>
-            <p className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-400">
-              {tMyNFTs('connectWalletFirst')}
+            <p className="mt-2 text-sm text-[#000000]">
+              请连接钱包以访问NFT详情
             </p>
           </div>
         ) : web3Data.loading.nfts ? (
@@ -727,21 +723,21 @@ export default function MyNFTsPage() {
           <div className="space-y-6">
             {/* Whitelist Registration Section */}
             {!isWhitelisted && (
-              <div id="invite-code-section" className="rounded-[28px] border-2 border-dashed border-yellow-600/50 bg-[#000000] p-6 sm:p-8">
+              <div id="invite-code-section" className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-6 sm:p-8 text-center">
                 <div className="flex items-center justify-center mb-4">
-                  <Lock className="h-8 w-8 sm:h-10 sm:w-10 text-yellow-400" />
+                  <Lock className="h-8 w-8 sm:h-10 sm:w-10 text-[#000000]" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+                <h3 className="text-base font-bold text-[#000000] mb-2 text-center">
                   {tWhitelist('applyWhitelist')}
                 </h3>
-                <p className="text-sm sm:text-base text-gray-300 mb-6">
+                <p className="text-sm sm:text-base text-[#000000] mb-6 text-center">
                   {tWhitelist('enterInviteCode')}
                 </p>
                 
                 <div className="max-w-md mx-auto">
                   <button
                     onClick={() => setIsWhitelistModalOpen(true)}
-                    className="w-full px-6 py-3 bg-[#CEF248] text-black rounded-[20px] hover:bg-[#B8D93F] font-semibold flex items-center justify-center space-x-2"
+                    className="w-full px-6 h-10 bg-[#CEF248] text-black rounded-[20px] hover:bg-[#B8D93F] font-semibold flex items-center justify-center space-x-2"
                   >
                     <Gift className="h-4 w-4" />
                     <span>{tWhitelist('applyWhitelist')}</span>
@@ -875,4 +871,6 @@ export default function MyNFTsPage() {
     </div>
   );
 }
+
+
 
