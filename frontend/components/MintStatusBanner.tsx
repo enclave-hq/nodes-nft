@@ -44,7 +44,7 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
     const isLight = variant === 'light';
     return (
       <div className={cn(
-        "rounded-[20px] p-3 sm:p-4",
+        "rounded-[20px] px-4 py-2",
         isLight 
           ? "bg-[#FFFFFF] border border-[#000000]/10" 
           : "bg-[#000000]"

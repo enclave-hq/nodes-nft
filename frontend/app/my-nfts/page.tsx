@@ -226,20 +226,20 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
       {/* $E Locked Section */}
       <div className="mb-3 p-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
         <p className="text-xs font-medium text-[#000000] mb-2">{t('eclvLocked')}</p>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center">
             <p className="text-xs text-[#000000] mb-1">{t('notUnlocked')}</p>
             <p className="text-sm font-bold text-[#000000]">
               {formatTokenAmount(pool.remainingMintQuota, 18, 6)}
             </p>
           </div>
-          <div>
+          <div className="text-center">
             <p className="text-xs text-[#000000] mb-1">{t('unlocked')}</p>
             <p className="text-sm font-bold text-[#000000]">
               {formatTokenAmount(BigInt(pool.totalEclvLocked) - BigInt(pool.remainingMintQuota), 18, 6)}
             </p>
           </div>
-          <div>
+          <div className="text-center">
             <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
             <p className="text-sm font-bold text-[#000000]">
               {formatTokenAmount(pool.unlockedWithdrawn, 18, 6)}
@@ -250,8 +250,30 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
 
       {/* $E Produced Section */}
       <div className="mb-3 p-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2">
           <p className="text-xs font-medium text-[#000000]">{t('eclvProduced')}</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4 mb-2">
+          <div className="text-center">
+            <p className="text-xs text-[#000000] mb-1">{t('totalProduced')}</p>
+            <p className="text-sm font-bold text-[#000000]">
+              {globalState ? formatTokenAmount(globalState.accProducedPerNFT, 18, 6) : "0"}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-[#000000] mb-1">{t('availableForWithdrawal')}</p>
+            <p className="text-sm font-bold text-[#000000]">
+              {pendingProduced ? formatTokenAmount(pendingProduced, 18, 6) : "0"}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
+            <p className="text-sm font-bold text-[#000000]">
+              {pool?.producedDebt ? formatTokenAmount(pool.producedDebt, 18, 6) : "0"}
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end">
           <button
             onClick={handleClaimProduced}
             disabled={!pendingProduced || pendingProduced === "0" || pendingProduced === "0.0" || parseFloat(pendingProduced) <= 0 || claimProduced.isLoading}
@@ -273,32 +295,34 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
             )}
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-xs text-[#000000] mb-1">{t('totalProduced')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {globalState ? formatTokenAmount(globalState.accProducedPerNFT, 18, 6) : "0"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-[#000000] mb-1">{t('availableForWithdrawal')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {pendingProduced ? formatTokenAmount(pendingProduced, 18, 6) : "0"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {pool?.producedDebt ? formatTokenAmount(pool.producedDebt, 18, 6) : "0"}
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* USDT Section */}
       <div className="mb-3 p-3 bg-gray-100 rounded-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-2">
+        <div className="mb-2">
           <p className="text-xs font-medium text-[#000000]">USDT</p>
+        </div>
+        <div className="grid grid-cols-3 gap-4 mb-2">
+          <div className="text-center">
+            <p className="text-xs text-[#000000] mb-1">{t('totalReward')}</p>
+            <p className="text-sm font-bold text-[#000000]">
+              {totalUsdtReward ? formatTokenAmount(totalUsdtReward, 18, 6) : "0"}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-[#000000] mb-1">{t('availableReward')}</p>
+            <p className="text-sm font-bold text-[#000000]">
+              {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 6) : "0"}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
+            <p className="text-sm font-bold text-[#000000]">
+              {usdtRewardDebt ? formatTokenAmount(usdtRewardDebt, 18, 6) : "0"}
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end">
           <button
             onClick={handleClaimReward}
             disabled={!pendingUsdt || pendingUsdt === "0" || pendingUsdt === "0.0" || parseFloat(pendingUsdt) <= 0 || claimReward.isLoading}
@@ -319,26 +343,6 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
               t('claimReward')
             )}
           </button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-xs text-[#000000] mb-1">{t('totalReward')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {totalUsdtReward ? formatTokenAmount(totalUsdtReward, 18, 6) : "0"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-[#000000] mb-1">{t('availableReward')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {pendingUsdt ? formatTokenAmount(pendingUsdt, 18, 6) : "0"}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600 mb-1">{t('withdrawnAmount')}</p>
-            <p className="text-sm font-bold text-[#000000]">
-              {usdtRewardDebt ? formatTokenAmount(usdtRewardDebt, 18, 6) : "0"}
-            </p>
-          </div>
         </div>
       </div>
 

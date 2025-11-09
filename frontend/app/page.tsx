@@ -248,17 +248,6 @@ export default function Home() {
                     {tWhitelist('applyWhitelist')}
                   </button>
                 )}
-                <Link
-                  href="/my-nfts"
-                  className={cn(
-                    "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
-                    "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                    "min-w-[140px]"
-                  )}
-                >
-                  <span>{t('hero.viewNftsButton')}</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
               </>
             ) : (
               <button
@@ -276,13 +265,29 @@ export default function Home() {
               </button>
             )}
           </div>
+
+          {/* Mint Status Banner and View NFTs Button - Same Row */}
+          {isConnected && (
+            <div className="mt-4 flex items-center justify-center gap-x-4">
+              <MintStatusBanner variant="light" />
+              <Link
+                href="/my-nfts"
+                className={cn(
+                  "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                  "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
+                  "min-w-[140px]"
+                )}
+              >
+                <span>{t('hero.viewNftsButton')}</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Stats Section */}
         {isConnected && (
           <div className="mt-6 space-y-4">
-            {/* Mint Status Banner */}
-            <MintStatusBanner variant="light" />
             
             {/* NFT Stats Card */}
             <div className="rounded-[20px] bg-[#000000] p-4 sm:p-6 shadow-md hover:shadow-lg transition-shadow relative">

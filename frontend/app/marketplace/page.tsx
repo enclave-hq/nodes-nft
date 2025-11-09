@@ -105,7 +105,6 @@ function SellOrderCard({
               </span>
             ) : (
               <span className="flex items-center justify-center">
-                <X className="mr-2 h-4 w-4" />
                 {t('cancelOrder')}
               </span>
             )}
@@ -749,7 +748,6 @@ function NFTListItem({
               </>
             ) : (
               <>
-                <X className="h-4 w-4 mr-2" />
                 {t('revokeListing')}
               </>
             )}
@@ -841,7 +839,6 @@ function NFTListItemSimple({
                   </>
                 ) : (
                   <>
-                    <X className="h-4 w-4 mr-2" />
                     {tMyNFTs('revokeListing')}
                   </>
                 )}
