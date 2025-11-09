@@ -62,15 +62,15 @@ function SellOrderCard({
           NFT #{order.nftId}
         </h3>
         <span className="text-sm text-[#000000]">
-          {t('orderId')}: #{order.orderId}
+          ID: #{order.orderId}
         </span>
       </div>
 
       {/* Price - Centered in gray card */}
       <div className="mb-4 rounded-lg bg-gray-100 p-3">
-        <p className="text-2xl font-bold text-[#000000] text-center">
+        <div className="text-sm font-semibold text-[#000000] text-center">
           {formatTokenAmount(totalPrice, 18, 2)} USDT
-        </p>
+        </div>
       </div>
 
       {/* Seller Info */}
@@ -87,7 +87,7 @@ function SellOrderCard({
 
       {/* Listed Date - Right Aligned */}
       <div className="mb-4 text-sm text-right">
-        <span className="text-[#000000]">{t('listedTime')}: {order.createdAtDisplay}</span>
+        <span className="text-[#000000]">{order.createdAtDisplay}</span>
       </div>
 
       {/* Action Button */}
@@ -477,7 +477,7 @@ export default function MarketplacePage() {
                     </button>
                   </div>
                 ) : allOrders.data && allOrders.data.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-4">
                     {allOrders.data.map((order) => (
                       <SellOrderCard key={order.orderId} order={order} onBuy={handleBuy} />
                     ))}
@@ -725,14 +725,10 @@ function NFTListItem({
             </div>
           </div>
           
-          {/* Order ID below price */}
-          <div className="text-xs text-gray-600">
-            {t('orderId')}: #{activeOrder.orderId}
-          </div>
-          
-          {/* Created Time - Right Aligned (without "创建时间" text) */}
-          <div className="text-xs text-gray-600 text-right">
-            {activeOrder.createdAtDisplay}
+          {/* Order ID and Created Time - Same row */}
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <span>ID: #{activeOrder.orderId}</span>
+            <span>{activeOrder.createdAtDisplay}</span>
           </div>
           
           {/* Cancel Order Button */}
