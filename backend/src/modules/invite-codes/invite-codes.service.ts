@@ -261,7 +261,7 @@ export class InviteCodesService {
   /**
    * Get user's invite codes (used and owned)
    * @param address User address
-   * @returns User's invite code status: none, pending, or approved with invite codes
+   * @returns User's invite code status: none, pending, approved_pending_activation, or approved with invite codes
    */
   async getUserInviteCodes(address: string) {
     const normalizedAddress = address.toLowerCase();
@@ -271,6 +271,25 @@ export class InviteCodesService {
       where: {
         applicantAddress: normalizedAddress,
         status: { in: ['pending', 'auto_approved'] },
+      },
+    });
+
+    // Get pending invite codes (approved but not yet activated - waiting for NFT mint)
+    const pendingInviteCodes = await this.prisma.inviteCode.findMany({
+      where: {
+        applicantAddress: normalizedAddress,
+        status: 'pending',
+      },
+      select: {
+        id: true,
+        code: true,
+        status: true,
+        maxUses: true,
+        usageCount: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
 
@@ -294,9 +313,11 @@ export class InviteCodesService {
     });
 
     // Determine status
-    let inviteCodeStatus: 'none' | 'pending' | 'approved';
+    let inviteCodeStatus: 'none' | 'pending' | 'approved_pending_activation' | 'approved';
     if (activeInviteCodes.length > 0) {
       inviteCodeStatus = 'approved';
+    } else if (pendingInviteCodes.length > 0) {
+      inviteCodeStatus = 'approved_pending_activation';
     } else if (pendingRequest) {
       inviteCodeStatus = 'pending';
     } else {
@@ -324,7 +345,7 @@ export class InviteCodesService {
     });
 
     return {
-      inviteCodeStatus, // 'none' | 'pending' | 'approved'
+      inviteCodeStatus, // 'none' | 'pending' | 'approved_pending_activation' | 'approved'
       usedInviteCode: usage
         ? {
             id: usage.inviteCode.id,
@@ -338,6 +359,14 @@ export class InviteCodesService {
         code: ic.code,
         status: ic.status,
         maxUses: ic.maxUses ?? null, // Use null instead of undefined for JSON serialization
+        usageCount: ic.usageCount,
+        createdAt: ic.createdAt.toISOString(),
+      })),
+      pendingInviteCodes: pendingInviteCodes.map((ic) => ({
+        id: ic.id,
+        code: ic.code,
+        status: ic.status,
+        maxUses: ic.maxUses ?? null,
         usageCount: ic.usageCount,
         createdAt: ic.createdAt.toISOString(),
       })),
@@ -407,8 +436,17 @@ export class InviteCodesService {
       this.prisma.inviteCode.count({ where }),
     ]);
 
+    // Transform dates to ISO strings for JSON serialization
+    const transformedData = data.map((code) => ({
+      ...code,
+      createdAt: code.createdAt.toISOString(),
+      updatedAt: code.createdAt.toISOString(), // Use createdAt if updatedAt not available
+      activatedAt: code.activatedAt ? code.activatedAt.toISOString() : null,
+      expiresAt: code.expiresAt ? code.expiresAt.toISOString() : null,
+    }));
+
     return {
-      data,
+      data: transformedData,
       total,
       page,
       limit,
@@ -443,6 +481,76 @@ export class InviteCodesService {
     }
 
     return descendants;
+  }
+
+  /**
+   * Get invite code requests list with pagination
+   */
+  async findAllRequests(page: number = 1, limit: number = 20, status?: string) {
+    const skip = (page - 1) * limit;
+    const where: any = {};
+    
+    if (status) {
+      where.status = status;
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.inviteCodeRequest.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          referrerInviteCode: {
+            select: { id: true, code: true },
+          },
+        },
+      }),
+      this.prisma.inviteCodeRequest.count({ where }),
+    ]);
+
+    // Transform dates to ISO strings for JSON serialization
+    const transformedData = data.map((request) => ({
+      ...request,
+      createdAt: request.createdAt.toISOString(),
+      reviewedAt: request.reviewedAt ? request.reviewedAt.toISOString() : null,
+    }));
+
+    return {
+      data: transformedData,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Reject invite code request (admin)
+   */
+  async rejectRequest(requestId: number, adminAddress: string) {
+    const request = await this.prisma.inviteCodeRequest.findUnique({
+      where: { id: requestId },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Request not found');
+    }
+
+    if (request.status !== 'pending' && request.status !== 'auto_approved') {
+      throw new BadRequestException('Request already processed');
+    }
+
+    await this.prisma.inviteCodeRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'rejected',
+        adminAddress: adminAddress,
+        reviewedAt: new Date(),
+      },
+    });
+
+    return { success: true, message: 'Request rejected' };
   }
 
   /**

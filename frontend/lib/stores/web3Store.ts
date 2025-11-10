@@ -111,8 +111,16 @@ export interface Web3Data {
   
   // Invite codes information
   inviteCodes: {
-    inviteCodeStatus: 'none' | 'pending' | 'approved';
+    inviteCodeStatus: 'none' | 'pending' | 'approved_pending_activation' | 'approved';
     ownedInviteCodes: Array<{
+      id: number;
+      code: string;
+      status: string;
+      maxUses?: number;
+      usageCount: number;
+      createdAt: string;
+    }>;
+    pendingInviteCodes?: Array<{
       id: number;
       code: string;
       status: string;
@@ -422,6 +430,7 @@ export const useWeb3Store = create<Web3Store>()(
     inviteCodes: {
       inviteCodeStatus: 'none',
       ownedInviteCodes: [],
+      pendingInviteCodes: [],
       usedInviteCode: undefined,
     },
     loading: {
@@ -1102,6 +1111,7 @@ export const useWeb3Store = create<Web3Store>()(
           inviteCodes: {
             inviteCodeStatus: data.inviteCodeStatus,
             ownedInviteCodes: data.ownedInviteCodes,
+            pendingInviteCodes: data.pendingInviteCodes || [],
             usedInviteCode: data.usedInviteCode,
           },
           loading: { ...state.loading, inviteCodes: false },

@@ -61,9 +61,23 @@ export class ContractService implements OnModuleInit {
 
     // Initialize provider and signer
     try {
-      this.provider = new ethers.JsonRpcProvider(rpcUrl);
+      // Create provider with custom fetch options for timeout
+      const fetchRequest = new ethers.FetchRequest(rpcUrl);
+      fetchRequest.timeout = 60000; // 60 seconds timeout
+      
+      this.provider = new ethers.JsonRpcProvider(fetchRequest);
       this.signer = new ethers.Wallet(adminPrivateKey, this.provider);
-    } catch (error) {
+      
+      // Test connection
+      try {
+        const blockNumber = await this.provider.getBlockNumber();
+        console.log(`✅ RPC connection successful (block: ${blockNumber})`);
+      } catch (error: any) {
+        console.warn('⚠️ RPC connection test failed:', error.message);
+        console.warn('   Please check your RPC_URL configuration');
+        console.warn(`   RPC_URL: ${rpcUrl ? rpcUrl.substring(0, 50) + '...' : 'not set'}`);
+      }
+    } catch (error: any) {
       console.warn('⚠️ Failed to initialize contract service:', error.message);
       return;
     }
@@ -123,20 +137,36 @@ export class ContractService implements OnModuleInit {
 
   /**
    * Read contract state (view function)
+   * With retry mechanism for timeout errors
    */
   async readContract<T = any>(
     functionName: string,
     args: any[] = [],
+    retries: number = 3,
   ): Promise<T> {
     if (!this.isInitialized()) {
       throw new Error('Contract service not initialized. Please check your configuration.');
     }
-    try {
-      return await this.nftManagerContract[functionName](...args);
-    } catch (error) {
-      console.error(`Error reading contract ${functionName}:`, error);
-      throw error;
+    
+    let lastError: any;
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await this.nftManagerContract[functionName](...args);
+      } catch (error: any) {
+        lastError = error;
+        // Retry on timeout errors
+        if (error.code === 'TIMEOUT' && i < retries - 1) {
+          const delay = (i + 1) * 1000; // Exponential backoff: 1s, 2s, 3s
+          console.warn(`⚠️ RPC timeout for ${functionName}, retrying in ${delay}ms... (${i + 1}/${retries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+        console.error(`Error reading contract ${functionName}:`, error);
+        throw error;
+      }
     }
+    
+    throw lastError;
   }
 
   /**
@@ -267,13 +297,334 @@ export class ContractService implements OnModuleInit {
   }
 
   /**
-   * Get active batch
+   * Get active batch ID
    */
-  async getActiveBatch(): Promise<any> {
+  async getActiveBatch(): Promise<bigint> {
     try {
-      return await this.readContract('getActiveBatch');
+      const batchId = await this.readContract<bigint>('getActiveBatch');
+      return batchId;
     } catch (error) {
       console.error('Error getting active batch:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get current batch ID
+   */
+  async getCurrentBatchId(): Promise<bigint> {
+    try {
+      const batchId = await this.readContract<bigint>('getCurrentBatchId');
+      return batchId;
+    } catch (error) {
+      console.error('Error getting current batch ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get batch information
+   */
+  async getBatch(batchId: bigint): Promise<{
+    batchId: bigint;
+    maxMintable: bigint;
+    currentMinted: bigint;
+    mintPrice: bigint;
+    active: boolean;
+    createdAt: bigint;
+  }> {
+    try {
+      const batch = await this.readContract('batches', [batchId]);
+      return {
+        batchId: batch.batchId,
+        maxMintable: batch.maxMintable,
+        currentMinted: batch.currentMinted,
+        mintPrice: batch.mintPrice,
+        active: batch.active,
+        createdAt: batch.createdAt,
+      };
+    } catch (error) {
+      console.error(`Error getting batch ${batchId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all batches (iterate through batch IDs)
+   */
+  async getAllBatches(): Promise<Array<{
+    batchId: bigint;
+    maxMintable: bigint;
+    currentMinted: bigint;
+    mintPrice: bigint;
+    active: boolean;
+    createdAt: bigint;
+  }>> {
+    try {
+      const currentBatchId = await this.getCurrentBatchId();
+      const batches: Array<{
+        batchId: bigint;
+        maxMintable: bigint;
+        currentMinted: bigint;
+        mintPrice: bigint;
+        active: boolean;
+        createdAt: bigint;
+      }> = [];
+
+      // Iterate through all batch IDs (starting from 1)
+      for (let i = 1; i < Number(currentBatchId); i++) {
+        try {
+          const batch = await this.getBatch(BigInt(i));
+          batches.push(batch);
+        } catch (error) {
+          // Skip if batch doesn't exist
+          console.warn(`Batch ${i} does not exist, skipping`);
+        }
+      }
+
+      return batches;
+    } catch (error) {
+      console.error('Error getting all batches:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get whitelist count
+   */
+  async getWhitelistCount(): Promise<bigint> {
+    try {
+      return await this.readContract<bigint>('getWhitelistCount');
+    } catch (error) {
+      console.error('Error getting whitelist count:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all whitelisted addresses (requires iterating - may be expensive)
+   * Note: This is a fallback method. In practice, you should maintain a list off-chain
+   */
+  async getAllWhitelistedAddresses(): Promise<string[]> {
+    // This is not efficient - contract doesn't have a way to enumerate whitelist
+    // We should rely on events or maintain a list in the backend
+    throw new Error('Contract does not support enumerating whitelist. Use events or maintain list in backend.');
+  }
+
+  /**
+   * Get Treasury address from NFTManager contract
+   */
+  async getTreasury(): Promise<string> {
+    try {
+      return await this.readContract<string>('treasury');
+    } catch (error) {
+      console.error('Error getting treasury address:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get USDT token address from NFTManager contract
+   */
+  async getUsdtToken(): Promise<string> {
+    try {
+      return await this.readContract<string>('usdtToken');
+    } catch (error) {
+      console.error('Error getting USDT token address:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get total minted NFT count
+   * @returns Total minted count
+   */
+  async getTotalMinted(): Promise<number> {
+    try {
+      const totalMinted = await this.readContract<bigint>('totalMinted', []);
+      return Number(totalMinted);
+    } catch (error: any) {
+      console.error('Error getting total minted:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get original minter address for an NFT (from chain)
+   * @param nftId NFT ID
+   * @returns Original minter address, or null if not set (for NFTs minted before upgrade) or if NFT pool not initialized
+   */
+  async getMinter(nftId: number): Promise<string | null> {
+    try {
+      const minter = await this.readContract<string>('getMinter', [nftId]);
+      
+      // Check if minter is zero address (not set)
+      if (!minter || minter === '0x0000000000000000000000000000000000000000') {
+        return null;
+      }
+      
+      return minter;
+    } catch (error: any) {
+      console.error(`Error reading contract getMinter:`, error);
+      
+      // Handle execution reverted errors (NFT pool may not be initialized yet)
+      if (error.code === 'CALL_EXCEPTION' || 
+          error.reason === 'require(false)' ||
+          error.shortMessage?.includes('execution reverted')) {
+        console.log(`⚠️ NFT ${nftId} pool may not be initialized yet, returning null`);
+        return null;
+      }
+      
+      // If function doesn't exist (contract not upgraded yet), return null
+      if (error.message?.includes('function') || error.message?.includes('not found')) {
+        return null;
+      }
+      
+      // For other errors, still return null instead of throwing
+      // This allows the callback to proceed with the provided minterAddress
+      console.warn(`⚠️ Unexpected error getting minter for NFT ${nftId}, returning null:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Set minter address for an existing NFT (migration function)
+   * This will create the NFT pool if it doesn't exist
+   * @param nftId NFT ID
+   * @param minterAddress Original minter address
+   * @returns Transaction hash
+   */
+  async setMinter(nftId: number, minterAddress: string): Promise<string> {
+    if (!this.isInitialized()) {
+      throw new Error('Contract service not initialized. Please check your configuration.');
+    }
+
+    try {
+      const txHash = await this.writeContract('setMinter', [nftId, minterAddress]);
+      console.log(`✅ Set minter for NFT ${nftId}: ${minterAddress}`);
+      return txHash;
+    } catch (error: any) {
+      console.error(`Error setting minter for NFT ${nftId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Batch set minter addresses for multiple NFTs (migration function)
+   * This will create NFT pools if they don't exist
+   * @param nftIds Array of NFT IDs
+   * @param minterAddresses Array of minter addresses (must match length of nftIds)
+   * @returns Transaction hash
+   */
+  async batchSetMinters(nftIds: number[], minterAddresses: string[]): Promise<string> {
+    if (!this.isInitialized()) {
+      throw new Error('Contract service not initialized. Please check your configuration.');
+    }
+
+    if (nftIds.length !== minterAddresses.length) {
+      throw new Error('nftIds and minterAddresses arrays must have the same length');
+    }
+
+    if (nftIds.length === 0) {
+      throw new Error('Arrays cannot be empty');
+    }
+
+    try {
+      const txHash = await this.writeContract('batchSetMinters', [nftIds, minterAddresses]);
+      console.log(`✅ Batch set minter for ${nftIds.length} NFTs`);
+      return txHash;
+    } catch (error: any) {
+      console.error(`Error batch setting minters:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * @param address Address to check balance for
+   * @returns Balance in wei
+   */
+  async getUsdtBalance(address: string): Promise<bigint> {
+    try {
+      const usdtAddress = await this.getUsdtToken();
+      
+      // Create ERC20 contract instance
+      const erc20Abi = [
+        'function balanceOf(address owner) view returns (uint256)',
+        'function decimals() view returns (uint8)',
+      ];
+      
+      const usdtContract = new ethers.Contract(usdtAddress, erc20Abi, this.provider);
+      const balance = await usdtContract.balanceOf(address);
+      
+      return BigInt(balance.toString());
+    } catch (error) {
+      console.error('Error getting USDT balance:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transfer USDT from an address to another
+   * 
+   * Important: 
+   * - If `from` is the signer address: uses transfer() directly
+   * - If `from` is not the signer address: uses transferFrom(), which requires:
+   *   1. Treasury must have approved this signer address to spend USDT
+   *   2. Approval amount must be >= transfer amount
+   * 
+   * @param from Source address (Treasury address)
+   * @param to Destination address
+   * @param amount Amount in wei
+   * @returns Transaction hash
+   */
+  async transferUsdt(from: string, to: string, amount: bigint): Promise<string> {
+    try {
+      const usdtAddress = await this.getUsdtToken();
+      
+      // Create ERC20 contract instance with signer
+      const erc20Abi = [
+        'function transfer(address to, uint256 amount) returns (bool)',
+        'function transferFrom(address from, address to, uint256 amount) returns (bool)',
+        'function approve(address spender, uint256 amount) returns (bool)',
+        'function allowance(address owner, address spender) view returns (uint256)',
+        'function balanceOf(address owner) view returns (uint256)',
+      ];
+      
+      const usdtContract = new ethers.Contract(usdtAddress, erc20Abi, this.signer);
+      const signerAddress = await this.signer.getAddress();
+      
+      // Case 1: Treasury is the signer address - can transfer directly
+      if (from.toLowerCase() === signerAddress.toLowerCase()) {
+        console.log(`✅ Treasury is signer address, using transfer()`);
+        const tx = await usdtContract.transfer(to, amount);
+        const receipt = await tx.wait();
+        return receipt.hash;
+      }
+      
+      // Case 2: Treasury is a different address - need to use transferFrom
+      console.log(`⚠️  Treasury (${from}) is not signer (${signerAddress}), checking allowance...`);
+      
+      // Check allowance
+      const allowance = await usdtContract.allowance(from, signerAddress);
+      const allowanceBigInt = BigInt(allowance.toString());
+      
+      console.log(`   Allowance: ${allowanceBigInt.toString()}, Required: ${amount.toString()}`);
+      
+      if (allowanceBigInt < amount) {
+        throw new Error(
+          `Insufficient allowance. Treasury needs to approve this signer address (${signerAddress}) to spend USDT. ` +
+          `Current allowance: ${(Number(allowanceBigInt) / 1e18).toFixed(2)} USDT, ` +
+          `Required: ${(Number(amount) / 1e18).toFixed(2)} USDT`
+        );
+      }
+      
+      // Use transferFrom
+      console.log(`✅ Sufficient allowance, using transferFrom()`);
+      const tx = await usdtContract.transferFrom(from, to, amount);
+      const receipt = await tx.wait();
+      return receipt.hash;
+    } catch (error: any) {
+      console.error('Error transferring USDT:', error);
       throw error;
     }
   }

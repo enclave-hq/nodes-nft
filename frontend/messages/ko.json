@@ -114,7 +114,8 @@
       "progress": "진행률",
       "connectWalletFirst": "먼저 지갑을 연결해주세요",
       "noActiveBatchMint": "현재 활성 배치가 없습니다. NFT를 민팅할 수 없습니다",
-      "batchSoldOutMint": "현재 배치가 매진되었습니다. NFT를 민팅할 수 없습니다"
+      "batchSoldOutMint": "현재 배치가 매진되었습니다. NFT를 민팅할 수 없습니다",
+      "waitForNextBatch": "다음 배치가 민팅을 시작할 때까지 기다려주세요"
     },
     "mint": {
       "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",

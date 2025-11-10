@@ -83,3 +83,28 @@ img[src*="logo"], img[src*="enclave"], img[alt*="Logo"], img[alt*="logo"] {
 .modal-content {
   animation: slideUp 0.3s ease-out;
 }
+
+/* Ensure Toast close button is clickable */
+[data-testid="toast-close-button"],
+button[aria-label="Close"],
+button[aria-label="close"],
+div[role="button"][aria-label="Close"],
+div[role="button"][aria-label="close"] {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
+
+/* Ensure Toast container and all interactive elements are clickable */
+.toast-container > div,
+[data-sonner-toast] button,
+[data-sonner-toast] [role="button"] {
+  pointer-events: auto !important;
+}
+
+/* React Hot Toast specific selecters */
+div[class*="toast"] button,
+div[class*="toast"] [role="button"] {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}

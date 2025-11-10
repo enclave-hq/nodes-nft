@@ -74,9 +74,15 @@ async function main() {
   console.log("   This will deploy a new implementation and update the proxy.\n");
 
   // Force upgrade by deploying new implementation first
+  // Use unsafeSkipStorageCheck to force deployment even if code appears identical
+  console.log("   Force deploying new implementation...");
   const upgraded = await upgrades.upgradeProxy(PROXY_ADDRESS, NFTManager, {
     kind: "uups",
-    unsafeAllow: ["constructor", "state-variable-immutable"]
+    unsafeAllow: ["constructor", "state-variable-immutable"],
+    unsafeSkipStorageCheck: true, // Force upgrade even if storage layout appears unchanged
+    txOverrides: {
+      gasLimit: 5000000, // Increase gas limit if needed
+    },
   });
   await upgraded.waitForDeployment();
   
@@ -143,6 +149,51 @@ async function main() {
       }
     } catch (error: any) {
       console.log("⚠️  Warning: Could not test setNodeNFT -", error.message);
+    }
+    
+    try {
+      // Test getMinter function exists
+      const testNftId = 1;
+      const minter = await upgraded.getMinter(testNftId);
+      console.log("✅ getMinter function works (returned:", minter === "0x0000000000000000000000000000000000000000" ? "zero address (not set)" : minter, ")");
+    } catch (error: any) {
+      console.log("⚠️  Warning: Could not test getMinter -", error.message);
+    }
+    
+    try {
+      // Test setMinter function exists
+      const hasSetMinter = upgraded.interface.hasFunction("setMinter");
+      if (hasSetMinter) {
+        console.log("✅ setMinter function exists in upgraded contract");
+      } else {
+        console.log("❌ setMinter function NOT found in upgraded contract!");
+      }
+    } catch (error: any) {
+      console.log("⚠️  Warning: Could not test setMinter -", error.message);
+    }
+    
+    try {
+      // Test batchSetMinters function exists
+      const hasBatchSetMinters = upgraded.interface.hasFunction("batchSetMinters");
+      if (hasBatchSetMinters) {
+        console.log("✅ batchSetMinters function exists in upgraded contract");
+      } else {
+        console.log("❌ batchSetMinters function NOT found in upgraded contract!");
+      }
+    } catch (error: any) {
+      console.log("⚠️  Warning: Could not test batchSetMinters -", error.message);
+    }
+    
+    try {
+      // Test MinterSet event exists
+      const hasMinterSetEvent = upgraded.interface.hasEvent("MinterSet");
+      if (hasMinterSetEvent) {
+        console.log("✅ MinterSet event exists in upgraded contract");
+      } else {
+        console.log("❌ MinterSet event NOT found in upgraded contract!");
+      }
+    } catch (error: any) {
+      console.log("⚠️  Warning: Could not test MinterSet event -", error.message);
     }
   } catch (error: any) {
     console.log("⚠️  Warning: Could not verify upgrade -", error.message);

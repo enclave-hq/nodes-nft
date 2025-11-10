@@ -120,7 +120,8 @@
       "progress": "進捗",
       "connectWalletFirst": "まずウォレットを接続してください",
       "noActiveBatchMint": "現在アクティブなバッチがありません。NFTをミントできません",
-      "batchSoldOutMint": "現在のバッチは完売しました。NFTをミントできません"
+      "batchSoldOutMint": "現在のバッチは完売しました。NFTをミントできません",
+      "waitForNextBatch": "次のバッチがミント開始されるまでお待ちください"
     },
     "mint": {
       "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",

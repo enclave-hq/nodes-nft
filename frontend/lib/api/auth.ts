@@ -6,22 +6,30 @@ import { apiPost } from './client';
 import { setAuthToken, removeAuthToken } from './client';
 
 export interface LoginRequest {
-  address: string;
-  signature?: string;
+  username: string;
+  password: string;
+  totpCode?: string;
 }
 
 export interface LoginResponse {
   access_token: string;
-  address: string;
+  username: string;
+}
+
+export interface SetupTotpResponse {
+  secret: string;
+  qrCode: string;
+  otpauthUrl: string;
 }
 
 /**
- * Login with address and optional signature
+ * Login with username, password and optional TOTP code
  */
-export async function login(address: string, signature?: string): Promise<LoginResponse> {
+export async function login(username: string, password: string, totpCode?: string): Promise<LoginResponse> {
   const response = await apiPost<LoginResponse>('/admin/auth/login', {
-    address,
-    signature,
+    username,
+    password,
+    totpCode,
   });
   
   // Store token
@@ -30,6 +38,38 @@ export async function login(address: string, signature?: string): Promise<LoginR
   }
   
   return response;
+}
+
+/**
+ * Setup TOTP (generate secret and QR code)
+ */
+export async function setupTotp(username: string, password: string): Promise<SetupTotpResponse> {
+  return apiPost<SetupTotpResponse>('/admin/auth/totp/setup', {
+    username,
+    password,
+  });
+}
+
+/**
+ * Enable TOTP after verification
+ */
+export async function enableTotp(username: string, password: string, totpCode: string, secret: string): Promise<{ success: boolean; message: string }> {
+  return apiPost('/admin/auth/totp/enable', {
+    username,
+    password,
+    totpCode,
+    secret,
+  });
+}
+
+/**
+ * Disable TOTP
+ */
+export async function disableTotp(username: string, password: string): Promise<{ success: boolean; message: string }> {
+  return apiPost('/admin/auth/totp/disable', {
+    username,
+    password,
+  });
 }
 
 /**

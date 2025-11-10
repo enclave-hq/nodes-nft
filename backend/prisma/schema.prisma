@@ -13,8 +13,13 @@ datasource db {
 // Admin table
 model Admin {
   id        Int      @id @default(autoincrement())
-  address   String   @unique @db.VarChar(42)
+  username  String   @unique @db.VarChar(50)
+  passwordHash String @db.VarChar(255) // bcrypt hashed password
+  totpSecret String?  @db.VarChar(32) // TOTP secret (base32 encoded)
+  totpEnabled Boolean @default(false) // Whether TOTP is enabled
+  address   String?  @db.VarChar(42) // Optional: legacy wallet address
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("admins")
 }
@@ -62,6 +67,7 @@ model InviteCode {
   usage                 InviteCodeUsage[]
   nftRecords            NftRecord[]
   rootNftRecords         NftRecord[] @relation("RootNftRecord")
+  rootReferralRewards    ReferralRewardRecord[] @relation("RootReferralReward")
 
   @@map("invite_codes")
 }
@@ -84,7 +90,8 @@ model InviteCodeUsage {
 model NftRecord {
   id                    Int      @id @default(autoincrement())
   nftId                 Int      @unique // NFT ID
-  ownerAddress          String   @db.VarChar(42) // Current owner address
+  ownerAddress          String   @db.VarChar(42) // Current owner address (may change on transfer)
+  minterAddress         String   @db.VarChar(42) // Original minter address (never changes)
   mintedAt              DateTime @default(now())
   mintTxHash            String?  @db.VarChar(66) // Mint transaction hash
   inviteCodeId          Int? // Invite code ID used by user
@@ -117,6 +124,7 @@ model Batch {
   batchId       BigInt   // Batch ID in contract
   maxMintable   BigInt   // Max mintable quantity for this batch
   mintPrice     String   @db.VarChar(50) // Stored as string (wei)
+  referralReward String? @db.VarChar(50) // Referral reward per NFT in USDT (only in database, not on-chain)
   currentMinted BigInt   @default(0)
   active        Boolean  @default(false)
   createdAt     DateTime @default(now())
@@ -129,7 +137,7 @@ model Batch {
 // Admin operation log table
 model AdminLog {
   id         Int      @id @default(autoincrement())
-  adminAddress String @db.VarChar(42)
+  adminAddress String @db.VarChar(100) // Can be username (username/password auth) or address (wallet auth)
   actionType String   @db.VarChar(50) // whitelist_add, batch_create, etc.
   actionData Json? // Store operation details
   txHash     String?  @db.VarChar(66) // Transaction hash (if any)
@@ -146,5 +154,65 @@ model StatsCache {
   updatedAt DateTime @default(now())
 
   @@map("stats_cache")
+}
+
+// Revenue record table (records USDT income from NFT minting)
+model RevenueRecord {
+  id            Int      @id @default(autoincrement())
+  nftId         Int      @unique // NFT ID (one-to-one with NFT)
+  batchId       BigInt   // Batch ID
+  minterAddress String   @db.VarChar(42) // Address that minted the NFT
+  mintPrice     String   @db.VarChar(50) // Mint price in USDT (wei, stored as string)
+  mintPriceUSDT String   @db.VarChar(50) // Mint price in USDT (human-readable)
+  mintTxHash    String?  @db.VarChar(66) // Mint transaction hash
+  createdAt     DateTime @default(now())
+
+  @@map("revenue_records")
+}
+
+// Referral reward record table (records referral rewards for root referrers)
+model ReferralRewardRecord {
+  id                Int      @id @default(autoincrement())
+  nftId             Int      @unique // NFT ID (one-to-one with NFT)
+  batchId           BigInt   // Batch ID
+  minterAddress     String   @db.VarChar(42) // Address that minted the NFT
+  rootReferrerAddress String @db.VarChar(42) // Root referrer address (traced from invite chain)
+  rootInviteCodeId  Int? // Root invite code ID
+  rootInviteCode    InviteCode? @relation("RootReferralReward", fields: [rootInviteCodeId], references: [id])
+  referralReward    String   @db.VarChar(50) // Referral reward in USDT (human-readable)
+  referralRewardWei String  @db.VarChar(50) // Referral reward in wei (stored as string)
+  mintTxHash        String?  @db.VarChar(66) // Mint transaction hash (for reference)
+  createdAt         DateTime @default(now())
+
+  @@map("referral_reward_records")
+}
+
+// Referral reward distribution table (records referral reward payouts)
+model ReferralRewardDistribution {
+  id                Int      @id @default(autoincrement())
+  rootReferrerAddress String @db.VarChar(42) // Root referrer address
+  amount            String   @db.VarChar(50) // Distribution amount in USDT (human-readable)
+  amountWei         String   @db.VarChar(50) // Distribution amount in wei (stored as string)
+  toAddress         String   @db.VarChar(42) // Recipient address
+  txHash            String?  @db.VarChar(66) // Transaction hash
+  adminAddress      String   @db.VarChar(100) // Admin username or address who performed the distribution
+  note              String?  @db.Text // Optional note
+  createdAt         DateTime @default(now())
+
+  @@map("referral_reward_distributions")
+}
+
+// Revenue withdrawal table (records revenue/profit withdrawals)
+model RevenueWithdrawal {
+  id                Int      @id @default(autoincrement())
+  amount            String   @db.VarChar(50) // Withdrawal amount in USDT (human-readable)
+  amountWei         String   @db.VarChar(50) // Withdrawal amount in wei (stored as string)
+  toAddress         String   @db.VarChar(42) // Recipient address
+  txHash            String?  @db.VarChar(66) // Transaction hash
+  adminAddress      String   @db.VarChar(100) // Admin username or address who performed the withdrawal
+  note              String?  @db.Text // Optional note
+  createdAt         DateTime @default(now())
+
+  @@map("revenue_withdrawals")
 }
 

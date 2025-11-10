@@ -4,8 +4,7 @@ import "./globals.css";
 import { Providers } from "@/lib/providers/Providers";
 import { I18nProvider } from "@/lib/i18n/provider";
 import { DebugPanel } from "@/components/DebugPanel";
-import { Sidebar } from "@/components/Sidebar";
-import { BottomNav } from "@/components/BottomNav";
+import { ConditionalLayout } from "@/components/ConditionalLayout";
 import { ProtectImages } from "./protect-images";
 
 const inter = Inter({
@@ -29,18 +28,9 @@ export default function RootLayout({
         <I18nProvider>
           <Providers>
             <ProtectImages />
-            <div className="lg:pl-64">
-              {/* Desktop Sidebar */}
-              <Sidebar />
-              
-              {/* Main Content */}
-              <main className="pb-16 lg:pb-0">
-                {children}
-              </main>
-              
-              {/* Mobile Bottom Navigation */}
-              <BottomNav />
-            </div>
+            <ConditionalLayout>
+              {children}
+            </ConditionalLayout>
             {/* <DebugPanel /> */}
           </Providers>
         </I18nProvider>

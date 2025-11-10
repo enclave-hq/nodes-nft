@@ -7,10 +7,24 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-export interface ApiError {
-  message: string;
+/**
+ * Custom error class for API errors
+ * This ensures error objects are properly recognized as Error instances
+ */
+export class ApiError extends Error {
   statusCode?: number;
   error?: string;
+
+  constructor(message: string, statusCode?: number, error?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.statusCode = statusCode;
+    this.error = error;
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ApiError);
+    }
+  }
 }
 
 /**
@@ -66,7 +80,7 @@ async function apiRequest<T>(
     // Handle unauthorized - clear token
     if (response.status === 401) {
       removeAuthToken();
-      throw new Error('Unauthorized - please login again');
+      throw new ApiError('Unauthorized - please login again', 401, 'UNAUTHORIZED');
     }
 
     // Handle errors
@@ -76,46 +90,47 @@ async function apiRequest<T>(
         statusCode: response.status,
       }));
       
-      const error: ApiError = {
-        message: errorData.message || errorData.error || 'Request failed',
-        statusCode: response.status,
-        error: errorData.error,
-      };
-      
-      throw error;
+      throw new ApiError(
+        errorData.message || errorData.error || 'Request failed',
+        response.status,
+        errorData.error,
+      );
     }
 
     // Return JSON data
     const data = await response.json();
     return data as T;
   } catch (error) {
+    // Re-throw ApiError instances (already properly formatted)
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    
     // Handle network errors (fetch failures)
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      const networkError: ApiError = {
-        message: 'Network error: Unable to connect to API server. Please check if the backend is running.',
-        statusCode: 0,
-        error: 'NETWORK_ERROR',
-      };
-      throw networkError;
+      throw new ApiError(
+        'Network error: Unable to connect to API server. Please check if the backend is running.',
+        0,
+        'NETWORK_ERROR',
+      );
     }
     
     // Handle other fetch-related errors
     if (error instanceof Error && (error.message === 'Failed to fetch' || error.message.includes('fetch'))) {
-      const networkError: ApiError = {
-        message: 'Network error: Unable to connect to API server. Please check if the backend is running.',
-        statusCode: 0,
-        error: 'NETWORK_ERROR',
-      };
-      throw networkError;
+      throw new ApiError(
+        'Network error: Unable to connect to API server. Please check if the backend is running.',
+        0,
+        'NETWORK_ERROR',
+      );
     }
     
-    // Re-throw known errors
+    // Re-throw other Error instances (preserve original error)
     if (error instanceof Error) {
       throw error;
     }
     
-    // Handle unknown errors
-    throw new Error('Unknown error occurred');
+    // Handle unknown errors (non-Error objects)
+    throw new ApiError('Unknown error occurred', 0, 'UNKNOWN_ERROR');
   }
 }
 

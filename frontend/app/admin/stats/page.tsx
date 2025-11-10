@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useWallet } from '@/lib/providers/WalletProvider';
 import { 
-  login, 
   isAuthenticated,
   getOverviewStats,
   getInviteCodeStats,
@@ -13,44 +11,15 @@ import {
 } from '@/lib/api';
 
 export default function AdminStatsPage() {
-  const { address, isConnected, connect } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticatedState, setIsAuthenticatedState] = useState(false);
   const [overviewStats, setOverviewStats] = useState<OverviewStats | null>(null);
   const [inviteCodeStats, setInviteCodeStats] = useState<InviteCodeStats | null>(null);
 
   useEffect(() => {
-    setIsAuthenticatedState(isAuthenticated());
     if (isAuthenticated()) {
       fetchStats();
     }
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticatedState && isConnected && address) {
-      fetchStats();
-    }
-  }, [isAuthenticatedState, isConnected, address]);
-
-  const handleLogin = async () => {
-    if (!isConnected || !address) {
-      toast.error('请先连接钱包');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await login(address);
-      setIsAuthenticatedState(true);
-      toast.success('登录成功');
-      await fetchStats();
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      toast.error(error.message || '登录失败，请确认您是合约管理员');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const fetchStats = async () => {
     if (!isAuthenticated()) {
@@ -73,60 +42,22 @@ export default function AdminStatsPage() {
     }
   };
 
-  // Show login page if not authenticated
-  if (!isAuthenticatedState) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h1 className="text-3xl font-bold mb-6">数据统计</h1>
-            <p className="text-gray-600 mb-6">
-              请先连接钱包并登录以访问管理功能
-            </p>
-            {!isConnected ? (
-              <button
-                onClick={() => connect()}
-                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238]"
-              >
-                连接钱包
-              </button>
-            ) : (
-              <button
-                onClick={handleLogin}
-                disabled={isLoading}
-                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
-              >
-                {isLoading ? '登录中...' : '登录'}
-              </button>
-            )}
-            <p className="text-sm text-gray-500 mt-4">
-              只有合约管理员可以访问此页面
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">数据统计</h1>
-            <div className="flex gap-2">
-              <button
-                onClick={fetchStats}
-                disabled={isLoading}
-                className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
-              >
-                {isLoading ? '加载中...' : '刷新'}
-              </button>
-              <div className="text-sm text-gray-600 flex items-center">
-                钱包: {address?.slice(0, 6)}...{address?.slice(-4)}
-              </div>
-            </div>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">数据统计</h1>
+            <p className="mt-1 text-sm text-gray-600">详细的系统数据统计和分析</p>
           </div>
+          <button
+            onClick={fetchStats}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {isLoading ? '加载中...' : '刷新数据'}
+          </button>
+        </div>
 
           {/* 总体统计 */}
           {overviewStats && (
@@ -209,12 +140,11 @@ export default function AdminStatsPage() {
             </div>
           )}
 
-          {isLoading && !overviewStats && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">加载统计数据中...</p>
-            </div>
-          )}
-        </div>
+        {isLoading && !overviewStats && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">加载统计数据中...</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -115,6 +115,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         uint256 unlockedWithdrawn;      // Unlocked and withdrawn $E (default 0)
         uint256 producedWithdrawn;      // $E production withdrawn (accumulated)
         mapping(address => uint256) rewardWithdrawn; // Reward withdrawn per token (accumulated)
+        address minter;                 // Original minter address (never changes, even if NFT is transferred) - MUST be after mapping
     }
     
     /**
@@ -252,6 +253,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
     event TokensBurnedFromSwap(uint256 amount, string reason);
     event UsdtTokenUpdated(address indexed oldUsdt, address indexed newUsdt);
     event UserNFTListSynced(uint256 indexed nftId, address indexed from, address indexed to);
+    event MinterSet(uint256 indexed nftId, address indexed minter);
 
     /* ========== MODIFIERS ========== */
     
@@ -599,6 +601,7 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         pool.createdAt = block.timestamp;
         pool.unlockedWithdrawn = 0; // Initialize to 0
         pool.producedWithdrawn = 0; // Initialize to 0
+        pool.minter = msg.sender; // Store original minter address (never changes)
         
         // Initialize reward withdrawn for all reward tokens
         for (uint256 i = 0; i < rewardTokens.length; i++) {
@@ -1607,6 +1610,105 @@ contract NFTManager is OwnableUpgradeable, UUPSUpgradeable, ReentrancyGuardUpgra
         }
         
         return (orders, total);
+    }
+
+    /* ========== MINTER QUERY ========== */
+    
+    /**
+     * @notice Get original minter address for an NFT
+     * @dev The minter address never changes, even if the NFT is transferred or sold
+     * @param nftId NFT ID
+     * @return minter Original minter address, or address(0) if not set (for NFTs minted before upgrade)
+     */
+    function getMinter(uint256 nftId) external view returns (address minter) {
+        return nftPools[nftId].minter;
+    }
+    
+    /**
+     * @notice Set minter address for an existing NFT (migration function)
+     * @dev This function is used to set minter for NFTs minted before the upgrade
+     * Only owner can call this function
+     * @param nftId NFT ID
+     * @param minterAddress Original minter address (from NFTMinted event)
+     */
+    function setMinter(uint256 nftId, address minterAddress) external onlyOwner {
+        require(nftId > 0, "Invalid NFT ID");
+        require(minterAddress != address(0), "Invalid minter address");
+        
+        NFTPool storage pool = nftPools[nftId];
+        
+        // Initialize pool minimally if it doesn't exist yet
+        // This handles NFTs minted before the upgrade or outside NFTManager
+        if (pool.nftId == 0) {
+            // Pool doesn't exist, create it
+            pool.nftId = nftId;
+            pool.status = NFTStatus.Active;
+            pool.createdAt = block.timestamp;
+            pool.unlockedWithdrawn = 0;
+            pool.producedWithdrawn = 0;
+            
+            // Initialize reward withdrawn for all reward tokens
+            for (uint256 i = 0; i < rewardTokens.length; i++) {
+                address token = rewardTokens[i];
+                pool.rewardWithdrawn[token] = 0;
+            }
+            
+            // Set minter
+            pool.minter = minterAddress;
+        } else {
+            // Pool exists, check if minter is already set
+            require(pool.minter == address(0), "Minter already set");
+            pool.minter = minterAddress;
+        }
+        
+        emit MinterSet(nftId, minterAddress);
+    }
+    
+    /**
+     * @notice Batch set minter addresses for multiple NFTs (migration function)
+     * @dev This function is used to set minter for NFTs minted before the upgrade
+     * Only owner can call this function
+     * @param nftIds Array of NFT IDs
+     * @param minterAddresses Array of original minter addresses (from NFTMinted events)
+     */
+    function batchSetMinters(uint256[] calldata nftIds, address[] calldata minterAddresses) external onlyOwner {
+        require(nftIds.length == minterAddresses.length, "Array length mismatch");
+        
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            uint256 nftId = nftIds[i];
+            address minterAddress = minterAddresses[i];
+            
+            require(nftId > 0, "Invalid NFT ID");
+            require(minterAddress != address(0), "Invalid minter address");
+            
+            NFTPool storage pool = nftPools[nftId];
+            
+            // Initialize pool minimally if it doesn't exist yet
+            // This handles NFTs minted before the upgrade or outside NFTManager
+            if (pool.nftId == 0) {
+                // Pool doesn't exist, create it
+                pool.nftId = nftId;
+                pool.status = NFTStatus.Active;
+                pool.createdAt = block.timestamp;
+                pool.unlockedWithdrawn = 0;
+                pool.producedWithdrawn = 0;
+                
+                // Initialize reward withdrawn for all reward tokens
+                for (uint256 j = 0; j < rewardTokens.length; j++) {
+                    address token = rewardTokens[j];
+                    pool.rewardWithdrawn[token] = 0;
+                }
+                
+                // Set minter
+                pool.minter = minterAddress;
+            } else {
+                // Pool exists, check if minter is already set
+                require(pool.minter == address(0), "Minter already set");
+                pool.minter = minterAddress;
+            }
+            
+            emit MinterSet(nftId, minterAddress);
+        }
     }
 
     /* ========== UUPS UPGRADE ========== */

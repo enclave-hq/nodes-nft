@@ -101,6 +101,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
   // Get invite code status (from Store)
   const inviteCodeStatus = inviteCodes.inviteCodeStatus;
   const activeInviteCodes = inviteCodes.ownedInviteCodes;
+  const pendingInviteCodes = inviteCodes.pendingInviteCodes || [];
 
   return (
     <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
@@ -137,9 +138,15 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-green-900">{t('whitelisted')}</p>
+                    <p className="text-sm font-medium text-green-900">
+                      {inviteCodeStatus === 'approved_pending_activation' 
+                        ? t('waitingForActivation')
+                        : t('whitelisted')}
+                    </p>
                     <p className="text-xs text-green-700 mt-1">
-                      {t('whitelistedDescription')}
+                      {inviteCodeStatus === 'approved_pending_activation'
+                        ? t('waitingForActivationDescription')
+                        : t('whitelistedDescription')}
                     </p>
                   </div>
                   <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 ml-2" />
@@ -202,6 +209,33 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                               {code.code}
                             </p>
                             <p className="text-xs text-blue-700 mt-1">{t('activeDescription')}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : inviteCodeStatus === 'approved_pending_activation' ? (
+              // Status: Approved but waiting for activation (NFT mint)
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-yellow-900">{t('waitingForActivation')}</p>
+                    <Clock className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+                  </div>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    {t('waitingForActivationDescription')}
+                  </p>
+                  <div className="space-y-2">
+                    {pendingInviteCodes.map((code) => (
+                      <div key={code.id} className="bg-gray-100 rounded-lg p-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-mono font-semibold text-black">
+                              {code.code}
+                            </p>
+                            <p className="text-xs text-yellow-700 mt-1">{t('pendingActivationDescription')}</p>
                           </div>
                         </div>
                       </div>

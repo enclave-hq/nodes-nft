@@ -5,18 +5,19 @@
 import { apiGet, apiPost, apiPatch } from './client';
 
 export interface Batch {
-  id: string;
+  batchId: string;
   maxMintable: string;
-  mintPrice: string;
-  isActive: boolean;
+  currentMinted: string;
+  mintPrice: string; // in wei (BSC USDT has 18 decimals)
+  referralReward: string | null; // Referral reward per NFT in USDT (only in database)
+  active: boolean;
   createdAt: string;
-  updatedAt: string;
-  createdBy: string;
 }
 
 export interface CreateBatchRequest {
   maxMintable: string;
   mintPrice: string;
+  referralReward?: string; // Optional referral reward in USDT
 }
 
 export interface CreateBatchResponse {
@@ -39,11 +40,13 @@ export async function getBatches(): Promise<Batch[]> {
  */
 export async function createBatch(
   maxMintable: string,
-  mintPrice: string
+  mintPrice: string,
+  referralReward?: string
 ): Promise<CreateBatchResponse> {
   return apiPost<CreateBatchResponse>('/admin/batches', {
     maxMintable,
     mintPrice,
+    referralReward,
   });
 }
 
