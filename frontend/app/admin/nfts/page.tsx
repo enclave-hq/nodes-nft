@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { useWallet } from '@/lib/providers/WalletProvider';
 import { 
-  login, 
   isAuthenticated,
   traceNFT,
   getNFTsByRootInviteCode,
@@ -14,36 +12,11 @@ import {
 } from '@/lib/api';
 
 export default function AdminNFTsPage() {
-  const { address, isConnected, connect } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticatedState, setIsAuthenticatedState] = useState(false);
   const [searchType, setSearchType] = useState<'nft' | 'user' | 'root'>('nft');
   const [searchValue, setSearchValue] = useState('');
   const [nfts, setNfts] = useState<NFT[]>([]);
   const [nftTrace, setNftTrace] = useState<NFTTrace | null>(null);
-
-  useEffect(() => {
-    setIsAuthenticatedState(isAuthenticated());
-  }, []);
-
-  const handleLogin = async () => {
-    if (!isConnected || !address) {
-      toast.error('请先连接钱包');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await login(address);
-      setIsAuthenticatedState(true);
-      toast.success('登录成功');
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      toast.error(error.message || '登录失败，请确认您是合约管理员');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSearch = async () => {
     if (!searchValue.trim()) {
@@ -85,57 +58,26 @@ export default function AdminNFTsPage() {
       }
     } catch (error: any) {
       console.error('Failed to search:', error);
-      toast.error(error.message || '搜索失败');
+      // Show more specific error messages
+      if (error.statusCode === 404) {
+        toast.error(error.message || '未找到相关记录');
+      } else if (error.statusCode === 401) {
+        toast.error('请先登录');
+      } else {
+        toast.error(error.message || '搜索失败');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Show login page if not authenticated
-  if (!isAuthenticatedState) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h1 className="text-3xl font-bold mb-6">NFT追溯</h1>
-            <p className="text-gray-600 mb-6">
-              请先连接钱包并登录以访问管理功能
-            </p>
-            {!isConnected ? (
-              <button
-                onClick={() => connect()}
-                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238]"
-              >
-                连接钱包
-              </button>
-            ) : (
-              <button
-                onClick={handleLogin}
-                disabled={isLoading}
-                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
-              >
-                {isLoading ? '登录中...' : '登录'}
-              </button>
-            )}
-            <p className="text-sm text-gray-500 mt-4">
-              只有合约管理员可以访问此页面
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">NFT追溯</h1>
-            <div className="text-sm text-gray-600">
-              钱包: {address?.slice(0, 6)}...{address?.slice(-4)}
-            </div>
-          </div>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">NFT追溯</h1>
+          <p className="mt-1 text-sm text-gray-600">追溯 NFT 的邀请链和来源</p>
+        </div>
 
           {/* 搜索区域 */}
           <div className="mb-6 p-6 border border-gray-200 rounded-lg">
@@ -300,12 +242,11 @@ export default function AdminNFTsPage() {
             </div>
           )}
 
-          {!nftTrace && nfts.length === 0 && !isLoading && (
-            <div className="text-center py-12 text-gray-500">
-              <p>请输入搜索条件进行查询</p>
-            </div>
-          )}
-        </div>
+        {!nftTrace && nfts.length === 0 && !isLoading && (
+          <div className="text-center py-12 text-gray-500">
+            <p>请输入搜索条件进行查询</p>
+          </div>
+        )}
       </div>
     </div>
   );

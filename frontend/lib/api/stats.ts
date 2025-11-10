@@ -10,6 +10,7 @@ export interface OverviewStats {
   totalInviteCodes: number;
   activeInviteCodes: number;
   totalWhitelisted: number;
+  whitelistedUsers?: number; // Alias for totalWhitelisted
   totalBatches: number;
   activeBatches: number;
 }
@@ -21,6 +22,10 @@ export interface InviteCodeStats {
   pending: number;
   expired: number;
   byStatus: Record<string, number>;
+  // Frontend-specific fields
+  pendingCount?: number;
+  activeCount?: number;
+  totalUsageCount?: number;
 }
 
 /**

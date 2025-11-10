@@ -11,6 +11,8 @@ export class WhitelistService {
 
   /**
    * Get whitelist with pagination
+   * Note: Contract doesn't support enumerating whitelist, so we use database history
+   * But we verify each address against contract to ensure accuracy
    */
   async getWhitelist(page: number = 1, limit: number = 50, search?: string) {
     const skip = (page - 1) * limit;
@@ -20,7 +22,8 @@ export class WhitelistService {
       where.address = { contains: search, mode: 'insensitive' };
     }
 
-    const [data, total] = await Promise.all([
+    // Get from database history (as index)
+    const [historyRecords, total] = await Promise.all([
       this.prisma.whitelistHistory.findMany({
         where: { action: 'add', ...where },
         skip,
@@ -31,11 +34,30 @@ export class WhitelistService {
       this.prisma.whitelistHistory.count({ where: { action: 'add', ...where } }),
     ]);
 
+    // Verify each address against contract (filter out removed addresses)
+    // Return entries with metadata (address, addedAt, addedBy)
+    const verifiedEntries = [];
+    for (const record of historyRecords) {
+      const isWhitelisted = await this.contractService.isWhitelisted(record.address);
+      if (isWhitelisted) {
+        verifiedEntries.push({
+          address: record.address,
+          addedAt: record.createdAt.toISOString(),
+          addedBy: record.adminAddress || 'unknown',
+        });
+      }
+    }
+
+    // Calculate total pages
+    const totalCount = verifiedEntries.length;
+    const totalPages = Math.ceil(totalCount / limit);
+
     return {
-      data: data.map((item) => item.address),
-      total,
+      data: verifiedEntries,
+      total: totalCount,
       page,
       limit,
+      totalPages,
     };
   }
 
@@ -43,6 +65,10 @@ export class WhitelistService {
    * Batch add addresses to whitelist
    */
   async addToWhitelist(addresses: string[], adminAddress: string) {
+    const added: string[] = [];
+    const failed: string[] = [];
+    
+    try {
     // Call contract
     const txHash = await this.contractService.addToWhitelist(addresses);
 
@@ -60,7 +86,27 @@ export class WhitelistService {
       ),
     );
 
-    return { success: true, txHash };
+      // All addresses were added successfully
+      added.push(...addresses);
+      
+      return { 
+        success: true, 
+        txHash,
+        added,
+        failed,
+        message: `成功添加 ${added.length} 个地址到白名单`,
+      };
+    } catch (error) {
+      // If contract call fails, all addresses failed
+      failed.push(...addresses);
+      
+      return { 
+        success: false, 
+        added,
+        failed,
+        message: error instanceof Error ? error.message : '添加白名单失败',
+      };
+    }
   }
 
   /**

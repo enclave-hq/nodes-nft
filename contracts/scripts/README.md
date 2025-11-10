@@ -1,38 +1,26 @@
-# 📜 Deployment and Testing Scripts
+# 📜 Deployment Scripts
 
-All scripts for deploying and testing the Enclave Node NFT system on BSC Testnet.
+All scripts for deploying and upgrading the Enclave Node NFT system.
 
 ---
 
 ## 📋 Script Index
 
-### 🚀 Production Deployment Scripts (Testnet/Mainnet)
+### 🚀 Deployment Scripts
 
 | Script | Purpose | Prerequisites | Runtime |
 |--------|---------|---------------|---------|
-| `01-deploy-usdt.ts` | Deploy Test USDT token | Private key, BNB | ~1 min |
-| `02-deploy-main.ts` | Deploy all main contracts | USDT address | ~3 min |
+| `01-deploy-usdt.ts` | Deploy Test USDT token (Testnet) | Private key, BNB | ~1 min |
+| `02-deploy-main.ts` | Deploy all main contracts (Testnet) | USDT address | ~3 min |
+| `deploy-mainnet.ts` | Deploy all main contracts (Mainnet) | USDT address, Mainnet config | ~5 min |
+| `deploy-vesting.ts` | Deploy TokenVesting contract | Token address | ~2 min |
+
+### 🔄 Upgrade Scripts
+
+| Script | Purpose | Prerequisites | Runtime |
+|--------|---------|---------------|---------|
 | `upgrade-nftmanager.ts` | Upgrade NFTManager contract | MANAGER_ADDRESS in .env | ~2 min |
-
-### 🧪 Production Testing Scripts
-
-| Script | Purpose | Prerequisites | Runtime |
-|--------|---------|---------------|---------|
-| `03-setup-test-accounts.ts` | Distribute USDT to test accounts | Deployed USDT | ~2 min |
-| `04-test-mint.ts` | Test NFT minting | Deployed contracts, USDT | ~2 min |
-| `05-test-distribute-and-claim.ts` | Test distribution & claiming | Minted NFTs | ~3 min |
-
-### 🏠 Local Development Scripts
-
-| Script | Purpose | Prerequisites | Runtime |
-|--------|---------|---------------|---------|
-| `local-01-deploy-all.ts` | Deploy all contracts locally | Hardhat node running | ~30 sec |
-| `local-02-test-mint.ts` | Test NFT minting locally | Contracts deployed | ~10 sec |
-| `local-03-test-distribution.ts` | Test distribution locally | NFTs minted | ~15 sec |
-| `local-04-test-marketplace.ts` | Test marketplace locally | NFTs minted | ~20 sec |
-| `local-05-test-unlock.ts` | Test unlock mechanism locally | NFTs minted | ~15 sec |
-| `local-06-test-v4-features.ts` | Test v4 features locally | Contracts deployed | ~20 sec |
-| `run-all-local-tests.sh` | Run all local tests sequentially | Hardhat node running | ~2 min |
+| `migrate-minter-addresses.ts` | Set minter addresses for existing NFTs | Upgraded contract, Owner key | ~5-10 min |
 
 ---
 
@@ -46,7 +34,7 @@ cp .env.example .env
 nano .env  # Add your PRIVATE_KEY
 ```
 
-### Step 2: Deploy Contracts
+### Step 2: Deploy Contracts (Testnet)
 
 ```bash
 # Deploy Test USDT
@@ -59,42 +47,31 @@ npx hardhat run scripts/01-deploy-usdt.ts --network bscTestnet
 npx hardhat run scripts/02-deploy-main.ts --network bscTestnet
 ```
 
-### Step 3: Run Tests
+### Step 3: Deploy Contracts (Mainnet)
 
 ```bash
-# Optional: Setup test accounts
-npx hardhat run scripts/03-setup-test-accounts.ts --network bscTestnet
-
-# Test minting
-npx hardhat run scripts/04-test-mint.ts --network bscTestnet
-
-# Test distribution and claiming
-npx hardhat run scripts/05-test-distribute-and-claim.ts --network bscTestnet
+# Set USDT_ADDRESS to BSC mainnet USDT (0x55d398326f99059fF775485246999027B3197955)
+# Deploy all main contracts
+npx hardhat run scripts/deploy-mainnet.ts --network bscMainnet
 ```
 
----
+### Step 4: Upgrade Contract
 
-## 🏠 Local Development
-
-For local testing, start a Hardhat node first:
+After upgrading the NFTManager contract to include the `minter` field, you need to migrate minter addresses for existing NFTs:
 
 ```bash
-# Terminal 1: Start local Hardhat node
-npx hardhat node
+# 1. Upgrade the contract first
+npx hardhat run scripts/upgrade-nftmanager.ts --network bscTestnet
 
-# Terminal 2: Run local tests
-# Option 1: Run all tests sequentially
-./scripts/run-all-local-tests.sh
-
-# Option 2: Run individual tests
-npx hardhat run scripts/local-01-deploy-all.ts --network localhost
-npx hardhat run scripts/local-02-test-mint.ts --network localhost
-# ... etc
+# 2. Migrate minter addresses for existing NFTs
+npx hardhat run scripts/migrate-minter-addresses.ts --network bscTestnet
 ```
 
-**Local scripts vs Production scripts:**
-- **Local scripts** (`local-XX-*`): Quick deployment and testing on local Hardhat node, no real gas costs
-- **Production scripts** (`01-05-*`): Full deployment and testing on testnet/mainnet, uses real gas
+The migration script will:
+- Check which NFTs don't have minter set yet
+- Batch set minter addresses using `batchSetMinters` (50 NFTs per batch)
+
+**Note:** New NFTs minted after the upgrade will automatically have their minter set in the `mintNFT` function.
 
 ---
 
@@ -106,13 +83,13 @@ npx hardhat run scripts/local-02-test-mint.ts --network localhost
 
 **What it does:**
 - Deploys TestUSDT contract
-- Mints 10,000,000 USDT to deployer
+- Mints 100,000,000 USDT to deployer
 - Outputs contract address for .env configuration
 
 **Output:**
 ```
 ✅ Test USDT deployed to: 0x...
-📊 Initial supply: 10,000,000 USDT
+📊 Initial supply: 100,000,000 USDT
 ```
 
 **Next step:** Add `USDT_ADDRESS` to your `.env` file.
@@ -121,7 +98,7 @@ npx hardhat run scripts/local-02-test-mint.ts --network localhost
 
 ### 02-deploy-main.ts
 
-**Purpose:** Deploy all main contracts (EnclaveToken, NodeNFT, NFTManager).
+**Purpose:** Deploy all main contracts (EnclaveToken, NodeNFT, NFTManager) on Testnet.
 
 **What it does:**
 1. Deploys EnclaveToken (100M ECLV)
@@ -146,91 +123,50 @@ Plus configuration instructions for both contracts/.env and frontend/.env.local.
 
 ---
 
-### 03-setup-test-accounts.ts
+### deploy-mainnet.ts
 
-**Purpose:** Distribute USDT to multiple test accounts for testing.
+**Purpose:** Deploy all main contracts (EnclaveToken, NodeNFT, NFTManager) on BSC Mainnet.
 
 **What it does:**
-- Mints 100,000 USDT to each configured test account
-- Useful for multi-user testing scenarios
+1. Deploys EnclaveToken ($E)
+2. Deploys NodeNFT (ERC-721)
+3. Deploys NFTManager (Upgradeable UUPS Proxy)
+4. Configures all contracts
+5. Sets up reward tokens and initial balances
 
-**Configuration:**
-Edit the script to add your test wallet addresses:
-```typescript
-const testAccounts = [
-  "0x1234...", // Alice
-  "0x5678...", // Bob
-];
+**Prerequisites:**
+- Set `USDT_ADDRESS` in .env (BSC mainnet USDT: `0x55d398326f99059fF775485246999027B3197955`)
+- Set `PRIVATE_KEY` in .env (deployer wallet with BNB for gas)
+- Set `BSC_MAINNET_RPC_URL` in .env
+- Set `BSCSCAN_API_KEY` in .env (for verification)
+
+**Usage:**
+```bash
+npx hardhat run scripts/deploy-mainnet.ts --network bscMainnet
 ```
 
-**Output:**
-```
-✅ Minted 100,000 USDT to 0x...
-```
+**⚠️ WARNING:** This is a MAINNET deployment! Make sure you have verified all configurations!
 
 ---
 
-### 04-test-mint.ts
+### deploy-vesting.ts
 
-**Purpose:** Test NFT minting functionality for both Standard and Premium types.
-
-**What it does:**
-1. Connects to deployed contracts
-2. Checks USDT balance
-3. Displays NFT configurations
-4. Mints a Standard NFT (10,000 USDT)
-5. Mints a Premium NFT (50,000 USDT)
-6. Verifies NFT ownership and pool configurations
-
-**Requirements:**
-- USDT balance ≥ 60,000 USDT
-- All contracts deployed
-
-**Output:**
-```
-✅ Standard NFT minted! NFT ID: 1
-✅ Premium NFT minted! NFT ID: 2
-📊 Total NFTs minted: 2
-```
-
-**What to verify:**
-- NFT ownership is correct
-- Pool configurations match (shares, weight, ECLV quota)
-- USDT balance decreased by mint prices
-
----
-
-### 05-test-distribute-and-claim.ts
-
-**Purpose:** Test reward distribution and claiming mechanisms.
+**Purpose:** Deploy TokenVesting contract and set up vesting schedules.
 
 **What it does:**
-1. Verifies oracle permissions
-2. Distributes 1,000 ECLV production
-3. Distributes 500 USDT rewards
-4. Checks pending rewards for NFT #1
-5. Claims ECLV production
-6. Claims USDT rewards
-7. Tests batch claiming
+1. Deploys TokenVesting contract
+2. Sets TGE time
+3. Creates vesting schedules for Team, SAFT1, and SAFT2
+4. Optionally transfers tokens to vesting contract
 
-**Requirements:**
-- At least 1 NFT minted
-- Deployer is oracle
-- Oracle has USDT for reward distribution
+**Prerequisites:**
+- Set `TOKEN_ADDRESS` or `ENCLAVE_TOKEN_ADDRESS` in .env
+- Optionally set `MULTISIG_ADDRESS`, `TGE_TIME`, beneficiary addresses, etc.
 
-**Output:**
+**Usage:**
+```bash
+npx hardhat run scripts/deploy-vesting.ts --network <network>
 ```
-✅ ECLV distributed!
-✅ USDT rewards distributed!
-✅ Claimed X ECLV
-✅ Claimed X USDT
-```
-
-**What to verify:**
-- Global accumulated index updates
-- Pending rewards calculate correctly
-- Claim operations work
-- Token balances update correctly
 
 ---
 
@@ -245,7 +181,7 @@ const testAccounts = [
 4. Verifies upgrade and tests basic functions
 
 **Requirements:**
-- MANAGER_ADDRESS set in .env
+- `MANAGER_ADDRESS` set in .env
 - Deployer must be proxy owner
 - Sufficient gas balance
 
@@ -265,85 +201,26 @@ npx hardhat run scripts/upgrade-nftmanager.ts --network bscTestnet
 
 ---
 
-## 🎯 Testing Scenarios
+### migrate-minter-addresses.ts
 
-### Scenario 1: Fresh Deployment Test
+**Purpose:** Set minter addresses for existing NFTs after contract upgrade.
+
+**What it does:**
+1. Checks which NFTs don't have minter set yet
+2. Uses contract owner as minter for all NFTs that need it
+3. Batch sets minter addresses using `batchSetMinters` (50 NFTs per batch)
+
+**Requirements:**
+- Upgraded NFTManager contract with `setMinter` function
+- Deployer must be contract owner
+- Sufficient gas balance
+
+**Usage:**
 ```bash
-# Full deployment from scratch
-npx hardhat run scripts/01-deploy-usdt.ts --network bscTestnet
-# Add USDT_ADDRESS to .env
-npx hardhat run scripts/02-deploy-main.ts --network bscTestnet
-# Add all addresses to .env
-npx hardhat run scripts/04-test-mint.ts --network bscTestnet
-npx hardhat run scripts/05-test-distribute-and-claim.ts --network bscTestnet
+npx hardhat run scripts/migrate-minter-addresses.ts --network bscTestnet
 ```
 
-**Expected time:** ~10 minutes  
-**Expected cost:** ~0.3-0.5 BNB
-
-### Scenario 2: Multi-User Testing
-```bash
-# Setup test accounts
-# Edit 03-setup-test-accounts.ts first
-npx hardhat run scripts/03-setup-test-accounts.ts --network bscTestnet
-
-# Then test with different wallets
-# Change PRIVATE_KEY in .env for each test
-```
-
-### Scenario 3: Gas Measurement
-```bash
-# Enable gas reporting
-export REPORT_GAS=true
-
-# Run tests and record gas usage
-npx hardhat run scripts/04-test-mint.ts --network bscTestnet
-npx hardhat run scripts/05-test-distribute-and-claim.ts --network bscTestnet
-```
-
----
-
-## 📊 Expected Gas Costs
-
-Reference values (actual may vary):
-
-| Operation | Estimated Gas | At 10 gwei | Notes |
-|-----------|--------------|------------|-------|
-| Deploy USDT | ~1,500k | ~0.015 BNB | One-time |
-| Deploy ECLV | ~1,200k | ~0.012 BNB | One-time |
-| Deploy NFT | ~2,000k | ~0.020 BNB | One-time |
-| Deploy Manager | ~4,000k | ~0.040 BNB | One-time (proxy) |
-| Mint Standard | ~200k | ~0.002 BNB | Per mint |
-| Mint Premium | ~200k | ~0.002 BNB | Per mint |
-| Distribute (O(1)) | ~50-100k | ~0.001 BNB | Fixed cost! |
-| Claim | ~50-80k | ~0.001 BNB | Per claim |
-
-**Total deployment cost:** ~0.1 BNB  
-**Total test cost:** ~0.01 BNB
-
----
-
-## 🐛 Troubleshooting
-
-### Error: "insufficient funds for gas"
-**Solution:** Get more testnet BNB from https://testnet.binance.org/faucet-smart
-
-### Error: "Please set USDT_ADDRESS in .env"
-**Solution:** Run `01-deploy-usdt.ts` first and add the address to `.env`
-
-### Error: "nonce too low"
-**Solution:** Reset your MetaMask account (Settings > Advanced > Reset Account)
-
-### Error: "Insufficient USDT balance"
-**Solution:** 
-- Run `03-setup-test-accounts.ts` to mint more USDT, or
-- Use `usdt.mint(yourAddress, amount)` in Hardhat console
-
-### Script hangs or times out
-**Solution:**
-- Check your RPC URL
-- Try a different RPC endpoint
-- Check network connectivity
+**Note:** This script should be run after upgrading the contract to include the `minter` field.
 
 ---
 
@@ -364,44 +241,38 @@ npx hardhat verify --network bscTestnet 0x789... # NFT
 
 ---
 
-## 📝 Logs and Debugging
+## 🐛 Troubleshooting
 
-### Enable detailed logging
-```bash
-# Set Hardhat to verbose mode
-export DEBUG=hardhat:*
+### Error: "insufficient funds for gas"
+**Solution:** Get more testnet BNB from https://testnet.binance.org/faucet-smart
 
-# Run script
-npx hardhat run scripts/04-test-mint.ts --network bscTestnet
-```
+### Error: "Please set USDT_ADDRESS in .env"
+**Solution:** Run `01-deploy-usdt.ts` first and add the address to `.env`
 
-### Use Hardhat Console
-```bash
-npx hardhat console --network bscTestnet
-```
+### Error: "nonce too low"
+**Solution:** Reset your MetaMask account (Settings > Advanced > Reset Account)
 
-```javascript
-// Connect to contracts
-const manager = await ethers.getContractAt("NFTManager", "0x...");
-const nft = await ethers.getContractAt("NodeNFT", "0x...");
-
-// Query state
-const pool = await manager.nftPools(1);
-console.log(pool);
-
-// Test functions
-const tx = await manager.claimProduced(1);
-await tx.wait();
-```
+### Script hangs or times out
+**Solution:**
+- Check your RPC URL
+- Try a different RPC endpoint
+- Check network connectivity
 
 ---
 
-## 📚 Additional Resources
+## 📊 Expected Gas Costs
 
-- **Full Guide:** [TESTNET_DEPLOYMENT_GUIDE.md](../TESTNET_DEPLOYMENT_GUIDE.md)
-- **Quick Start:** [QUICK_START.md](../QUICK_START.md)
-- **Test Report:** [TEST_REPORT_TEMPLATE.md](../TEST_REPORT_TEMPLATE.md)
-- **Testing Overview:** [TESTING_COMPLETE.md](../TESTING_COMPLETE.md)
+Reference values (actual may vary):
+
+| Operation | Estimated Gas | At 10 gwei | Notes |
+|-----------|--------------|------------|-------|
+| Deploy USDT | ~1,500k | ~0.015 BNB | One-time |
+| Deploy ECLV | ~1,200k | ~0.012 BNB | One-time |
+| Deploy NFT | ~2,000k | ~0.020 BNB | One-time |
+| Deploy Manager | ~4,000k | ~0.040 BNB | One-time (proxy) |
+| Upgrade Manager | ~500k | ~0.005 BNB | Per upgrade |
+
+**Total deployment cost:** ~0.1 BNB (testnet)
 
 ---
 
@@ -411,12 +282,8 @@ await tx.wait();
 2. **Record all contract addresses** - Keep them organized in .env
 3. **Test incrementally** - Run one script at a time and verify results
 4. **Monitor BSCScan** - Watch transactions in real-time
-5. **Use test accounts** - Create multiple wallets for realistic testing
+5. **Verify contracts** - Always verify contracts on BSCScan after deployment
 
 ---
 
-**Ready to deploy? Start with** [QUICK_START.md](../QUICK_START.md)! 🚀
-
-
-
-
+**Ready to deploy? Start with the deployment scripts! 🚀**

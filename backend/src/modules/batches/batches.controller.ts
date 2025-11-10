@@ -15,12 +15,13 @@ export class BatchesController {
 
   @Post()
   async createBatch(
-    @Body() body: { maxMintable: string; mintPrice: string },
+    @Body() body: { maxMintable: string; mintPrice: string; referralReward?: string },
     @CurrentUser() adminAddress: string,
   ) {
     return this.batchesService.createBatch(
       BigInt(body.maxMintable),
       body.mintPrice,
+      body.referralReward || null,
       adminAddress,
     );
   }

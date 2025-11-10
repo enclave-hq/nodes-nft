@@ -6,11 +6,9 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { ContractModule } from '../contract/contract.module';
 
 @Module({
   imports: [
-    ContractModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

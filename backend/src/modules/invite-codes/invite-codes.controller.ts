@@ -34,14 +34,28 @@ export class InviteCodesController {
     );
   }
 
-  @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.inviteCodesService.findOne(id);
+  // More specific routes must come before generic routes
+  @Get('requests')
+  async findAllRequests(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Query('status') status?: string,
+  ) {
+    return this.inviteCodesService.findAllRequests(
+      parseInt(page),
+      parseInt(limit),
+      status,
+    );
   }
 
   @Get(':id/descendants')
   async getDescendants(@Param('id', ParseIntPipe) id: number) {
     return this.inviteCodesService.getDescendants(id);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.inviteCodesService.findOne(id);
   }
 
   @Patch('requests/:id/approve')
@@ -51,6 +65,14 @@ export class InviteCodesController {
     @CurrentUser() adminAddress: string,
   ) {
     return this.inviteCodesService.approveRequest(id, adminAddress);
+  }
+
+  @Patch('requests/:id/reject')
+  async rejectRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() adminAddress: string,
+  ) {
+    return this.inviteCodesService.rejectRequest(id, adminAddress);
   }
 }
 

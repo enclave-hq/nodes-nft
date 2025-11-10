@@ -9,22 +9,46 @@ export interface InviteCode {
   code: string;
   status: string;
   maxUses?: number;
-  currentUses: number;
+  currentUses?: number;
+  usageCount?: number;
   expiresAt?: string;
   createdAt: string;
   updatedAt: string;
   rootInviteCodeId?: number;
   referrerInviteCodeId?: number;
-  ownerAddress: string;
+  ownerAddress?: string;
+  applicantAddress?: string;
+  parentInviteCodeId?: number;
+  creator?: string;
+  mintedNftCount?: number;
+  activatedAt?: string;
+  level?: number;
+  rootApplicantAddress?: string;
+  parentInviteCode?: string;
 }
 
 export interface InviteCodeRequest {
   id: number;
   applicantAddress: string;
   referrerInviteCodeId?: number;
+  referrerInviteCode?: {
+    id: number;
+    code: string;
+  };
   status: string;
+  adminAddress?: string;
+  autoApproved: boolean;
+  note?: string;
   createdAt: string;
-  updatedAt: string;
+  reviewedAt?: string;
+}
+
+export interface InviteCodeRequestsListResponse {
+  data: InviteCodeRequest[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface InviteCodesListResponse {
@@ -102,6 +126,26 @@ export async function getInviteCodeDescendants(id: number): Promise<InviteCode[]
 }
 
 /**
+ * Get all invite code requests (admin)
+ */
+export async function getInviteCodeRequests(
+  page: number = 1,
+  limit: number = 20,
+  status?: string
+): Promise<InviteCodeRequestsListResponse> {
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  });
+  
+  if (status) {
+    params.append('status', status);
+  }
+  
+  return apiGet<InviteCodeRequestsListResponse>(`/admin/invite-codes/requests?${params.toString()}`);
+}
+
+/**
  * Approve an invite code request (admin)
  */
 export async function approveInviteCodeRequest(
@@ -113,6 +157,15 @@ export async function approveInviteCodeRequest(
     maxUses,
     expiresAt,
   });
+}
+
+/**
+ * Reject an invite code request (admin)
+ */
+export async function rejectInviteCodeRequest(
+  requestId: number
+): Promise<{ success: boolean; message: string }> {
+  return apiPatch<{ success: boolean; message: string }>(`/admin/invite-codes/requests/${requestId}/reject`);
 }
 
 /**
@@ -159,7 +212,7 @@ export async function validateInviteCode(
  * Returns the invite code status, used invite code, and owned invite codes
  */
 export interface UserInviteCodesResponse {
-  inviteCodeStatus: 'none' | 'pending' | 'approved';
+  inviteCodeStatus: 'none' | 'pending' | 'approved_pending_activation' | 'approved';
   usedInviteCode?: {
     id: number;
     code: string;
@@ -167,6 +220,14 @@ export interface UserInviteCodesResponse {
     createdAt: string;
   };
   ownedInviteCodes: Array<{
+    id: number;
+    code: string;
+    status: string;
+    maxUses?: number;
+    usageCount: number;
+    createdAt: string;
+  }>;
+  pendingInviteCodes?: Array<{
     id: number;
     code: string;
     status: string;

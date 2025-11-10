@@ -112,7 +112,8 @@
       "batchId": "Batch #{id}",
       "progress": "Progress",
       "connectWalletFirst": "Please connect your wallet first",
-      "noActiveBatchMint": "There is no active batch currently. Cannot mint NFT"
+      "noActiveBatchMint": "There is no active batch currently. Cannot mint NFT",
+      "waitForNextBatch": "Please wait patiently for the next batch to open for minting"
     }
   },
   "mint": {

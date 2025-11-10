@@ -10,12 +10,36 @@ export class BatchesService {
   ) {}
 
   /**
-   * Get all batches
+   * Get all batches (from contract + database for referralReward)
    */
   async findAll() {
-    return this.prisma.batch.findMany({
-      orderBy: { createdAt: 'desc' },
+    // Read directly from contract
+    const contractBatches = await this.contractService.getAllBatches();
+    
+    // Get referral rewards from database
+    const dbBatches = await this.prisma.batch.findMany({
+      select: {
+        batchId: true,
+        referralReward: true,
+      },
     });
+    
+    // Create a map of batchId -> referralReward
+    const referralRewardMap = new Map<string, string | null>();
+    dbBatches.forEach(dbBatch => {
+      referralRewardMap.set(dbBatch.batchId.toString(), dbBatch.referralReward);
+    });
+    
+    // Convert BigInt fields to strings for JSON serialization
+    return contractBatches.map(batch => ({
+      batchId: batch.batchId.toString(),
+      maxMintable: batch.maxMintable.toString(),
+      currentMinted: batch.currentMinted.toString(),
+      mintPrice: batch.mintPrice.toString(),
+      referralReward: referralRewardMap.get(batch.batchId.toString()) || null,
+      active: batch.active,
+      createdAt: new Date(Number(batch.createdAt) * 1000).toISOString(),
+    }));
   }
 
   /**
@@ -24,22 +48,38 @@ export class BatchesService {
   async createBatch(
     maxMintable: bigint,
     mintPrice: string,
+    referralReward: string | null,
     adminAddress: string,
   ) {
-    // Call contract createBatch
+    // Validate and log mintPrice
     const mintPriceBigInt = BigInt(mintPrice);
+    console.log(`📝 Creating batch with:`);
+    console.log(`   - maxMintable: ${maxMintable.toString()}`);
+    console.log(`   - mintPrice (wei): ${mintPriceBigInt.toString()}`);
+    console.log(`   - mintPrice (USDT, 18 decimals): ${Number(mintPriceBigInt) / 1e18}`);
+    
+    // Call contract createBatch
     const txHash = await this.contractService.createBatch(maxMintable, mintPriceBigInt);
 
-    // Get batch ID from contract event or return value
-    const batchId = await this.getLatestBatchId();
+    // Get batch ID from contract (read after transaction)
+    const currentBatchId = await this.contractService.getCurrentBatchId();
+    const batchId = currentBatchId - 1n; // The created batch ID
 
-    // Save to database
+    // Read batch from contract to get actual state
+    const contractBatch = await this.contractService.getBatch(batchId);
+
+    // Save to database as history record (not as source of truth)
+    // referralReward is only stored in database, not on-chain
     const batch = await this.prisma.batch.create({
       data: {
-        batchId: BigInt(batchId),
-        maxMintable,
-        mintPrice,
-        active: false,
+        batchId: batchId,
+        maxMintable: contractBatch.maxMintable,
+        mintPrice: contractBatch.mintPrice.toString(),
+        referralReward: referralReward || null, // Store referral reward in USDT (only in database)
+        currentMinted: contractBatch.currentMinted,
+        active: contractBatch.active,
+        createdAt: new Date(Number(contractBatch.createdAt) * 1000),
+        activatedAt: contractBatch.active ? new Date(Number(contractBatch.createdAt) * 1000) : null,
       },
     });
 
@@ -48,12 +88,25 @@ export class BatchesService {
       data: {
         adminAddress,
         actionType: 'batch_create',
-        actionData: { batchId, maxMintable: maxMintable.toString(), mintPrice },
+        actionData: { 
+          batchId: batchId.toString(), 
+          maxMintable: maxMintable.toString(), 
+          mintPrice 
+        },
         txHash,
       },
     });
 
-    return batch;
+    // Convert BigInt fields to strings for JSON serialization
+    return {
+      batchId: batch.batchId.toString(),
+      maxMintable: batch.maxMintable.toString(),
+      currentMinted: batch.currentMinted.toString(),
+      mintPrice: batch.mintPrice,
+      referralReward: batch.referralReward,
+      active: batch.active,
+      createdAt: batch.createdAt.toISOString(),
+    };
   }
 
   /**
@@ -63,31 +116,23 @@ export class BatchesService {
     // Call contract activateBatch
     const txHash = await this.contractService.activateBatch(batchId);
 
-    // Update database
+    // Read batch from contract to get actual state
+    const contractBatch = await this.contractService.getBatch(batchId);
+
+    // Update database as history record
     await this.prisma.batch.updateMany({
       where: { batchId },
       data: {
-        active: true,
-        activatedAt: new Date(),
-      },
-    });
-
-    // Deactivate other batches
-    await this.prisma.batch.updateMany({
-      where: {
-        batchId: { not: batchId },
-        active: true,
-      },
-      data: {
-        active: false,
-        deactivatedAt: new Date(),
+        active: contractBatch.active,
+        activatedAt: contractBatch.active ? new Date() : null,
       },
     });
 
     // Log admin operation
+    // adminAddress can be username (for username/password auth) or address (for wallet auth)
     await this.prisma.adminLog.create({
       data: {
-        adminAddress,
+        adminAddress: adminAddress || 'unknown',
         actionType: 'batch_activate',
         actionData: { batchId: batchId.toString() },
         txHash,
@@ -95,14 +140,6 @@ export class BatchesService {
     });
 
     return { success: true, txHash };
-  }
-
-  private async getLatestBatchId(): Promise<number> {
-    // Get from contract or database
-    const latest = await this.prisma.batch.findFirst({
-      orderBy: { batchId: 'desc' },
-    });
-    return latest ? Number(latest.batchId) + 1 : 1;
   }
 }
 

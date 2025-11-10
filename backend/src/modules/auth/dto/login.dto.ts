@@ -1,12 +1,16 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class LoginDto {
   @IsString()
   @IsNotEmpty()
-  address: string;
+  username: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 
   @IsString()
   @IsOptional()
-  signature?: string;
+  totpCode?: string; // TOTP verification code (6 digits)
 }
 

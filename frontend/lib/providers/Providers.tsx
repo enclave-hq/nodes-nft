@@ -17,6 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               background: '#363636',
               color: '#fff',
             },
+            className: 'toast-container',
             success: {
               duration: 4000,
               iconTheme: {

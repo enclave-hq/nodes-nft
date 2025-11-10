@@ -5,6 +5,8 @@ import { useWallet } from '../providers/WalletProvider';
 import { useWeb3Store, callContractWithFallback } from '../stores/web3Store';
 import { CONTRACT_ADDRESSES, GAS_CONFIG } from '../contracts/config';
 import { NFT_MANAGER_ABI, ERC20_ABI, NODE_NFT_ABI } from '../contracts/abis';
+import { handleNftMintCallback } from '../api/revenue';
+import { Interface } from 'ethers';
 
 export function useUserNFTs() {
   const { address, isConnected } = useWallet();
@@ -281,8 +283,81 @@ export function useMintNFT() {
         console.log('⚠️ No transaction event logs');
       }
       
-      // Extract NFT ID from events (simplified for now)
-      const nftId = "1"; // In real implementation, parse from receipt logs
+      // Extract NFT ID from events
+      // NFTMinted(uint256 indexed nftId, address indexed minter, uint256 indexed batchId, uint256 mintPrice, uint256 timestamp)
+      let nftId: number | null = null;
+      let batchId: bigint | null = null;
+      
+      if (receipt.logs && receipt.logs.length > 0) {
+        console.log('📋 Parsing NFTMinted event from transaction logs...');
+        
+        // Create interface to parse events
+        const nftManagerInterface = new Interface(NFT_MANAGER_ABI);
+        
+        // Find NFTMinted event
+        for (const log of receipt.logs) {
+          try {
+            // Check if this log is from NFTManager contract
+            if (log.address?.toLowerCase() !== CONTRACT_ADDRESSES.nftManager.toLowerCase()) {
+              continue;
+            }
+            
+            // Try to parse the log (ethers v6 API)
+            // In ethers v6, parseLog takes a log object directly
+            const parsedLog = nftManagerInterface.parseLog({
+              topics: log.topics || [],
+              data: log.data || '0x',
+              address: log.address,
+            } as any);
+            
+            if (parsedLog && parsedLog.name === 'NFTMinted') {
+              // Extract NFT ID (first indexed parameter)
+              // In ethers v6, args is a tuple-like object
+              const args = parsedLog.args as any[];
+              nftId = Number(args[0]);
+              batchId = BigInt(args[2]); // batchId is third indexed parameter
+              console.log(`✅ Parsed NFT ID: ${nftId}, Batch ID: ${batchId}`);
+              break;
+            }
+          } catch (error) {
+            // Not the event we're looking for, continue
+            continue;
+          }
+        }
+      }
+      
+      if (!nftId) {
+        console.warn('⚠️ Could not extract NFT ID from transaction logs');
+        // Fallback: try to get from totalMinted
+        try {
+          const totalMinted = await walletManager.readContract(
+            CONTRACT_ADDRESSES.nftManager,
+            NFT_MANAGER_ABI as unknown[],
+            'totalMinted',
+            []
+          ) as bigint;
+          nftId = Number(totalMinted);
+          console.log(`✅ Using totalMinted as NFT ID: ${nftId}`);
+        } catch (error) {
+          console.error('❌ Failed to get NFT ID:', error);
+          throw new Error('Failed to extract NFT ID from transaction');
+        }
+      }
+      
+      // Call backend to process NFT mint callback
+      try {
+        console.log('📞 Calling backend NFT mint callback...');
+        const callbackResult = await handleNftMintCallback({
+          nftId,
+          minterAddress: address,
+          mintTxHash,
+          batchId: batchId ? batchId.toString() : undefined,
+        });
+        console.log('✅ Backend callback completed:', callbackResult);
+      } catch (error: any) {
+        // Log error but don't fail the mint - backend can process it later
+        console.error('⚠️ Backend callback failed (non-critical):', error.message);
+      }
       
       // 🔄 Update web3Store data
       console.log('🔄 Updating Web3 data...');
@@ -292,7 +367,7 @@ export function useMintNFT() {
       return {
         success: true,
         transactionHash: mintTxHash,
-        nftId: parseInt(nftId),
+        nftId,
       };
     } catch (err) {
       console.error('❌ Error occurred during NFT minting:');

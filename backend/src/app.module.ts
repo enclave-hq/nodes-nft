@@ -9,6 +9,7 @@ import { NftsModule } from './modules/nfts/nfts.module';
 import { WhitelistModule } from './modules/whitelist/whitelist.module';
 import { BatchesModule } from './modules/batches/batches.module';
 import { StatsModule } from './modules/stats/stats.module';
+import { RevenueModule } from './modules/revenue/revenue.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { StatsModule } from './modules/stats/stats.module';
     WhitelistModule,
     BatchesModule,
     StatsModule,
+    RevenueModule,
   ],
 })
 export class AppModule {}

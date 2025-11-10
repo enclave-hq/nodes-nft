@@ -18,16 +18,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Verify admin exists
+    // Verify admin exists by username or userId
     const admin = await this.prisma.admin.findUnique({
-      where: { address: payload.address },
+      where: payload.username 
+        ? { username: payload.username }
+        : { id: payload.userId },
     });
 
     if (!admin) {
       throw new UnauthorizedException('Admin not found');
     }
 
-    return { address: payload.address };
+    return { 
+      username: admin.username,
+      userId: admin.id,
+    };
   }
 }
 

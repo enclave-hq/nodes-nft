@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useWallet } from '@/lib/providers/WalletProvider';
 import { 
-  login, 
   isAuthenticated,
   getWhitelist,
   addToWhitelist,
@@ -13,10 +11,8 @@ import {
 } from '@/lib/api';
 
 export default function AdminWhitelistPage() {
-  const { address, isConnected, connect } = useWallet();
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticatedState, setIsAuthenticatedState] = useState(false);
   const [page, setPage] = useState(1);
   const [limit] = useState(50);
   const [totalPages, setTotalPages] = useState(1);
@@ -26,37 +22,16 @@ export default function AdminWhitelistPage() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    setIsAuthenticatedState(isAuthenticated());
     if (isAuthenticated()) {
       fetchWhitelist();
     }
   }, []);
 
   useEffect(() => {
-    if (isAuthenticatedState && isConnected && address) {
+    if (isAuthenticated()) {
       fetchWhitelist();
     }
-  }, [isAuthenticatedState, isConnected, address, page, search]);
-
-  const handleLogin = async () => {
-    if (!isConnected || !address) {
-      toast.error('请先连接钱包');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await login(address);
-      setIsAuthenticatedState(true);
-      toast.success('登录成功');
-      await fetchWhitelist();
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      toast.error(error.message || '登录失败，请确认您是合约管理员');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [page, search]);
 
   const fetchWhitelist = async () => {
     if (!isAuthenticated()) {
@@ -98,8 +73,9 @@ export default function AdminWhitelistPage() {
     try {
       const result = await addToWhitelist(addresses);
       if (result.success) {
-        toast.success(`成功添加 ${result.added.length} 个地址到白名单`);
-        if (result.failed.length > 0) {
+        const addedCount = result.added?.length || addresses.length;
+        toast.success(`成功添加 ${addedCount} 个地址到白名单`);
+        if (result.failed && result.failed.length > 0) {
           toast.error(`失败: ${result.failed.length} 个地址`);
         }
         setNewAddresses('');
@@ -107,9 +83,10 @@ export default function AdminWhitelistPage() {
       } else {
         toast.error(result.message || '添加失败');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to add to whitelist:', error);
-      toast.error(error.message || '添加白名单失败');
+      const message = error instanceof Error ? error.message : '添加白名单失败';
+      toast.error(message);
     } finally {
       setIsAdding(false);
     }
@@ -133,51 +110,13 @@ export default function AdminWhitelistPage() {
     }
   };
 
-  // Show login page if not authenticated
-  if (!isAuthenticatedState) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h1 className="text-3xl font-bold mb-6">白名单管理</h1>
-            <p className="text-gray-600 mb-6">
-              请先连接钱包并登录以访问管理功能
-            </p>
-            {!isConnected ? (
-              <button
-                onClick={() => connect()}
-                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238]"
-              >
-                连接钱包
-              </button>
-            ) : (
-              <button
-                onClick={handleLogin}
-                disabled={isLoading}
-                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
-              >
-                {isLoading ? '登录中...' : '登录'}
-              </button>
-            )}
-            <p className="text-sm text-gray-500 mt-4">
-              只有合约管理员可以访问此页面
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">白名单管理</h1>
-            <div className="text-sm text-gray-600">
-              钱包: {address?.slice(0, 6)}...{address?.slice(-4)}
-            </div>
-          </div>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">白名单管理</h1>
+          <p className="mt-1 text-sm text-gray-600">管理用户白名单</p>
+        </div>
 
           {/* 统计信息 */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg">
@@ -290,29 +229,28 @@ export default function AdminWhitelistPage() {
             </table>
           </div>
 
-          {/* 分页 */}
-          {totalPages > 1 && (
-            <div className="mt-4 flex justify-center gap-2">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1 || isLoading}
-                className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
-              >
-                上一页
-              </button>
-              <span className="px-4 py-2">
-                第 {page} / {totalPages} 页
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || isLoading}
-                className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
-              >
-                下一页
-              </button>
-            </div>
-          )}
-        </div>
+        {/* 分页 */}
+        {totalPages > 1 && (
+          <div className="mt-4 flex justify-center gap-2">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1 || isLoading}
+              className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
+            >
+              上一页
+            </button>
+            <span className="px-4 py-2">
+              第 {page} / {totalPages} 页
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages || isLoading}
+              className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
+            >
+              下一页
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

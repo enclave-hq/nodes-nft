@@ -27,21 +27,16 @@ export class StatsService {
       this.prisma.batch.count({ where: { active: true } }),
     ]);
 
+    // Return format matching frontend expectations
     return {
-      inviteCodes: {
-        total: totalInviteCodes,
-        active: activeInviteCodes,
-      },
-      nfts: {
-        total: totalNFTs,
-      },
-      whitelist: {
-        total: totalWhitelisted,
-      },
-      batches: {
-        total: totalBatches,
-        active: activeBatches,
-      },
+      totalUsers: totalWhitelisted, // Total users = whitelisted users
+      totalNFTs: totalNFTs,
+      totalInviteCodes: totalInviteCodes,
+      activeInviteCodes: activeInviteCodes,
+      totalWhitelisted: totalWhitelisted,
+      whitelistedUsers: totalWhitelisted, // Alias for frontend compatibility
+      totalBatches: totalBatches,
+      activeBatches: activeBatches,
     };
   }
 
@@ -49,16 +44,41 @@ export class StatsService {
    * Get invite code statistics
    */
   async getInviteCodeStats() {
-    const stats = await this.prisma.inviteCode.groupBy({
-      by: ['status'],
-      _count: true,
-    });
+    const [
+      stats,
+      totalUsageCount,
+      totalInviteCodes,
+      activeInviteCodes,
+    ] = await Promise.all([
+      this.prisma.inviteCode.groupBy({
+        by: ['status'],
+        _count: true,
+      }),
+      this.prisma.inviteCodeUsage.count(), // Total usage count
+      this.prisma.inviteCode.count(),
+      this.prisma.inviteCode.count({ where: { status: 'active' } }),
+    ]);
+
+    const byStatus = stats.reduce((acc, item) => {
+      acc[item.status] = item._count;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const pendingCount = byStatus['pending'] || 0;
+    const activeCount = byStatus['active'] || 0;
+    const revokedCount = byStatus['revoked'] || 0;
 
     return {
-      byStatus: stats.reduce((acc, item) => {
-        acc[item.status] = item._count;
-        return acc;
-      }, {}),
+      total: totalInviteCodes,
+      active: activeInviteCodes,
+      used: totalUsageCount, // Total number of times invite codes have been used
+      pending: pendingCount,
+      expired: 0, // Can be calculated if expiresAt is set and in the past
+      byStatus,
+      // Frontend-specific fields
+      pendingCount,
+      activeCount,
+      totalUsageCount,
     };
   }
 }

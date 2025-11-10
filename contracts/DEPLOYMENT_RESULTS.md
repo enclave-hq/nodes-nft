@@ -1,6 +1,6 @@
 # Contract Deployment Results
 
-**Last Updated:** 2025-11-06  
+**Last Updated:** 2025-11-10  
 **Network:** BSC Testnet (Chain ID: 97)  
 **⚠️ IMPORTANT: This is a TESTNET deployment, NOT mainnet!**
 
@@ -15,9 +15,9 @@
 |----------|--------|---------|---------|
 | **TestUSDT** | ✅ Deployed | `0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34` | **BSC Testnet** ⚠️ |
 | **EnclaveToken ($E)** | ✅ Deployed | `0xCd0Ff5Fd00BD622563011A23091af30De24E7262` | **BSC Testnet** ⚠️ |
-| **NodeNFT** | ✅ Deployed | `0x92301C0acA7586d9F0B1968af2502616009Abf69` | **BSC Testnet** ⚠️ |
-| **NFTManager (Proxy)** | ✅ Deployed | `0xF87F9296955439C323ac79769959bEe087f6D06E` | **BSC Testnet** ⚠️ |
-| **NFTManager (Implementation)** | ✅ Deployed | `0x22EEe5094712a9EF828F3F840FA0dA05c04725b1` | **BSC Testnet** ⚠️ |
+| **NodeNFT** | ✅ Deployed | `0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0` | **BSC Testnet** ⚠️ |
+| **NFTManager (Proxy)** | ✅ Deployed | `0x31C052e02281Cb04445d309bCA9eaB25dC031141` | **BSC Testnet** ⚠️ |
+| **NFTManager (Implementation)** | ✅ Deployed | `0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554` | **BSC Testnet** ⚠️ |
 | **TokenVesting** | ❌ Not Deployed | - | - |
 
 > ⚠️ **All contracts are on BSC Testnet (Chain ID: 97) - NOT mainnet!**
@@ -133,7 +133,7 @@
   - Set USDT token address
   - Set multisig node address
 
-**Implementation Address:** `0x22EEe5094712a9EF828F3F840FA0dA05c04725b1`  
+**Implementation Address:** `0x4AA58A38A0cFe3D3c51FF2903a382922c1B284fF`  
 **BSCScan:** https://testnet.bscscan.com/address/0x22EEe5094712a9EF828F3F840FA0dA05c04725b1
 
 **Deployment Details:**
@@ -318,7 +318,7 @@ console.log("Implementation:", implAddress);
 
 ---
 
-**Last Updated:** 2025-11-06  
+**Last Updated:** 2025-11-10  
 **Maintained By:** Development Team
 
 ---

@@ -114,7 +114,8 @@
       "progress": "进度",
       "connectWalletFirst": "请先连接钱包",
       "noActiveBatchMint": "当前没有激活的批次，无法铸造NFT",
-      "batchSoldOutMint": "当前批次已售罄，无法铸造NFT"
+      "batchSoldOutMint": "当前批次已售罄，无法铸造NFT",
+      "waitForNextBatch": "请耐心等待下次开放铸造"
     },
     "mint": {
       "whitelistRequired": "您需要先加入白名单才能铸造NFT",
@@ -381,6 +382,9 @@
     "activeDescription": "已激活，可用于邀请他人",
     "pending": "等待审核",
     "pendingDescription": "您的邀请码申请正在审核中，请耐心等待",
+    "waitingForActivation": "等待铸造后激活",
+    "waitingForActivationDescription": "您的邀请码申请已经通过，等待铸造后激活",
+    "pendingActivationDescription": "等待铸造NFT后激活",
     "noInviteCode": "您还没有邀请码，申请后可用于邀请他人加入白名单",
     "applying": "申请中...",
     "applyInviteCode": "申请邀请码",
