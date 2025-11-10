@@ -192,9 +192,9 @@ function CreateOrderModal({
 
   return (
     <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
-      <div className="w-full rounded-t-[28px] bg-[#FFFFFF] border-t border-[#000000]/10 p-4 shadow-xl max-h-[45vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+      <div className="w-full rounded-t-[28px] bg-[#FFFFFF] border-t border-[#000000]/10 p-4 shadow-xl max-h-[90vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-bold text-[#000000]">{t('title')}</h3>
+          <h3 className="text-[15px] font-bold text-[#000000]">{t('title')}</h3>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
@@ -681,7 +681,7 @@ function MyNFTsSection({
             <div className="mb-4 rounded-[20px] bg-[#000000] px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-[#FFFFFF]">{tMyNFTs('notOnSale')}</h3>
+                  <h3 className="text-[15px] font-semibold text-[#FFFFFF]">{tMyNFTs('notOnSale')}</h3>
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#CEF248] text-[#000000] text-xs font-bold">
                     {nftsWithoutOrders.length}
                   </span>
