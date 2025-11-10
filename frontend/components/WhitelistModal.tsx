@@ -105,7 +105,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
 
   return (
     <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
-      <div className="bg-[#FFFFFF] rounded-t-[28px] shadow-2xl w-full h-[45vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+      <div className="bg-[#FFFFFF] rounded-t-[28px] shadow-2xl w-full max-h-[90vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
         {/* Header */}
         <div className="pt-3 px-4 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between mb-2">

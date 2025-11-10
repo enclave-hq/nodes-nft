@@ -213,20 +213,20 @@ export default function Home() {
       {/* Hero Section */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8" style={{ paddingTop: 'calc(65px + 1.5rem)' }}>
         <div className="text-center">
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center" style={{ marginBottom: '-3px', marginTop: '0px' }}>
             <Image
               src="/enclave-logo-black.png"
               alt="Enclave Logo"
-              width={260}
-              height={104}
-              className="h-[83.2px] w-auto bg-transparent select-none"
+              width={281}
+              height={113}
+              className="h-[90px] w-auto bg-transparent select-none"
               style={{ background: 'transparent', userSelect: 'none' }}
               draggable={false}
               onContextMenu={(e) => e.preventDefault()}
               onDragStart={(e) => e.preventDefault()}
             />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#000000] sm:text-3xl">
+          <h1 className="text-[16px] font-bold tracking-tight text-[#000000]">
             {t('hero.title')}
           </h1>
           <p className="mt-2 text-sm leading-7 text-gray-700 max-w-2xl mx-auto">
@@ -399,7 +399,7 @@ export default function Home() {
       {/* Active Batch Section */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mx-auto max-w-2xl text-left">
-          <h2 className="text-base font-bold tracking-tight text-[#000000]">
+          <h2 className="text-[15px] font-bold tracking-tight text-[#000000]">
             {tBatch('activeBatch')}
           </h2>
         </div>
