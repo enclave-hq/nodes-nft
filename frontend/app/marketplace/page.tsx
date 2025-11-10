@@ -9,10 +9,11 @@ import { CONTRACT_ADDRESSES } from "@/lib/contracts/config";
 import toast from 'react-hot-toast';
 import { formatTokenAmount, formatAddress, formatDate, cn, parseTokenAmount } from "@/lib/utils";
 import { NFTStatus, NFT_UNIFIED_CONFIG } from "@/lib/contracts/config";
-import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp, RefreshCw } from "lucide-react";
+import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
 import { RefreshButton } from "@/components/RefreshButton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
+import { ListIcon } from "@/components/icons/ListIcon";
 
 function SellOrderCard({ 
   order, 
@@ -55,41 +56,38 @@ function SellOrderCard({
   };
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            NFT #{order.nftId}
-          </h3>
-        </div>
-        <span className="rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
-          NFT
-        </span>
+    <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/30 p-4 shadow-sm hover:shadow-md transition-shadow">
+      {/* First Row: NFT ID (left) and Order ID (right) */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-[#000000]">
+          NFT #{order.nftId}
+        </h3>
+        {isOwnOrder && (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#CEF248] text-[#000000]">
+            我的
+          </span>
+        )}
       </div>
 
-      {/* Price */}
-      <div className="mt-4 rounded-lg bg-gray-50 p-3">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500">{t('nftPrice')}</p>
-          <span className="text-xs text-gray-500">{t('orderId')}: #{order.orderId}</span>
-        </div>
-        <p className="mt-1 text-2xl font-bold text-gray-900">
+      {/* Price - Centered in gray card */}
+      <div className="mb-4 rounded-lg bg-gray-100 p-3">
+        <div className="text-sm font-semibold text-[#000000] text-center">
           {formatTokenAmount(totalPrice, 18, 2)} USDT
-        </p>
+        </div>
       </div>
 
       {/* Seller Info */}
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <span className="text-gray-500">{t('seller')}:</span>
-        <span className="font-medium text-gray-900">
-          {isOwnOrder ? t('you') : formatAddress(order.seller)}
-        </span>
+      <div className="mb-2 text-sm flex items-center justify-between whitespace-nowrap">
+        <span className="text-[#000000]">{t('seller')}</span>
+        <span className="text-[#000000] truncate">{formatAddress(order.seller)}</span>
       </div>
 
-      {/* Listed Date */}
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-gray-500">{t('listedTime')}: {order.createdAtDisplay}</span>
+      <div className="border-t border-[#000000]/10 my-2"></div>
+
+      {/* Order ID and Listed Date - Right Aligned */}
+      <div className="mb-4 text-xs flex justify-between">
+        <span className="text-[#000000]">ID: #{order.orderId}</span>
+        <span className="text-[#000000]">{order.createdAtDisplay}</span>
       </div>
 
       {/* Action Button */}
@@ -98,7 +96,7 @@ function SellOrderCard({
           <button
             onClick={handleCancel}
             disabled={cancelOrder.isLoading}
-            className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+            className="w-full rounded-[20px] bg-[#000000] text-[#FFFFFF] px-4 py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
           >
             {cancelOrder.isLoading ? (
               <span className="flex items-center justify-center">
@@ -107,7 +105,6 @@ function SellOrderCard({
               </span>
             ) : (
               <span className="flex items-center justify-center">
-                <X className="mr-2 h-4 w-4" />
                 {t('cancelOrder')}
               </span>
             )}
@@ -116,7 +113,7 @@ function SellOrderCard({
           <button
             onClick={handleBuy}
             disabled={buyNFT.isLoading}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
+            className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] disabled:opacity-50"
           >
             {buyNFT.isLoading ? (
               <span className="flex items-center justify-center">
@@ -137,7 +134,7 @@ function SellOrderCard({
 }
 
 function CreateOrderModal({
-  nftId,
+  nftId: initialNftId,
   onClose,
   onOrderCreated,
 }: {
@@ -147,16 +144,38 @@ function CreateOrderModal({
 }) {
   const t = useTranslations('marketplace.createOrder');
   const [price, setPrice] = useState("");
+  const [selectedNftId, setSelectedNftId] = useState<number>(initialNftId);
+  const [isNftSelectorOpen, setIsNftSelectorOpen] = useState(false);
   const createOrder = useCreateSellOrder();
+  const web3Data = useWeb3Data();
+  const allOrders = useAllSellOrders();
+  
+  // Get NFTs that don't have active orders (can be listed)
+  const availableNFTs = useMemo(() => {
+    if (!web3Data.nfts || !allOrders.data) return web3Data.nfts || [];
+    
+    const activeOrderNftIds = new Set(
+      allOrders.data
+        .filter(order => order.active)
+        .map(order => order.nftId)
+    );
+    
+    return web3Data.nfts.filter(nft => !activeOrderNftIds.has(nft.id));
+  }, [web3Data.nfts, allOrders.data]);
+
+  // Update selected NFT when initialNftId changes
+  useEffect(() => {
+    setSelectedNftId(initialNftId);
+  }, [initialNftId]);
 
   const handleCreate = async () => {
-    if (!price) return;
+    if (!price || !selectedNftId) return;
     
     try {
       const priceBigInt = parseTokenAmount(price, 18);
       
       await createOrder.mutateAsync({
-        nftId,
+        nftId: selectedNftId,
         price: priceBigInt, // Price for the whole NFT
       });
       
@@ -172,23 +191,82 @@ function CreateOrderModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-gray-900">{t('title')}</h3>
+    <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
+      <div className="w-full rounded-t-[28px] bg-[#FFFFFF] border-t border-[#000000]/10 p-4 shadow-xl max-h-[45vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xl font-bold text-[#000000]">{t('title')}</h3>
           <button
             onClick={onClose}
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
+            className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mt-6 space-y-4">
+        <div className="space-y-3.5">
+          {/* NFT Selector */}
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => setIsNftSelectorOpen(!isNftSelectorOpen)}
+              className="w-full flex items-center justify-between rounded-lg border border-[#000000]/10 bg-[#FFFFFF] px-3 py-2 text-left hover:bg-gray-50 transition-colors h-[40px]"
+            >
+              <span className="text-[14px] font-medium text-[#000000]">
+                {selectedNftId ? (
+                  <>已选NFT #{selectedNftId}</>
+                ) : (
+                  <>选择NFT {availableNFTs.length > 0 && `(${availableNFTs.length})`}</>
+                )}
+              </span>
+              {isNftSelectorOpen ? (
+                <ChevronUp className="h-4 w-4 text-[#000000]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-[#000000]" />
+              )}
+            </button>
+            
+            {isNftSelectorOpen && (
+              <div className="mt-2 rounded-lg border border-[#000000]/10 bg-[#FFFFFF] max-h-48 overflow-y-auto">
+                {availableNFTs.length === 0 ? (
+                  <div className="p-3 text-center text-[14px] text-gray-600">
+                    暂无可挂单的NFT
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {availableNFTs.map((nft) => (
+                      <button
+                        key={nft.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedNftId(nft.id);
+                          setIsNftSelectorOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
+                          selectedNftId === nft.id ? 'bg-[#CEF248]' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[14px] font-medium ${
+                            selectedNftId === nft.id ? 'text-[#000000]' : 'text-[#000000]'
+                          }`}>
+                            NFT #{nft.id}
+                          </span>
+                          {selectedNftId === nft.id && (
+                            <span className="text-[12px] text-[#000000]">✓</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
           {/* Price Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              {t('nftPriceLabel')}
+          <div className="space-y-2.5">
+            <label className="block text-sm font-medium text-[#000000]">
+              设置出售价格
             </label>
             <input
               type="number"
@@ -196,27 +274,25 @@ function CreateOrderModal({
               min="0"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="block w-full px-3 py-2 text-sm text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' }}
               placeholder={t('nftPricePlaceholder')}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              {t('nftPriceNote')}
-            </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex space-x-3">
+        <div className="mt-4 flex space-x-3">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="flex-1 rounded-[20px] bg-[#000000] px-4 py-2 text-sm font-medium text-[#FFFFFF] hover:bg-gray-800"
           >
             {t('cancel')}
           </button>
           <button
             onClick={handleCreate}
             disabled={!price || createOrder.isLoading}
-            className="flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
+            className="flex-1 rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-[#000000] hover:bg-[#B8D93F] disabled:opacity-50"
           >
             {createOrder.isLoading ? (
               <span className="flex items-center justify-center">
@@ -245,6 +321,16 @@ export default function MarketplacePage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createOrderNFT, setCreateOrderNFT] = useState<{ nftId: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'my-nfts' | 'orders'>('orders');
+
+  const handleTabChange = (tab: 'my-nfts' | 'orders') => {
+    // Prevent any layout shift by maintaining scroll position
+    const currentScrollY = window.scrollY;
+    setActiveTab(tab);
+    // Restore scroll position after state update to prevent layout shift
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: currentScrollY, behavior: 'instant' });
+    });
+  };
   
   const handleBuy = async (orderId: number) => {
     try {
@@ -283,161 +369,141 @@ export default function MarketplacePage() {
   }, [isConnected]); // Only depend on connection status
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#FFFFFF]">
       <Navbar />
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: 'calc(65px + 1rem)' }}>
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
-            <p className="mt-2 text-gray-600">
+        <div className="mb-4 sm:mb-8">
+          <div className="flex items-center gap-2">
+            <h1 className="text-base font-bold text-[#000000]">{t('title')}</h1>
+            <span className="text-sm text-gray-700">-</span>
+            <p className="text-sm text-gray-700">
               {t('subtitle')}
             </p>
           </div>
-          {/* Refresh Button */}
-          {isConnected && (
-            <RefreshButton size="sm" />
-          )}
         </div>
 
         {!isConnected ? (
           /* Not Connected State */
-          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-12 text-center">
-            <Store className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
+          <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/10 p-4 text-center">
+            <h3 className="text-base font-medium text-[#000000]">
               {t('connectWallet.title')}
             </h3>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-[#000000]">
               {t('connectWallet.description')}
             </p>
           </div>
         ) : (
-          <div className="rounded-lg bg-white shadow-sm">
-            {/* Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6" aria-label="Tabs">
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className={cn(
-                    "py-4 px-1 border-b-2 font-medium text-sm transition-colors",
-                    activeTab === 'orders'
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  )}
-                >
-                  {t('orders.title')}
-                  {allOrders.data && allOrders.data.length > 0 && (
-                    <span className={cn(
-                      "ml-2 rounded-full px-2 py-0.5 text-xs font-medium",
+          <>
+            {/* Tabs - Outside the card */}
+            <div className="mb-4">
+              <nav className="flex items-center gap-4" aria-label="Tabs">
+                <div className="relative inline-flex items-center rounded-full bg-[#FFFFFF] border border-[#000000]/10 h-10">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleTabChange('orders');
+                    }}
+                    className={cn(
+                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors",
                       activeTab === 'orders'
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-gray-100 text-gray-600"
-                    )}>
-                      {allOrders.data.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab('my-nfts')}
-                  className={cn(
-                    "py-4 px-1 border-b-2 font-medium text-sm transition-colors",
-                    activeTab === 'my-nfts'
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  )}
-                >
-                  {t('sidebar.title')}
-                  {web3Data.nfts && web3Data.nfts.length > 0 && (
-                    <span className={cn(
-                      "ml-2 rounded-full px-2 py-0.5 text-xs font-medium",
+                        ? "bg-[#CEF248] text-black h-10"
+                        : "bg-transparent text-black hover:bg-gray-100 h-10"
+                    )}
+                  >
+                    <span>{t('orders.title')}</span>
+                    {allOrders.data && allOrders.data.length > 0 && (
+                      <span className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
+                        activeTab === 'orders'
+                          ? "bg-black text-white"
+                          : "bg-[#CEF248] text-black"
+                      )}>
+                        {allOrders.data.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleTabChange('my-nfts');
+                    }}
+                    className={cn(
+                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors",
                       activeTab === 'my-nfts'
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-gray-100 text-gray-600"
-                    )}>
-                      {web3Data.nfts.length}
-                    </span>
-                  )}
-                </button>
+                        ? "bg-[#CEF248] text-black h-10"
+                        : "bg-transparent text-black hover:bg-gray-100 h-10"
+                    )}
+                  >
+                    <span>{t('sidebar.title')}</span>
+                    {web3Data.nfts && web3Data.nfts.length > 0 && (
+                      <span className={cn(
+                        "flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium",
+                        activeTab === 'my-nfts'
+                          ? "bg-black text-white"
+                          : "bg-[#CEF248] text-black"
+                      )}>
+                        {web3Data.nfts.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+                {/* Refresh Button */}
+                {isConnected && (
+                  <div className="ml-auto">
+                    <RefreshButton size="sm" />
+                  </div>
+                )}
               </nav>
             </div>
 
             {/* Tab Content */}
-            <div className="p-6">
-              {activeTab === 'orders' ? (
-                /* Active Orders Tab */
-                <div>
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <h2 className="text-lg font-semibold text-gray-900">
-                        {t('orders.title')}
-                      </h2>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => allOrders.refetch()}
-                        disabled={allOrders.isLoading}
-                        className="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 flex items-center"
-                      >
-                        {allOrders.isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                            {tMyNFTs('refreshing')}
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-1" />
-                            {tMyNFTs('refreshOrders')}
-                          </>
-                        )}
-                      </button>
-                    </div>
+            {activeTab === 'orders' ? (
+              /* Active Orders Tab - individual cards */
+              <>
+                {allOrders.isLoading ? (
+                  <div className="flex items-center justify-center rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-[#000000]" />
+                    <span className="ml-2 text-[#000000]">{tMyNFTs('loadingOrdersError')}</span>
                   </div>
-
-                  {/* Orders Grid */}
-                  {allOrders.isLoading ? (
-                    <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                      <span className="ml-2 text-gray-600">{tMyNFTs('loadingOrdersError')}</span>
-                    </div>
-                  ) : allOrders.error ? (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-                      <p className="text-red-600">{tMyNFTs('loadOrdersFailed')}: {allOrders.error}</p>
-                      <button
-                        onClick={() => allOrders.refetch()}
-                        className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-                      >
-                        {tMyNFTs('retry')}
-                      </button>
-                    </div>
-                  ) : allOrders.data && allOrders.data.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      {allOrders.data.map((order) => (
-                        <SellOrderCard key={order.orderId} order={order} onBuy={handleBuy} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-                      <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-4 text-lg font-medium text-gray-900">
-                        {t('orders.empty.title')}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-500">
-                        {t('orders.empty.description')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* My NFTs Tab */
-                <MyNFTsSection
-                  nfts={web3Data.nfts || []}
-                  onCreateOrder={handleCreateOrder}
-                  onOrderCreated={handleOrderCreated}
-                />
-              )}
-            </div>
-          </div>
+                ) : allOrders.error ? (
+                  <div className="rounded-lg border border-red-800 bg-red-900/30 p-6 text-center">
+                    <p className="text-red-400">{tMyNFTs('loadOrdersFailed')}: {allOrders.error}</p>
+                    <button
+                      onClick={() => allOrders.refetch()}
+                      className="mt-2 rounded-[20px] bg-[#CEF248] px-4 py-2 text-black hover:bg-[#B8D93F]"
+                    >
+                      {tMyNFTs('retry')}
+                    </button>
+                  </div>
+                ) : allOrders.data && allOrders.data.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    {allOrders.data.map((order) => (
+                      <SellOrderCard key={order.orderId} order={order} onBuy={handleBuy} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12 text-center">
+                    <ShoppingCart className="mx-auto h-12 w-12 text-[#000000]" />
+                    <h3 className="mt-4 text-base font-medium text-[#000000]">
+                      {t('orders.empty.title')}
+                    </h3>
+                    <p className="mt-2 text-sm text-[#000000]">
+                      {t('orders.empty.description')}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* My NFTs Tab - without card, directly on page background */
+              <MyNFTsSection
+                nfts={web3Data.nfts || []}
+                onCreateOrder={handleCreateOrder}
+                onOrderCreated={handleOrderCreated}
+              />
+            )}
+          </>
         )}
       </div>
 
@@ -509,14 +575,14 @@ function MyNFTsSection({
     return (
       <div>
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">{tMyNFTs('title')}</h2>
+          <h2 className="text-base font-bold text-white">{tMyNFTs('title')}</h2>
         </div>
-        <div className="rounded-lg border-2 border-dashed border-gray-200 p-12 text-center">
-          <Tag className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
+        <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12 text-center">
+          <Tag className="mx-auto h-12 w-12 text-[#000000]" />
+          <h3 className="mt-4 text-base font-medium text-[#000000]">
             {tMyNFTs('noNFTs')}
           </h3>
-          <p className="mt-2 text-sm text-gray-500">
+          <p className="mt-2 text-sm text-[#000000]">
             {tMyNFTs('noNFTsDescription')}
           </p>
         </div>
@@ -526,72 +592,55 @@ function MyNFTsSection({
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">{tMyNFTs('title')}</h2>
-      </div>
-
       {allOrders.isLoading ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-200 p-12 text-center">
-          <Loader2 className="mx-auto h-12 w-12 text-gray-400 animate-spin" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">
+        <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-12 text-center">
+          <Loader2 className="mx-auto h-12 w-12 text-[#000000] animate-spin" />
+          <h3 className="mt-4 text-base font-medium text-[#000000]">
             {tMyNFTs('loadingOrders')}
           </h3>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* On Sale Card */}
-          {nftsWithOrders.length > 0 && (
-            <div className="rounded-xl border-2 border-orange-200 bg-orange-50/30 p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{tMyNFTs('onSale')}</h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {tMyNFTs('onSaleCount').replace('{count}', String(nftsWithOrders.length))}
-                  </p>
+        <div>
+          {/* Not On Sale Card */}
+          {nftsWithoutOrders.length > 0 && (
+            <div className="mb-4 rounded-[20px] bg-[#000000] px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-[#FFFFFF]">{tMyNFTs('notOnSale')}</h3>
+                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#CEF248] text-[#000000] text-xs font-bold">
+                    {nftsWithoutOrders.length}
+                  </span>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {nftsWithOrders.map(({ nftId, order }) => (
-                  <NFTListItem
-                    key={`with-order-${nftId}`}
-                    nftId={nftId}
-                    onCreateOrder={onCreateOrder}
-                    onOrderCreated={onOrderCreated}
-                  />
-                ))}
+                <button
+                  onClick={() => onCreateOrder(nftsWithoutOrders[0])}
+                  className="rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-[#000000] hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
+                >
+                  <ListIcon className="h-4 w-4 mr-2" />
+                  挂单出售
+                </button>
               </div>
             </div>
           )}
 
-          {/* Not On Sale Card */}
-          {nftsWithoutOrders.length > 0 && (
-            <div className="rounded-xl border-2 border-gray-200 bg-white p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{tMyNFTs('notOnSale')}</h3>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {tMyNFTs('notOnSaleCount').replace('{count}', String(nftsWithoutOrders.length))}
-                  </p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {nftsWithoutOrders.map((nftId) => (
-                  <NFTListItem
-                    key={`without-order-${nftId}`}
-                    nftId={nftId}
-                    onCreateOrder={onCreateOrder}
-                    onOrderCreated={onOrderCreated}
-                  />
-                ))}
-              </div>
+          {/* On Sale Card */}
+          {nftsWithOrders.length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              {nftsWithOrders.map(({ nftId, order }) => (
+                <NFTListItem
+                  key={`with-order-${nftId}`}
+                  nftId={nftId}
+                  onCreateOrder={onCreateOrder}
+                  onOrderCreated={onOrderCreated}
+                />
+              ))}
             </div>
           )}
 
           {/* If all NFTs are listed or none are listed, show message */}
           {nftsWithOrders.length === 0 && nftsWithoutOrders.length === 0 && nfts.length > 0 && (
-            <div className="rounded-lg border-2 border-dashed border-gray-200 p-12 text-center">
+            <div className="rounded-[28px] border-2 border-dashed border-gray-700 bg-[#000000] p-12 text-center">
               <Tag className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
+              <h3 className="mt-4 text-lg font-medium text-white">
                 {tMyNFTs('noData')}
               </h3>
             </div>
@@ -652,46 +701,42 @@ function NFTListItem({
 
   // All NFTs now have the same configuration
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">
-              NFT #{nftId}
-            </h3>
-            <span className="rounded-full px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700">
-              NFT
-            </span>
-          </div>
-        </div>
-      </div>
-      
+    <div className="rounded-[20px] bg-[#FFFFFF] border border-[#000000]/30 p-4 shadow-sm hover:shadow-md transition-shadow">
       {/* Order Status */}
       {ordersLoading ? (
         <div className="mt-4 flex items-center justify-center py-2">
           <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
         </div>
       ) : activeOrder ? (
-        <div className="mt-4 space-y-3">
-          {/* Active Order Info */}
-          <div className="rounded-lg bg-orange-50 border border-orange-200 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-orange-800">{t('onSale')}</span>
-              <span className="text-xs text-orange-600">{t('orderId')} #{activeOrder.orderId}</span>
-            </div>
-            <div className="text-sm font-semibold text-gray-900">
+        <div className="space-y-3">
+          {/* First Row: NFT ID (left) and Status (right) */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-[#000000]">
+              NFT #{nftId}
+            </h3>
+            <span className="rounded-full px-2 py-1 text-xs font-medium bg-[#CEF248] text-[#000000]">
+              已挂单
+            </span>
+          </div>
+          
+          {/* Second Row: Price in gray card */}
+          <div className="rounded-lg bg-gray-100 p-3">
+            <div className="text-sm font-semibold text-[#000000] text-center">
               {formatTokenAmount(activeOrder.price, 18, 2)} USDT
             </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {t('createdTime')}: {activeOrder.createdAtDisplay}
-            </div>
+          </div>
+          
+          {/* Order ID and Created Time - Same row */}
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <span>ID: #{activeOrder.orderId}</span>
+            <span>{activeOrder.createdAtDisplay}</span>
           </div>
           
           {/* Cancel Order Button */}
           <button
             onClick={handleCancelOrder}
             disabled={cancelOrder.isLoading}
-            className="w-full rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="w-full rounded-[20px] bg-[#000000] px-4 py-2 text-sm font-medium text-[#FFFFFF] hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
           >
             {cancelOrder.isLoading ? (
               <>
@@ -700,7 +745,6 @@ function NFTListItem({
               </>
             ) : (
               <>
-                <X className="h-4 w-4 mr-2" />
                 {t('revokeListing')}
               </>
             )}
@@ -710,13 +754,104 @@ function NFTListItem({
         <div className="mt-4">
           <button
             onClick={() => onCreateOrder(nftId)}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-600 hover:to-purple-700 transition-colors flex items-center justify-center"
+            className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <ListIcon className="h-4 w-4 mr-2" />
             {tMyNFTs('listForSale')}
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function NFTListItemSimple({
+  nftId,
+  onCreateOrder,
+  onOrderCreated,
+}: {
+  nftId: number;
+  onCreateOrder: (nftId: number) => void;
+  onOrderCreated?: () => void;
+}) {
+  const tMyNFTs = useTranslations('marketplace.myNFTs');
+  const { data: pool } = useNFTPool(nftId);
+  const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useNFTSellOrders(nftId);
+  const cancelOrder = useCancelSellOrder();
+
+  // Auto-fetch orders when component mounts or nftId changes
+  useEffect(() => {
+    if (pool && nftId) {
+      refetchOrders();
+    }
+  }, [pool, nftId, refetchOrders]);
+
+  // Check if there's an active order
+  const activeOrder = orders && orders.length > 0 ? orders[0] : null;
+
+  if (!pool) return null;
+
+  const handleCancelOrder = async () => {
+    if (!activeOrder) return;
+    
+    try {
+      await cancelOrder.mutateAsync({ orderId: activeOrder.orderId });
+      toast.success(tMyNFTs('orderRevoked'));
+      refetchOrders();
+      if (onOrderCreated) {
+        onOrderCreated();
+      }
+    } catch (error: unknown) {
+      console.error("Failed to cancel order:", error);
+      const errorMessage = error instanceof Error ? error.message : tMyNFTs('revokeOrderFailed');
+      toast.error(errorMessage);
+    }
+  };
+
+  return (
+    <div className="py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <h3 className="text-[16px] font-semibold text-[#000000]">
+            NFT #{nftId}
+          </h3>
+        </div>
+        <div className="flex items-center gap-3">
+          {ordersLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          ) : activeOrder ? (
+            <div className="flex items-center gap-3">
+              <span className="text-[14px] text-[#000000]">
+                {formatTokenAmount(activeOrder.price, 18, 2)} USDT
+              </span>
+              <button
+                onClick={handleCancelOrder}
+                disabled={cancelOrder.isLoading}
+                className="rounded-[20px] bg-[#000000] text-[#FFFFFF] px-4 py-2 text-[14px] font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              >
+                {cancelOrder.isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    {tMyNFTs('revoking')}
+                  </>
+                ) : (
+                  <>
+                    {tMyNFTs('revokeListing')}
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => onCreateOrder(nftId)}
+              className="rounded-[20px] bg-[#CEF248] px-4 py-2 text-[14px] font-medium text-[#000000] hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
+            >
+              <ListIcon className="h-4 w-4 mr-2" />
+              {tMyNFTs('listForSale')}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -727,20 +862,20 @@ function OrdersForNFT({ nftId, onBuy }: { nftId: number; onBuy: (orderId: number
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-8">
+      <div className="flex items-center justify-center rounded-[28px] bg-[#000000] p-8">
         <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-gray-600">{tMyNFTs('loadingOrdersError')}</span>
+        <span className="ml-2 text-gray-300">{tMyNFTs('loadingOrdersError')}</span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-        <p className="text-red-600">{tMyNFTs('loadOrdersFailed')}: {error}</p>
+      <div className="rounded-lg border border-red-800 bg-red-900/30 p-6 text-center">
+        <p className="text-red-400">{tMyNFTs('loadOrdersFailed')}: {error}</p>
         <button
           onClick={() => refetch()}
-          className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+          className="mt-2 rounded-[20px] bg-[#CEF248] px-4 py-2 text-black hover:bg-[#B8D93F]"
         >
           {tMyNFTs('retry')}
         </button>
@@ -760,4 +895,5 @@ function OrdersForNFT({ nftId, onBuy }: { nftId: number; onBuy: (orderId: number
     </>
   );
 }
+
 

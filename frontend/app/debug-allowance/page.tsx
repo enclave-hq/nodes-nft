@@ -173,20 +173,20 @@ export default function AllowanceDebugger() {
             <button
               onClick={testAllowance}
               disabled={isTesting || !isConnected}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isTesting ? '测试中...' : '检查授权状态'}
             </button>
             <button
               onClick={testApprove}
               disabled={isTesting || !isConnected}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               {isTesting ? '测试中...' : '测试授权'}
             </button>
             <button
               onClick={clearLogs}
-              className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded hover:bg-[#D4E238]"
             >
               清除日志
             </button>

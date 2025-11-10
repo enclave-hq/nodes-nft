@@ -136,7 +136,7 @@ export default function MarketplaceTestPage() {
               <p className="text-red-600 mb-4">加载订单失败: {allOrders.error}</p>
               <button
                 onClick={() => allOrders.refetch()}
-                className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+                className="rounded-lg bg-[#E5F240] px-4 py-2 text-black hover:bg-[#D4E238]"
               >
                 重试
               </button>

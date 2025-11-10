@@ -64,7 +64,7 @@ export default function DebugPage() {
           
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-3 ${allOrders.isLoading ? 'bg-blue-500' : allOrders.error ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full mr-3 ${allOrders.isLoading ? 'bg-[#E5F240]' : allOrders.error ? 'bg-red-500' : 'bg-green-500'}`}></div>
               <div>
                 <h3 className="font-semibold text-gray-900">订单状态</h3>
                 <p className="text-sm text-gray-600">
@@ -85,7 +85,7 @@ export default function DebugPage() {
             <button
               onClick={handleRefresh}
               disabled={allOrders.isLoading}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
             >
               {allOrders.isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />

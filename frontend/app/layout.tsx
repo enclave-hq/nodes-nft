@@ -6,6 +6,7 @@ import { I18nProvider } from "@/lib/i18n/provider";
 import { DebugPanel } from "@/components/DebugPanel";
 import { Sidebar } from "@/components/Sidebar";
 import { BottomNav } from "@/components/BottomNav";
+import { ProtectImages } from "./protect-images";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans antialiased`}>
         <I18nProvider>
           <Providers>
+            <ProtectImages />
             <div className="lg:pl-64">
               {/* Desktop Sidebar */}
               <Sidebar />

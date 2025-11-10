@@ -95,9 +95,9 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://nodes-back.enclave-hq.com/api}
       
       # Port Configuration
-      PORT: ${PORT:-4001}
+      PORT: ${PORT:-3002}
     ports:
-      - "4001:4001"
+      - "3002:3002"
     depends_on:
       - backend
     volumes:

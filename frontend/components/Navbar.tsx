@@ -36,9 +36,20 @@ export function Navbar() {
   }, []);
 
   return (
-    <nav className="border-b border-gray-200 bg-white">
+    <nav 
+      className="fixed top-0 left-0 right-0 z-[100] bg-[#FFFFFF] border-b" 
+      style={{ 
+        borderColor: 'rgba(0, 0, 0, 0.1)', 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        transform: 'translateZ(0)',
+        willChange: 'transform'
+      }}
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex items-center justify-between" style={{ height: '65px' }}>
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2">
@@ -47,9 +58,10 @@ export function Navbar() {
                 alt="Enclave Logo"
                 width={32}
                 height={32}
-                className="h-8 w-8"
+                className="h-8 w-8 bg-transparent"
+                style={{ background: 'transparent' }}
               />
-              <span className="text-xl font-bold text-gray-900">Enclave</span>
+              <span className="text-xl font-bold text-black">Enclave</span>
             </Link>
           </div>
 
@@ -64,7 +76,7 @@ export function Navbar() {
               <div className="relative" ref={web3DropdownRef}>
                 <button
                   onClick={() => setWeb3DropdownOpen(!web3DropdownOpen)}
-                  className="inline-flex items-center space-x-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors bg-gray-100 text-gray-900 hover:bg-gray-200"
+                  className="inline-flex items-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors bg-[#CEF248] text-black hover:bg-[#B8D93F]"
                 >
                   <Wallet className="h-4 w-4" />
                   <span>{account ? formatAddress(account) : tCommon('connectWallet')}</span>
@@ -72,42 +84,42 @@ export function Navbar() {
                 
                 {/* Desktop Dropdown */}
                 {web3DropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-white shadow-lg ring-1 ring-gray-200 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-[#FFFFFF] shadow-lg border border-gray-200 z-50">
                     <div className="p-4">
                       {/* Balances Section */}
                       <div className="space-y-3 mb-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">{tHome('eclvBalance')}:</span>
-                          <span className="text-base font-semibold text-gray-900">
+                          <span className="text-sm text-black">{tHome('eclvBalance')}:</span>
+                          <span className="text-base font-semibold text-black">
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.e || "0"}
                                 decimals={6}
-                                className="text-base font-semibold text-gray-900"
+                                className="text-base font-semibold text-black"
                               />
                             )}
                             {web3Data.errors.balances && (
-                              <span className="text-xs text-red-500 ml-1" title={web3Data.errors.balances}>⚠</span>
+                              <span className="text-xs text-red-400 ml-1" title={web3Data.errors.balances}>⚠</span>
                             )}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">{tHome('usdtBalance')}:</span>
-                          <span className="text-base font-semibold text-gray-900">
+                          <span className="text-sm text-black">{tHome('usdtBalance')}:</span>
+                          <span className="text-base font-semibold text-black">
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.usdt || "0"}
                                 decimals={6}
-                                className="text-base font-semibold text-gray-900"
+                                className="text-base font-semibold text-black"
                               />
                             )}
                             {web3Data.errors.balances && (
-                              <span className="text-xs text-red-500 ml-1" title={web3Data.errors.balances}>⚠</span>
+                              <span className="text-xs text-red-400 ml-1" title={web3Data.errors.balances}>⚠</span>
                             )}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">{tCommon('allowance')}:</span>
+                          <span className="text-sm text-black">{tCommon('allowance')}:</span>
                           <span className="text-sm font-medium text-blue-600">
                             {web3Data.loading.allowances ? '...' : (
                               <TokenBalance 
@@ -117,7 +129,7 @@ export function Navbar() {
                               />
                             )}
                             {web3Data.errors.allowances && (
-                              <span className="text-xs text-red-500 ml-1" title={web3Data.errors.allowances}>⚠</span>
+                              <span className="text-xs text-red-400 ml-1" title={web3Data.errors.allowances}>⚠</span>
                             )}
                           </span>
                         </div>
@@ -125,10 +137,10 @@ export function Navbar() {
                       
                       {/* Wallet Address Section */}
                       {account && (
-                        <div className="pt-4 border-t border-gray-200">
+                        <div className="pt-4 border-t border-gray-300">
                           <div className="flex items-center space-x-2">
-                            <Wallet className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-900 break-all">
+                            <Wallet className="h-4 w-4 text-black" />
+                            <span className="text-sm font-medium text-black break-all">
                               {formatAddress(account)}
                             </span>
                           </div>
@@ -136,13 +148,13 @@ export function Navbar() {
                       )}
                       
                       {/* Disconnect Button */}
-                      <div className="pt-4 border-t border-gray-200 mt-4">
+                      <div className="pt-4 border-t border-gray-300 mt-4">
                         <button
                           onClick={async () => {
                             await disconnect();
                             setWeb3DropdownOpen(false);
                           }}
-                          className="w-full rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 transition-colors"
+                          className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors"
                         >
                           {tCommon('disconnect')}
                         </button>
@@ -156,8 +168,8 @@ export function Navbar() {
                 onClick={connect}
                 disabled={isConnecting}
                 className={cn(
-                  "inline-flex items-center space-x-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
-                  "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700",
+                  "inline-flex items-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                  "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
                   isConnecting && "opacity-50 cursor-not-allowed"
                 )}
               >
@@ -169,7 +181,7 @@ export function Navbar() {
             )}
 
             {isConnected && !isCorrectNetwork && (
-              <div className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600">
+              <div className="rounded-lg bg-red-900/30 px-3 py-2 text-xs font-medium text-red-400">
                 Wrong Network
               </div>
             )}
@@ -182,7 +194,7 @@ export function Navbar() {
               <div className="relative" ref={web3DropdownRef}>
                 <button
                   onClick={() => setWeb3DropdownOpen(!web3DropdownOpen)}
-                  className="inline-flex items-center rounded-lg bg-gray-50 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                  className="inline-flex items-center rounded-[20px] bg-[#CEF248] px-3 py-2 text-xs font-medium text-black hover:bg-[#B8D93F]"
                 >
                   <Wallet className="h-4 w-4 mr-1" />
                   <span className="hidden sm:inline">{account ? formatAddress(account) : 'Web3'}</span>
@@ -191,42 +203,42 @@ export function Navbar() {
                 
                 {/* Mobile Dropdown */}
                 {web3DropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-white shadow-lg ring-1 ring-gray-200 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-[#FFFFFF] shadow-lg border border-gray-200 z-50">
                     <div className="p-4">
                       {/* Balances Section */}
                       <div className="space-y-3 mb-4">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">{tHome('eclvBalance')}:</span>
-                          <span className="text-base font-semibold text-gray-900">
+                          <span className="text-sm text-black">{tHome('eclvBalance')}:</span>
+                          <span className="text-base font-semibold text-black">
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.e || "0"}
                                 decimals={6}
-                                className="text-base font-semibold text-gray-900"
+                                className="text-base font-semibold text-black"
                               />
                             )}
                             {web3Data.errors.balances && (
-                              <span className="text-xs text-red-500 ml-1" title={web3Data.errors.balances}>⚠</span>
+                              <span className="text-xs text-red-400 ml-1" title={web3Data.errors.balances}>⚠</span>
                             )}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">{tHome('usdtBalance')}:</span>
-                          <span className="text-base font-semibold text-gray-900">
+                          <span className="text-sm text-black">{tHome('usdtBalance')}:</span>
+                          <span className="text-base font-semibold text-black">
                             {web3Data.loading.balances ? '...' : (
                               <TokenBalance 
                                 value={web3Data.balances.usdt || "0"}
                                 decimals={6}
-                                className="text-base font-semibold text-gray-900"
+                                className="text-base font-semibold text-black"
                               />
                             )}
                             {web3Data.errors.balances && (
-                              <span className="text-xs text-red-500 ml-1" title={web3Data.errors.balances}>⚠</span>
+                              <span className="text-xs text-red-400 ml-1" title={web3Data.errors.balances}>⚠</span>
                             )}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-500">{tCommon('allowance')}:</span>
+                          <span className="text-sm text-black">{tCommon('allowance')}:</span>
                           <span className="text-sm font-medium text-blue-600">
                             {web3Data.loading.allowances ? '...' : (
                               <TokenBalance 
@@ -236,7 +248,7 @@ export function Navbar() {
                               />
                             )}
                             {web3Data.errors.allowances && (
-                              <span className="text-xs text-red-500 ml-1" title={web3Data.errors.allowances}>⚠</span>
+                              <span className="text-xs text-red-400 ml-1" title={web3Data.errors.allowances}>⚠</span>
                             )}
                           </span>
                         </div>
@@ -244,10 +256,10 @@ export function Navbar() {
                       
                       {/* Wallet Address Section */}
                       {account && (
-                        <div className="pt-4 border-t border-gray-200">
+                        <div className="pt-4 border-t border-gray-300">
                           <div className="flex items-center space-x-2">
-                            <Wallet className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-900 break-all">
+                            <Wallet className="h-4 w-4 text-black" />
+                            <span className="text-sm font-medium text-black break-all">
                               {formatAddress(account)}
                             </span>
                           </div>
@@ -255,13 +267,13 @@ export function Navbar() {
                       )}
                       
                       {/* Disconnect Button */}
-                      <div className="pt-4 border-t border-gray-200 mt-4">
+                      <div className="pt-4 border-t border-gray-300 mt-4">
                         <button
                           onClick={async () => {
                             await disconnect();
                             setWeb3DropdownOpen(false);
                           }}
-                          className="w-full rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 transition-colors"
+                          className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors"
                         >
                           {tCommon('disconnect')}
                         </button>
@@ -275,8 +287,8 @@ export function Navbar() {
                 onClick={connect}
                 disabled={isConnecting}
                 className={cn(
-                  "inline-flex items-center rounded-lg px-3 py-2 text-xs font-medium transition-colors",
-                  "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700",
+                  "inline-flex items-center rounded-[20px] px-3 py-2 text-xs font-medium transition-colors",
+                  "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
                   isConnecting && "opacity-50 cursor-not-allowed"
                 )}
               >

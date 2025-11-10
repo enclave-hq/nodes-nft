@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 /**
  * Utility functions for formatting
  */
-export function formatAddress(address: string, length = 6): string {
-  if (!address) return '';
-  return `${address.slice(0, length)}...${address.slice(-length)}`;
+export function formatAddress(address: string): string {
+  if (!address || address.length < 10) {
+    return address;
+  }
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
 }
 
 export function parseTokenAmount(amount: string, decimals: number = 18): bigint {
@@ -114,8 +118,8 @@ export function formatDate(date: string | Date | number | bigint | undefined | n
   }).format(dateObj);
 }
 
-export function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ');
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
 }
 
 /**
