@@ -15,7 +15,13 @@
     "create": "Create",
     "viewAll": "View All",
     "shares": "shares",
-    "share": "share"
+    "share": "share",
+    "allowance": "USDT Allowance",
+    "viewDetails": "View Details",
+    "collapse": "Collapse",
+    "refreshData": "Refresh Data",
+    "selectLanguage": "Select language",
+    "tabs": "Tabs"
   },
   "navbar": {
     "home": "Home",
@@ -33,11 +39,12 @@
     },
     "stats": {
       "myNfts": "My NFTs",
-      "eclvBalance": "$E Balance",
+      "eclvBalance": "Balance",
       "usdtBalance": "USDT Balance",
-      "eclvLocked": "$E Locked",
+      "eclvLocked": "Locked",
       "totalShares": "Total Shares",
       "listedShares": "Listed Shares",
+      "notListed": "Not Listed",
       "standard": "Standard",
       "premium": "Premium"
     },
@@ -318,7 +325,12 @@
       "cancel": "Cancel",
       "nftPriceLabel": "NFT Price (USDT)",
       "nftPricePlaceholder": "Enter NFT price",
-      "nftPriceNote": "This is the selling price for the entire NFT"
+      "nftPriceNote": "This is the selling price for the entire NFT",
+      "mine": "Mine",
+      "selectedNFT": "Selected NFT #{id}",
+      "selectNFT": "Select NFT",
+      "noAvailableNFTs": "No available NFTs to list",
+      "setPriceLabel": "Set Sale Price"
     },
     "myNFTs": {
       "title": "My NFTs",
@@ -356,7 +368,8 @@
     "connectWallet": "Please connect your wallet",
     "insufficientBalance": "Insufficient balance",
     "transactionFailed": "Transaction failed",
-    "tryAgain": "Please try again"
+    "tryAgain": "Please try again",
+    "wrongNetwork": "Wrong Network"
   },
   "whitelist": {
     "title": "Whitelist Management",
@@ -384,7 +397,8 @@
     "whitelistRegistered": "Whitelist registration successful!",
     "registerFailed": "Registration failed",
     "applicationSubmitted": "Invite code application submitted, please wait for review",
-    "applicationFailed": "Application failed"
+    "applicationFailed": "Application failed",
+    "copyInviteCode": "Copy Invite Code"
   },
   "mintStatus": {
     "applyWhitelistFirst": "Please",

@@ -267,13 +267,13 @@ export default function Home() {
                   <Link
                     href="/my-nfts"
                     className={cn(
-                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-3 sm:px-4 py-2 font-medium transition-colors",
                       "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                      "min-w-[140px]"
+                      "min-w-0"
                     )}
                   >
-                    <span>{t('hero.viewNftsButton')}</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <span className="whitespace-nowrap text-[12px] sm:text-[13px] md:text-sm">{t('hero.viewNftsButton')}</span>
+                    <ArrowRight className="h-4 w-4 flex-shrink-0" />
                   </Link>
                 </div>
               )}
@@ -285,13 +285,13 @@ export default function Home() {
                   <Link
                     href="/my-nfts"
                     className={cn(
-                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
+                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-3 sm:px-4 py-2 font-medium transition-colors",
                       "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                      "min-w-[140px]"
+                      "min-w-0"
                     )}
                   >
-                    <span>{t('hero.viewNftsButton')}</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <span className="whitespace-nowrap text-[12px] sm:text-[13px] md:text-sm">{t('hero.viewNftsButton')}</span>
+                    <ArrowRight className="h-4 w-4 flex-shrink-0" />
                   </Link>
                 </div>
               )}
@@ -337,28 +337,32 @@ export default function Home() {
                 <div className="text-2xl sm:text-3xl font-bold text-[#FFFFFF] mb-2">
                   {web3Data.nfts?.length || 0}
                 </div>
-                <h3 className="text-base font-normal text-[#FFFFFF] uppercase">
+                <h3 className="text-sm sm:text-base font-medium text-[#FFFFFF] uppercase mb-3">
                   {t('stats.myNfts')}
                 </h3>
               </div>
               
               {/* Divider Line */}
-              <div className="border-t border-gray-700 mb-4"></div>
+              <div className="border-t border-gray-700 mb-0.5"></div>
               
               {/* Three Rows - Label Left, Number Right, Separated by Lines */}
-              <div className="space-y-0">
+              <div>
                 {/* Row 1: 挂单中 */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                <div className="flex items-center justify-between border-b border-gray-700" style={{ height: '40px' }}>
                   <span className="text-sm sm:text-base font-medium text-[#FFFFFF]">
                     {t('stats.listedShares', { defaultValue: 'Listed Shares' })}
                   </span>
                   <span className="text-sm sm:text-base font-bold text-[#FFFFFF]">
-                    {loadingOrders ? '...' : activeOrders}
+                    {loadingOrders ? '...' : (
+                      <>
+                        {activeOrders} <span className="text-[#CEF248]">NFT</span>
+                      </>
+                    )}
                   </span>
                 </div>
                 
                 {/* Row 2: $E余额 */}
-                <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                <div className="flex items-center justify-between border-b border-gray-700" style={{ height: '40px' }}>
                   <span className="text-sm sm:text-base font-medium text-[#FFFFFF]">
                     {t('stats.eclvBalance')}
                   </span>
@@ -368,11 +372,12 @@ export default function Home() {
                       decimals={6}
                       className="text-sm sm:text-base font-bold text-[#FFFFFF]"
                     />
+                    <span className="text-[#CEF248]"> $E</span>
                   </span>
                 </div>
                 
                 {/* Row 3: $E锁仓中 */}
-                <div className="flex items-center justify-between py-3">
+                <div className="flex items-center justify-between" style={{ height: '40px' }}>
                   <span className="text-sm sm:text-base font-medium text-[#FFFFFF]">
                     {t('stats.eclvLocked')}
                   </span>
@@ -382,6 +387,7 @@ export default function Home() {
                       decimals={6}
                       className="text-sm sm:text-base font-bold text-[#FFFFFF]"
                     />
+                    <span className="text-[#CEF248]"> $E</span>
                   </span>
                 </div>
               </div>
@@ -440,10 +446,10 @@ export default function Home() {
                 </button>
               ) : isWhitelisted && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-black">
+                  <div className="flex items-center justify-between text-sm text-black">
                     <span>{t('stats.usdtBalance')}</span>
                     <span className="font-medium text-black">
-                      {web3Data.balances?.usdt || "0"} USDT
+                      {web3Data.balances?.usdt ? parseFloat(web3Data.balances.usdt).toFixed(2) : "0.00"} USDT
                     </span>
                   </div>
                   <button
@@ -486,7 +492,7 @@ export default function Home() {
             <button
               onClick={() => setActiveFeatureTab('step1')}
               className={cn(
-                "w-full px-4 py-3 rounded-lg text-left transition-colors border",
+                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
                 activeFeatureTab === 'step1'
                   ? "bg-[#CEF248] text-black"
                   : "text-black hover:bg-gray-100"
@@ -506,7 +512,7 @@ export default function Home() {
             <button
               onClick={() => setActiveFeatureTab('step2')}
               className={cn(
-                "w-full px-4 py-3 rounded-lg text-left transition-colors border",
+                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
                 activeFeatureTab === 'step2'
                   ? "bg-[#CEF248] text-black"
                   : "text-black hover:bg-gray-100"
@@ -526,7 +532,7 @@ export default function Home() {
             <button
               onClick={() => setActiveFeatureTab('step3')}
               className={cn(
-                "w-full px-4 py-3 rounded-lg text-left transition-colors border",
+                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
                 activeFeatureTab === 'step3'
                   ? "bg-[#CEF248] text-black"
                   : "text-black hover:bg-gray-100"
@@ -546,7 +552,7 @@ export default function Home() {
             <button
               onClick={() => setActiveFeatureTab('step4')}
               className={cn(
-                "w-full px-4 py-3 rounded-lg text-left transition-colors border",
+                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
                 activeFeatureTab === 'step4'
                   ? "bg-[#CEF248] text-black"
                   : "text-black hover:bg-gray-100"

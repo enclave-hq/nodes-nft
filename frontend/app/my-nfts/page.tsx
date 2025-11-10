@@ -187,7 +187,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
             onClick={onToggle}
             className="flex items-center space-x-1 text-sm text-[#000000] hover:text-gray-600 transition-colors"
           >
-            <span className="text-[14px]">查看详情</span>
+            <span className="text-[14px]">{tCommon('viewDetails')}</span>
             <ChevronDown className="h-4 w-4" />
           </button>
         </div>
@@ -218,7 +218,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
           onClick={onToggle}
           className="flex items-center space-x-1 text-sm text-[#000000] hover:text-gray-600 transition-colors"
         >
-          <span className="text-[14px]">收起</span>
+          <span className="text-[14px]">{tCommon('collapse')}</span>
           <ChevronUp className="h-4 w-4" />
         </button>
       </div>
@@ -263,7 +263,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
               </span>
             </div>
           </div>
-          <div className="border-t border-[#000000]/10 mt-1 mb-2"></div>
+          <div className="border-t border-[#000000]/10 mt-0 mb-2"></div>
           <div className="flex items-center justify-between">
             <div className="text-left">
               <span className="text-xs text-[#000000]">{t('availableForWithdrawal')} </span>
@@ -310,7 +310,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
               </span>
             </div>
           </div>
-          <div className="border-t border-[#000000]/10 mt-1 mb-2"></div>
+          <div className="border-t border-[#000000]/10 mt-0 mb-2"></div>
           <div className="flex items-center justify-between">
             <div className="text-left">
               <span className="text-xs text-[#000000]">{t('availableReward')} </span>
@@ -681,22 +681,25 @@ export default function MyNFTsPage() {
                 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
-                  {/* Refresh Button */}
-                  <RefreshButton size="sm" />
-                  
-                  {/* Quick Mint Button - Icon only, same style as RefreshButton */}
+                  {/* Mint Button */}
                   <button
                     onClick={handleQuickMint}
                     disabled={!isConnected || !isWhitelisted || !activeBatch || !canMint || minting}
-                    className="inline-flex items-center justify-center rounded-full h-10 w-10 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex items-center justify-center rounded-[20px] px-4 py-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium"
                     title={!isConnected ? tMyNFTs('connectWalletFirst') : !isWhitelisted ? tMyNFTs('joinWhitelistFirst') : !activeBatch ? tBatch('noActiveBatch') : !canMint ? tMyNFTs('batchSoldOut') : tMyNFTs('quickMint')}
                   >
                     {minting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span>{tCommon('loading')}</span>
+                      </>
                     ) : (
-                      <Plus className="h-4 w-4" />
+                      <span>{tCommon('mint')}</span>
                     )}
                   </button>
+                  
+                  {/* Refresh Button */}
+                  <RefreshButton size="sm" />
                 </div>
               </div>
             )}
@@ -710,7 +713,7 @@ export default function MyNFTsPage() {
               {tMarketplace('connectWallet.title')}
             </h3>
             <p className="mt-2 text-sm text-[#000000]">
-              请连接钱包以访问NFT详情
+              {tMyNFTs('connectWallet.description')}
             </p>
           </div>
         ) : web3Data.loading.nfts ? (
@@ -750,10 +753,10 @@ export default function MyNFTsPage() {
             {isWhitelisted && (
               <div className="space-y-6">
                 {/* Whitelist Status Card */}
-                <div className="rounded-[28px] border-2 border-green-600/50 bg-[#000000] p-6 sm:p-8">
+                <div className="rounded-[28px] border-2 border-gray-300 bg-white p-6 sm:p-8">
                   <div className="text-center mb-4">
-                    <Shield className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-green-400" />
-                    <h3 className="mt-4 text-xl sm:text-2xl font-bold text-white">
+                    <Shield className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-[#CEF248]" />
+                    <h3 className="mt-4 text-xl sm:text-2xl font-bold text-black">
                       {tMyNFTs('whitelisted')}
                     </h3>
                   </div>

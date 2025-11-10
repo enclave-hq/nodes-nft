@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from '@/lib/i18n/provider';
 import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
 
 // Home Icon SVG Component
 function HomeIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
@@ -68,7 +69,9 @@ function MyNFTsIcon({ className, style }: { className?: string; style?: React.CS
 export function BottomNav() {
   const t = useTranslations('navbar');
   const pathname = usePathname();
-  const isMyNFTsPage = pathname === '/my-nfts' || pathname?.startsWith('/my-nfts');
+  const navContainerRef = useRef<HTMLDivElement>(null);
+  const buttonRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [sliderStyle, setSliderStyle] = useState({ left: 0, width: 0 });
 
   const navItems = [
     { href: "/", label: t('home'), icon: HomeIcon },
@@ -76,13 +79,63 @@ export function BottomNav() {
     { href: "/my-nfts", label: t('myNfts'), icon: MyNFTsIcon },
   ];
 
+  // 计算当前激活按钮的位置和宽度
+  const updateSliderPosition = () => {
+    const activeIndex = navItems.findIndex(
+      (item) => pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
+    );
+
+    if (activeIndex !== -1 && buttonRefs.current[activeIndex] && navContainerRef.current) {
+      const activeButton = buttonRefs.current[activeIndex];
+      const container = navContainerRef.current;
+      
+      const buttonRect = activeButton.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      setSliderStyle({
+        left: buttonRect.left - containerRect.left,
+        width: buttonRect.width,
+      });
+    }
+  };
+
+  useEffect(() => {
+    // 延迟执行以确保 DOM 已渲染
+    const timer = setTimeout(updateSliderPosition, 0);
+    
+    // 监听窗口大小改变
+    window.addEventListener('resize', updateSliderPosition);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateSliderPosition);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center pb-6 px-6">
       {/* Floating Navigation Container - Rounded Style */}
-      <div className={cn(
-        "flex items-center backdrop-blur-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden min-w-[280px]",
-        isMyNFTsPage ? "bg-[#242424]/90" : "bg-[#3A3A3A]/80"
-      )} style={{ height: '64.524px', borderRadius: '25919828px' }}>
+      <div
+        ref={navContainerRef}
+        className={cn(
+          "flex items-center backdrop-blur-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden min-w-[280px] relative",
+          "bg-[#3a3a3a]"
+        )}
+        style={{ height: '64.524px', borderRadius: '25919828px' }}
+      >
+        {/* Sliding Background */}
+        <div
+          className="absolute bg-[#CEF248] transition-all duration-300 ease-in-out"
+          style={{
+            left: `${sliderStyle.left}px`,
+            width: `${sliderStyle.width}px`,
+            height: '64.524px',
+            borderRadius: '25919828px',
+            zIndex: 0,
+          }}
+        />
+
         {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || 
@@ -94,26 +147,19 @@ export function BottomNav() {
           return (
             <Link
               key={item.href}
+              ref={(el) => (buttonRefs.current[index] = el)}
               href={item.href}
               className={cn(
-                "flex items-center justify-center transition-all duration-200 relative",
+                "flex items-center justify-center transition-colors duration-200 relative",
                 "flex-1 min-w-[80px]",
                 isFirst && "rounded-l-[25919828px]",
                 isLast && "rounded-r-[25919828px]"
               )}
-              style={{ height: '64.524px' }}
+              style={{ height: '64.524px', zIndex: 1 }}
             >
-              {/* Semi-transparent Background for Active State */}
-              {isActive && (
-                <div className={cn(
-                  "absolute inset-0 rounded-full flex items-center justify-center",
-                  isMyNFTsPage ? "bg-[#CEF248]" : "bg-[#CEF248]/80"
-                )} style={{ width: '41.48px', height: '41.48px', left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }} />
-              )}
-              
               <Icon
                 className={cn(
-                  "relative z-10 transition-colors"
+                  "transition-colors duration-200"
                 )}
                 style={{ 
                   width: '20.75px', 
