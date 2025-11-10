@@ -104,7 +104,7 @@ export default function AdminNFTsPage() {
             {!isConnected ? (
               <button
                 onClick={() => connect()}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238]"
               >
                 连接钱包
               </button>
@@ -112,7 +112,7 @@ export default function AdminNFTsPage() {
               <button
                 onClick={handleLogin}
                 disabled={isLoading}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
               >
                 {isLoading ? '登录中...' : '登录'}
               </button>
@@ -182,7 +182,7 @@ export default function AdminNFTsPage() {
                   <button
                     onClick={handleSearch}
                     disabled={isLoading || !searchValue.trim()}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isLoading ? '搜索中...' : '搜索'}
                   </button>
@@ -287,7 +287,7 @@ export default function AdminNFTsPage() {
                                 toast.error(error.message || '获取追溯信息失败');
                               }
                             }}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                            className="px-3 py-1 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] text-sm"
                           >
                             追溯
                           </button>

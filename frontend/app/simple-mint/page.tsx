@@ -31,7 +31,7 @@ export default function SimpleMintPage() {
             <p className="text-gray-600 mb-6">管理您的白名单状态和邀请码</p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors font-semibold"
+              className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] transition-colors font-semibold"
             >
               打开白名单管理
             </button>

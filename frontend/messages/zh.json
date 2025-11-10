@@ -191,7 +191,7 @@
       "terminated": "已终止",
       "lockedEclv": "锁定 $E",
       "unlocked": "已解锁",
-      "notUnlocked": "未解锁",
+      "notUnlocked": "$E未解锁",
       "withdrawn": "已提取",
       "pendingEclv": "待领取 $E",
       "pendingUsdt": "待领取 USDT",
@@ -199,13 +199,13 @@
       "claim": "领取",
       "eclvLocked": "$E锁仓",
       "eclvProduced": "$E产出",
-      "totalProduced": "总产出",
+      "totalProduced": "$E总产出",
       "availableForWithdrawal": "可提取",
       "withdrawnAmount": "已提取",
       "claimProduced": "提取产出",
       "claiming": "提取中...",
       "usdtReward": "USDT收益",
-      "totalReward": "总收益",
+      "totalReward": "USDT总收益",
       "availableReward": "可提取",
       "claimReward": "提取收益",
       "claimingReward": "提取中..."
@@ -281,7 +281,7 @@
       "empty": "没有可出售的 NFT"
     },
     "orders": {
-      "title": "活跃订单",
+      "title": "活跃挂单",
       "viewAll": "查看全部",
       "empty": {
         "title": "未找到订单",
@@ -397,7 +397,7 @@
   "mintStatus": {
     "applyWhitelistFirst": "请先",
     "applyWhitelist": "申请白名单",
-    "batchMintable": "本批次可铸造的数量:",
+    "batchMintable": "本批次可铸造数量:",
     "waitForNextBatch": "请耐心等待下次开放铸造"
   },
   "batch": {

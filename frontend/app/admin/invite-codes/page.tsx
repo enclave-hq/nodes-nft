@@ -102,7 +102,7 @@ export default function AdminInviteCodesPage() {
             {!isConnected ? (
               <button
                 onClick={() => connect()}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238]"
               >
                 连接钱包
               </button>
@@ -110,7 +110,7 @@ export default function AdminInviteCodesPage() {
               <button
                 onClick={handleLogin}
                 disabled={isLoading}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
               >
                 {isLoading ? '登录中...' : '登录'}
               </button>
@@ -141,7 +141,7 @@ export default function AdminInviteCodesPage() {
             <button
               onClick={fetchInviteCodes}
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
             >
               {isLoading ? '加载中...' : '刷新'}
             </button>
@@ -197,7 +197,7 @@ export default function AdminInviteCodesPage() {
                           <button
                             onClick={() => handleApproveRequest(code.id)}
                             disabled={isLoading}
-                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm"
+                            className="px-3 py-1 bg-[#E5F240] text-black rounded hover:bg-[#D4E238] disabled:opacity-50 text-sm"
                           >
                             批准
                           </button>
@@ -216,7 +216,7 @@ export default function AdminInviteCodesPage() {
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1 || isLoading}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
               >
                 上一页
               </button>
@@ -226,7 +226,7 @@ export default function AdminInviteCodesPage() {
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages || isLoading}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
               >
                 下一页
               </button>
