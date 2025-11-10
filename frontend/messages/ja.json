@@ -17,6 +17,11 @@
     "shares": "シェア",
     "share": "シェア",
     "allowance": "承認額",
+    "viewDetails": "詳細を見る",
+    "collapse": "折りたたむ",
+    "refreshData": "データを更新",
+    "selectLanguage": "言語を選択",
+    "tabs": "タブ",
     "dataRefreshed": "データが更新されました",
     "refreshFailed": "更新に失敗しました。後でもう一度お試しください",
     "refreshChainData": "チェーン上のデータを更新",
@@ -39,9 +44,9 @@
     },
     "stats": {
       "myNfts": "マイ NFT",
-      "eclvBalance": "$E 残高",
+      "eclvBalance": "残高",
       "usdtBalance": "USDT 残高",
-      "eclvLocked": "$E ロック中",
+      "eclvLocked": "ロック中",
       "totalShares": "総シェア",
       "listedShares": "出品中",
       "notListed": "未出品",
@@ -328,9 +333,15 @@
       "totalValue": "合計価値",
       "creating": "作成中...",
       "createButton": "注文を作成",
+      "cancel": "キャンセル",
       "nftPriceLabel": "NFT価格（USDT）",
       "nftPricePlaceholder": "NFT価格を入力",
-      "nftPriceNote": "これはNFT全体の販売価格です"
+      "nftPriceNote": "これはNFT全体の販売価格です",
+      "mine": "マイ",
+      "selectedNFT": "選択済みNFT #{id}",
+      "selectNFT": "NFTを選択",
+      "noAvailableNFTs": "出品可能なNFTがありません",
+      "setPriceLabel": "販売価格を設定"
     },
     "myNFTs": {
       "title": "マイNFT",
@@ -368,7 +379,8 @@
     "connectWallet": "ウォレットを接続してください",
     "insufficientBalance": "残高不足",
     "transactionFailed": "トランザクション失敗",
-    "tryAgain": "もう一度お試しください"
+    "tryAgain": "もう一度お試しください",
+    "wrongNetwork": "ネットワークエラー"
   },
   "whitelist": {
     "title": "ホワイトリスト管理",
@@ -396,7 +408,8 @@
     "whitelistRegistered": "ホワイトリスト登録が成功しました！",
     "registerFailed": "登録に失敗しました",
     "applicationSubmitted": "招待コードの申請が提出されました。審査をお待ちください",
-    "applicationFailed": "申請に失敗しました"
+    "applicationFailed": "申請に失敗しました",
+    "copyInviteCode": "招待コードをコピー"
   },
   "mintStatus": {
     "applyWhitelistFirst": "まず",

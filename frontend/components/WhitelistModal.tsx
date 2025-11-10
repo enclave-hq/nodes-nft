@@ -135,21 +135,21 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
             </div>
             
             {isWhitelisted ? (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="bg-white border border-gray-300 rounded-lg p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-green-900">
+                    <p className="text-sm font-medium text-black">
                       {inviteCodeStatus === 'approved_pending_activation' 
                         ? t('waitingForActivation')
                         : t('whitelisted')}
                     </p>
-                    <p className="text-xs text-green-700 mt-1">
+                    <p className="text-xs text-gray-700 mt-1">
                       {inviteCodeStatus === 'approved_pending_activation'
                         ? t('waitingForActivationDescription')
                         : t('whitelistedDescription')}
                     </p>
                   </div>
-                  <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 ml-2" />
+                  <CheckCircle2 className="h-5 w-5 text-[#CEF248] flex-shrink-0 ml-2" />
                 </div>
               </div>
             ) : (
@@ -159,7 +159,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                     type="text"
                     value={inviteCode}
                     onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    placeholder="输入邀请码，加入白名单"
+                    placeholder={t('inviteCodePlaceholder')}
                     className="flex-1 px-3 py-2 text-sm text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border"
                     style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' }}
                     disabled={isRegistering}

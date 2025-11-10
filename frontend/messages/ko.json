@@ -15,7 +15,13 @@
     "create": "생성",
     "viewAll": "전체 보기",
     "shares": "지분",
-    "share": "지분"
+    "share": "지분",
+    "allowance": "USDT 승인 금액",
+    "viewDetails": "상세 보기",
+    "collapse": "접기",
+    "refreshData": "데이터 새로고침",
+    "selectLanguage": "언어 선택",
+    "tabs": "탭"
   },
   "navbar": {
     "home": "홈",
@@ -33,9 +39,9 @@
     },
     "stats": {
       "myNfts": "내 NFT",
-      "eclvBalance": "$E 잔액",
+      "eclvBalance": "잔액",
       "usdtBalance": "USDT 잔액",
-      "eclvLocked": "$E 잠금 중",
+      "eclvLocked": "잠금 중",
       "totalShares": "총 지분",
       "listedShares": "판매 중",
       "notListed": "미판매",
@@ -283,6 +289,7 @@
     },
     "orders": {
       "title": "활성 주문",
+      "viewAll": "전체 보기",
       "empty": {
         "title": "주문을 찾을 수 없습니다",
         "description": "첫 번째 판매 주문을 생성하세요!"
@@ -318,9 +325,15 @@
       "totalValue": "총 가치",
       "creating": "생성 중...",
       "createButton": "주문 생성",
+      "cancel": "취소",
       "nftPriceLabel": "NFT 가격 (USDT)",
       "nftPricePlaceholder": "NFT 가격 입력",
-      "nftPriceNote": "이것은 전체 NFT의 판매 가격입니다"
+      "nftPriceNote": "이것은 전체 NFT의 판매 가격입니다",
+      "mine": "내",
+      "selectedNFT": "선택된 NFT #{id}",
+      "selectNFT": "NFT 선택",
+      "noAvailableNFTs": "판매 가능한 NFT가 없습니다",
+      "setPriceLabel": "판매 가격 설정"
     },
     "myNFTs": {
       "title": "내 NFT",
@@ -358,7 +371,8 @@
     "connectWallet": "지갑을 연결해주세요",
     "insufficientBalance": "잔액 부족",
     "transactionFailed": "트랜잭션 실패",
-    "tryAgain": "다시 시도해주세요"
+    "tryAgain": "다시 시도해주세요",
+    "wrongNetwork": "네트워크 오류"
   },
   "whitelist": {
     "title": "화이트리스트 관리",
@@ -386,7 +400,8 @@
     "whitelistRegistered": "화이트리스트 등록 성공!",
     "registerFailed": "등록에 실패했습니다",
     "applicationSubmitted": "초대 코드 신청이 제출되었습니다. 검토를 기다려주세요",
-    "applicationFailed": "신청에 실패했습니다"
+    "applicationFailed": "신청에 실패했습니다",
+    "copyInviteCode": "초대 코드 복사"
   },
   "mintStatus": {
     "applyWhitelistFirst": "먼저",

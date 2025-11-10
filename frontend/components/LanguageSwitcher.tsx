@@ -4,9 +4,11 @@ import { useI18n } from '@/lib/i18n/provider';
 import { locales, localeNames, Locale } from '@/lib/i18n/config';
 import { Globe } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from '@/lib/i18n/provider';
 
 export function LanguageSwitcher() {
   const { locale, setLocale } = useI18n();
+  const t = useTranslations('common');
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -32,7 +34,7 @@ export function LanguageSwitcher() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-x-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-black hover:bg-gray-100 transition-colors"
-        aria-label="Select language"
+        aria-label={t('selectLanguage')}
       >
         <Globe className="h-4 w-4" />
         <span>{localeNames[locale]}</span>
