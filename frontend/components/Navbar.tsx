@@ -35,9 +35,10 @@ export function Navbar() {
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // 使用 click 事件而不是 mousedown，避免在按钮点击时立即关闭
+    document.addEventListener('click', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, []);
 
@@ -159,11 +160,18 @@ export function Navbar() {
                       {/* Invite Code Request Section */}
                       <div className="pt-4 border-t border-gray-300 mt-4">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔍 [Navbar] 查看邀请码按钮点击 (桌面端)');
                             web3Data.setWhitelistModalOpen(true);
                             setWeb3DropdownOpen(false);
                           }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                          }}
                           className="w-full rounded-[20px] bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors mb-3"
+                          type="button"
                         >
                           {shouldShowViewInviteCodes ? tWhitelist('viewInviteCodes') : tWhitelist('applyWhitelist')}
                         </button>
@@ -172,11 +180,14 @@ export function Navbar() {
                       {/* Disconnect Button */}
                       <div className="pt-2">
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             await disconnect();
                             setWeb3DropdownOpen(false);
                           }}
                           className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors"
+                          type="button"
                         >
                           {tCommon('disconnect')}
                         </button>
@@ -294,11 +305,18 @@ export function Navbar() {
                       {/* Invite Code Request Section */}
                       <div className="pt-4 border-t border-gray-300 mt-4">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🔍 [Navbar] 查看邀请码按钮点击 (移动端)');
                             web3Data.setWhitelistModalOpen(true);
                             setWeb3DropdownOpen(false);
                           }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                          }}
                           className="w-full rounded-[20px] bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors mb-3"
+                          type="button"
                         >
                           {shouldShowViewInviteCodes ? tWhitelist('viewInviteCodes') : tWhitelist('applyWhitelist')}
                         </button>
@@ -307,11 +325,14 @@ export function Navbar() {
                       {/* Disconnect Button */}
                       <div className="pt-2">
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             await disconnect();
                             setWeb3DropdownOpen(false);
                           }}
                           className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors"
+                          type="button"
                         >
                           {tCommon('disconnect')}
                         </button>

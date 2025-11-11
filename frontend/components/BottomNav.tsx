@@ -147,7 +147,7 @@ export function BottomNav() {
           return (
             <Link
               key={item.href}
-              ref={(el) => (buttonRefs.current[index] = el)}
+              ref={(el) => { buttonRefs.current[index] = el; }}
               href={item.href}
               className={cn(
                 "flex items-center justify-center transition-colors duration-200 relative",

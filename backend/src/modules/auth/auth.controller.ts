@@ -1,7 +1,9 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get, Query, UseGuards } from '@nestjs/common';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 export class SetupTotpDto {
   @IsString()
@@ -49,6 +51,31 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.username, loginDto.password, loginDto.totpCode);
+  }
+
+  /**
+   * Get current authenticated user info
+   */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async getCurrentUser(@CurrentUser() username: string) {
+    return {
+      username,
+    };
+  }
+
+  /**
+   * Check if TOTP is enabled for a username (public endpoint)
+   * This allows the frontend to pre-show TOTP input field
+   */
+  @Get('check-totp')
+  @HttpCode(HttpStatus.OK)
+  async checkTotpStatus(@Query('username') username: string) {
+    if (!username) {
+      return { totpEnabled: false };
+    }
+    return this.authService.checkTotpStatus(username);
   }
 
   @Post('totp/setup')

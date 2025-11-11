@@ -1,14 +1,19 @@
 #!/bin/bash
 # Multi-architecture Docker push script
 # Builds and pushes images for both amd64 and arm64 platforms
-# Usage: ./push-multiarch.sh [prod|dev]
-#   prod: Uses production API URL (https://nodes-back.enclave-hq.com/api)
-#   dev:  Uses default API URL from environment or docker-compose defaults
+# Usage: ./push-multiarch.sh [prod|dev|--prod|--dev]
+#   prod or --prod: Uses production API URL (https://nodes-back.enclave-hq.com/api)
+#   dev or --dev:  Uses default API URL from environment or docker-compose defaults
 
 set -e
 
-# Parse environment argument
+# Parse environment argument (support both --prod/--dev and prod/dev formats)
 ENV_MODE="${1:-dev}"
+if [ "$ENV_MODE" = "--prod" ] || [ "$ENV_MODE" = "prod" ]; then
+    ENV_MODE="prod"
+elif [ "$ENV_MODE" = "--dev" ] || [ "$ENV_MODE" = "dev" ]; then
+    ENV_MODE="dev"
+fi
 
 # Set API URL based on environment
 if [ "$ENV_MODE" = "prod" ]; then

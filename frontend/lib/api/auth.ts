@@ -2,7 +2,7 @@
  * Authentication API
  */
 
-import { apiPost } from './client';
+import { apiPost, apiGet } from './client';
 import { setAuthToken, removeAuthToken } from './client';
 
 export interface LoginRequest {
@@ -20,6 +20,32 @@ export interface SetupTotpResponse {
   secret: string;
   qrCode: string;
   otpauthUrl: string;
+}
+
+export interface TotpStatusResponse {
+  totpEnabled: boolean;
+}
+
+export interface CurrentUserResponse {
+  username: string;
+}
+
+/**
+ * Get current authenticated user info
+ */
+export async function getCurrentUser(): Promise<CurrentUserResponse> {
+  return apiGet<CurrentUserResponse>('/admin/auth/me');
+}
+
+/**
+ * Check if TOTP is enabled for a username
+ * This allows the frontend to pre-show TOTP input field
+ */
+export async function checkTotpStatus(username: string): Promise<TotpStatusResponse> {
+  if (!username) {
+    return { totpEnabled: false };
+  }
+  return apiGet<TotpStatusResponse>(`/admin/auth/check-totp?username=${encodeURIComponent(username)}`);
 }
 
 /**
