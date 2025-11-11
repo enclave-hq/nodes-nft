@@ -19,7 +19,8 @@ export function Navbar() {
   const { account, isConnected, isConnecting, connect, disconnect, chainId } = useWallet();
   const web3Data = useWeb3Data();
   const [web3DropdownOpen, setWeb3DropdownOpen] = useState(false);
-  const web3DropdownRef = useRef<HTMLDivElement>(null);
+  const desktopDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
   // Check if user has applied whitelist or invite code
   const isWhitelisted = web3Data.whitelist.isWhitelisted;
   // 只有已申请成功白名单时才显示"查看邀请码"，否则显示"申请白名单"
@@ -29,18 +30,34 @@ export function Navbar() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (!web3DropdownOpen) return;
+
     function handleClickOutside(event: MouseEvent) {
-      if (web3DropdownRef.current && !web3DropdownRef.current.contains(event.target as Node)) {
-        setWeb3DropdownOpen(false);
+      const target = event.target as Node;
+      
+      // 检查点击是否在 Desktop 或 Mobile 下拉菜单容器内
+      const clickedInDesktop = desktopDropdownRef.current?.contains(target);
+      const clickedInMobile = mobileDropdownRef.current?.contains(target);
+      
+      // 如果点击在任何一个下拉菜单容器内，不关闭
+      if (clickedInDesktop || clickedInMobile) {
+        return;
       }
+      
+      // 点击在外部，关闭下拉菜单
+      setWeb3DropdownOpen(false);
     }
 
-    // 使用 click 事件而不是 mousedown，避免在按钮点击时立即关闭
-    document.addEventListener('click', handleClickOutside);
+    // 延迟添加监听器，确保按钮的 onClick 先执行
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+    
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [web3DropdownOpen]);
 
   return (
     <nav 
@@ -80,7 +97,7 @@ export function Navbar() {
             
             {/* Wallet Info & Connect Button */}
             {isConnected ? (
-              <div className="relative" ref={web3DropdownRef}>
+              <div className="relative" ref={desktopDropdownRef}>
                 <button
                   onClick={() => setWeb3DropdownOpen(!web3DropdownOpen)}
                   className="inline-flex items-center space-x-2 rounded-[20px] px-4 py-2 text-sm font-medium transition-colors bg-[#CEF248] text-black hover:bg-[#B8D93F]"
@@ -91,7 +108,14 @@ export function Navbar() {
                 
                 {/* Desktop Dropdown */}
                 {web3DropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-[#FFFFFF] shadow-lg border border-gray-200 z-50">
+                  <div 
+                    className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-[#FFFFFF] shadow-lg border border-gray-200 z-50"
+                    data-dropdown-content
+                    onClick={(e) => {
+                      // 阻止事件冒泡，防止点击下拉菜单内容时关闭
+                      e.stopPropagation();
+                    }}
+                  >
                     <div className="p-4">
                       {/* Balances Section */}
                       <div className="space-y-3 mb-4">
@@ -163,7 +187,7 @@ export function Navbar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('🔍 [Navbar] 查看邀请码按钮点击 (桌面端)');
+                            console.log('🔍 [Navbar Desktop] 查看邀请码按钮点击');
                             web3Data.setWhitelistModalOpen(true);
                             setWeb3DropdownOpen(false);
                           }}
@@ -185,6 +209,9 @@ export function Navbar() {
                             e.stopPropagation();
                             await disconnect();
                             setWeb3DropdownOpen(false);
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
                           }}
                           className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors"
                           type="button"
@@ -224,10 +251,11 @@ export function Navbar() {
                 <div className="flex lg:hidden items-center space-x-2">
                   <LanguageSwitcher />
             {isConnected ? (
-              <div className="relative" ref={web3DropdownRef}>
+              <div className="relative" ref={mobileDropdownRef}>
                 <button
                   onClick={() => setWeb3DropdownOpen(!web3DropdownOpen)}
                   className="inline-flex items-center rounded-[20px] bg-[#CEF248] px-3 py-2 text-xs font-medium text-black hover:bg-[#B8D93F]"
+                  type="button"
                 >
                   <Wallet className="h-4 w-4 mr-1" />
                   <span className="hidden sm:inline">{account ? formatAddress(account) : 'Web3'}</span>
@@ -236,7 +264,14 @@ export function Navbar() {
                 
                 {/* Mobile Dropdown */}
                 {web3DropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-[#FFFFFF] shadow-lg border border-gray-200 z-50">
+                  <div 
+                    className="absolute right-0 top-full mt-2 w-80 rounded-lg bg-[#FFFFFF] shadow-lg border border-gray-200 z-50"
+                    data-dropdown-content
+                    onClick={(e) => {
+                      // 阻止事件冒泡，防止点击下拉菜单内容时关闭
+                      e.stopPropagation();
+                    }}
+                  >
                     <div className="p-4">
                       {/* Balances Section */}
                       <div className="space-y-3 mb-4">
@@ -308,7 +343,7 @@ export function Navbar() {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('🔍 [Navbar] 查看邀请码按钮点击 (移动端)');
+                            console.log('🔍 [Navbar Mobile] 查看邀请码按钮点击');
                             web3Data.setWhitelistModalOpen(true);
                             setWeb3DropdownOpen(false);
                           }}
@@ -330,6 +365,9 @@ export function Navbar() {
                             e.stopPropagation();
                             await disconnect();
                             setWeb3DropdownOpen(false);
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
                           }}
                           className="w-full rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-black hover:bg-[#B8D93F] transition-colors"
                           type="button"
