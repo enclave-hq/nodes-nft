@@ -1,5 +1,8 @@
 /**
  * API Module - Export all API functions
+ * 
+ * Note: API_BASE_URL is exported from './client' and can be imported from here
+ * or directly from '@/lib/api/client'
  */
 
 export * from './client';

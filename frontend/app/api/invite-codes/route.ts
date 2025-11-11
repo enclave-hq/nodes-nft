@@ -9,8 +9,6 @@ import { inviteCodeStore } from '@/lib/stores/inviteCodeStore';
  * The backend API is available at: /api/admin/invite-codes
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-
 // 管理密钥（从环境变量读取，生产环境应该使用更安全的认证）
 const ADMIN_KEY = process.env.ADMIN_KEY || 'your-admin-key-here';
 

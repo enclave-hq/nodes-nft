@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { API_BASE_URL } from '@/lib/api/client';
 
 /**
  * DEPRECATED: This API route is deprecated.
@@ -7,8 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * This route proxies to the backend API for backward compatibility.
  * The backend API is available at: /api/invite-codes/validate
  */
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 /**
  * POST /api/invite-codes/validate

@@ -474,7 +474,7 @@ export default function MarketplacePage() {
                   />
                   
                   <button
-                    ref={(el) => (tabButtonRefs.current[0] = el)}
+                    ref={(el) => { tabButtonRefs.current[0] = el; }}
                     onClick={(e) => {
                       e.preventDefault();
                       handleTabChange('orders');
@@ -499,7 +499,7 @@ export default function MarketplacePage() {
                     )}
                   </button>
                   <button
-                    ref={(el) => (tabButtonRefs.current[1] = el)}
+                    ref={(el) => { tabButtonRefs.current[1] = el; }}
                     onClick={(e) => {
                       e.preventDefault();
                       handleTabChange('my-nfts');

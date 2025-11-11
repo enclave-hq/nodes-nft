@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { setupTotp, enableTotp, disableTotp } from '@/lib/api/auth';
+import { setupTotp, enableTotp, disableTotp, checkTotpStatus, getCurrentUser } from '@/lib/api/auth';
+import { isAuthenticated } from '@/lib/api';
 
 export default function TotpSettingsPage() {
   const [username, setUsername] = useState('');
@@ -13,6 +14,84 @@ export default function TotpSettingsPage() {
   const [otpauthUrl, setOtpauthUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'setup' | 'verify' | 'enabled' | 'disable'>('setup');
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [isCheckingTotp, setIsCheckingTotp] = useState(false);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load current user info on mount
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      if (!isAuthenticated()) {
+        setIsLoadingUser(false);
+        return;
+      }
+
+      try {
+        const user = await getCurrentUser();
+        setUsername(user.username);
+        console.log('Current user:', user.username);
+      } catch (error) {
+        console.error('Failed to load current user:', error);
+        toast.error('无法获取当前用户信息');
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    loadCurrentUser();
+  }, []);
+
+  // Check TOTP status when username changes (with debounce)
+  useEffect(() => {
+    // Don't check if still loading user
+    if (isLoadingUser) {
+      return;
+    }
+
+    // Clear previous timeout
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+    }
+
+    // If username is empty, reset TOTP status
+    if (!username.trim()) {
+      setTotpEnabled(null);
+      return;
+    }
+
+    // Debounce: wait 500ms after user stops typing
+    checkTimeoutRef.current = setTimeout(async () => {
+      setIsCheckingTotp(true);
+      try {
+        const result = await checkTotpStatus(username.trim());
+        setTotpEnabled(result.totpEnabled);
+        console.log('TOTP status for', username, ':', result.totpEnabled);
+      } catch (error) {
+        console.error('Failed to check TOTP status:', error);
+        setTotpEnabled(null);
+      } finally {
+        setIsCheckingTotp(false);
+      }
+    }, 500);
+
+    // Cleanup function
+    return () => {
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+      }
+    };
+  }, [username, isLoadingUser]);
+
+  // Update TOTP status after enabling/disabling
+  useEffect(() => {
+    if (step === 'enabled') {
+      setTotpEnabled(true);
+    } else if (step === 'setup' && totpEnabled === false) {
+      // After disabling, totpEnabled should be false
+      // This is handled in handleDisable
+    }
+  }, [step]);
 
   // Setup TOTP - Generate secret and QR code
   const handleSetup = async (e: React.FormEvent) => {
@@ -88,6 +167,7 @@ export default function TotpSettingsPage() {
     setIsLoading(true);
     try {
       await disableTotp(username.trim(), password);
+      setTotpEnabled(false);
       setStep('setup');
       toast.success('TOTP 已成功禁用');
       // Clear form
@@ -135,10 +215,17 @@ export default function TotpSettingsPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="请输入管理员用户名"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder={isLoadingUser ? "加载中..." : "请输入管理员用户名"}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
                   required
+                  disabled={isLoadingUser || !!username}
+                  readOnly={!!username}
                 />
+                {username && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    当前登录用户：{username}
+                  </p>
+                )}
               </div>
               
               <div>
@@ -355,18 +442,46 @@ export default function TotpSettingsPage() {
         )}
 
         {/* Action Buttons */}
-        {step === 'setup' && (
+        {step === 'setup' && totpEnabled === true && (
           <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-green-800">
+                <strong>✓ TOTP 已启用</strong> - 此账户已启用 TOTP 双因素认证
+              </p>
+            </div>
             <button
               onClick={() => {
                 setStep('disable');
-                setUsername('');
                 setPassword('');
               }}
               className="w-full px-6 py-3 border border-red-300 text-red-700 font-semibold rounded-lg hover:bg-red-50 transition-colors"
             >
               禁用 TOTP
             </button>
+          </div>
+        )}
+        {step === 'setup' && totpEnabled === false && (
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <p className="text-sm text-gray-600">
+                <strong>ℹ️ TOTP 未启用</strong> - 此账户尚未启用 TOTP 双因素认证
+              </p>
+            </div>
+          </div>
+        )}
+        {step === 'setup' && totpEnabled === null && username.trim() && (
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            {isCheckingTotp ? (
+              <div className="text-center text-sm text-gray-500">
+                正在检查 TOTP 状态...
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>⚠️ 无法检查 TOTP 状态</strong> - 请确认用户名是否正确
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

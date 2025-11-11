@@ -3,9 +3,22 @@
  * 
  * This module provides a client for calling the NestJS backend API.
  * It handles authentication, error handling, and request/response formatting.
+ * 
+ * Configuration:
+ * - Set NEXT_PUBLIC_API_URL environment variable to configure the backend API base URL
+ * - Example: NEXT_PUBLIC_API_URL=http://localhost:4000/api
+ * - All Admin API calls use this configured base URL
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+// Get API base URL from environment variable or use default
+// This ensures all Admin API calls use the configured backend URL
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
+// Log the API base URL in development mode for debugging
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+  console.log('🔧 API Base URL:', API_BASE_URL);
+  console.log('📝 Configure via NEXT_PUBLIC_API_URL environment variable');
+}
 
 /**
  * Custom error class for API errors
@@ -85,14 +98,25 @@ async function apiRequest<T>(
 
     // Handle errors
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: response.statusText,
-        statusCode: response.status,
-      }));
+      let errorData: { message?: string | { message?: string }; statusCode?: number; error?: string };
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = {
+          message: response.statusText,
+          statusCode: response.status,
+        };
+      }
+      
+      // NestJS error format: { statusCode, message, timestamp, path }
+      // message can be a string or an object
+      const errorMessage = typeof errorData.message === 'string' 
+        ? errorData.message 
+        : (errorData.message?.message || String(errorData.message) || errorData.error || 'Request failed');
       
       throw new ApiError(
-        errorData.message || errorData.error || 'Request failed',
-        response.status,
+        errorMessage,
+        errorData.statusCode || response.status,
         errorData.error,
       );
     }

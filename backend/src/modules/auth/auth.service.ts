@@ -217,6 +217,26 @@ export class AuthService {
   }
 
   /**
+   * Check if TOTP is enabled for a username (public endpoint, no authentication required)
+   * This is safe because it only returns whether TOTP is enabled, not the secret
+   * @param username Admin username
+   * @returns Object with totpEnabled boolean
+   */
+  async checkTotpStatus(username: string): Promise<{ totpEnabled: boolean }> {
+    const admin = await this.prisma.admin.findUnique({
+      where: { username },
+      select: {
+        totpEnabled: true,
+      },
+    });
+
+    // Return false if admin doesn't exist (don't reveal if username exists)
+    return {
+      totpEnabled: admin?.totpEnabled || false,
+    };
+  }
+
+  /**
    * Verify JWT token
    * @param token JWT token
    * @returns Decoded payload

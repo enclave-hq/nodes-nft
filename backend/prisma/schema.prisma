@@ -15,7 +15,7 @@ model Admin {
   id        Int      @id @default(autoincrement())
   username  String   @unique @db.VarChar(50)
   passwordHash String @db.VarChar(255) // bcrypt hashed password
-  totpSecret String?  @db.VarChar(32) // TOTP secret (base32 encoded)
+  totpSecret String?  @db.VarChar(64) // TOTP secret (base32 encoded, typically 32-52 chars)
   totpEnabled Boolean @default(false) // Whether TOTP is enabled
   address   String?  @db.VarChar(42) // Optional: legacy wallet address
   createdAt DateTime @default(now())
