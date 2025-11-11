@@ -7,7 +7,6 @@ import { formatTokenAmount, formatUSD, cn, simplifyErrorMessage } from "@/lib/ut
 import { NFT_UNIFIED_CONFIG, CONTRACT_ADDRESSES } from "@/lib/contracts/config";
 import { ArrowRight, Coins, TrendingUp, Shield, Lock, Loader2, AlertCircle, PlusCircle, DollarSign, Zap, ArrowLeftRight, Github, Twitter, Package, RefreshCw } from "lucide-react";
 import { MintStatusBanner } from "@/components/MintStatusBanner";
-import { WhitelistModal } from "@/components/WhitelistModal";
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "@/lib/i18n/provider";
@@ -31,7 +30,8 @@ export default function Home() {
   const router = useRouter();
   const { batch: activeBatch, loading: batchLoading, refetch: refetchBatch } = useActiveBatch();
   const isWhitelisted = web3Data.whitelist.isWhitelisted;
-  const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
+  const inviteCodeStatus = web3Data.inviteCodes?.inviteCodeStatus || 'none';
+  const hasAppliedInviteCode = inviteCodeStatus !== 'none';
   const [activeFeatureTab, setActiveFeatureTab] = useState<'step1' | 'step2' | 'step3' | 'step4'>('step1');
   const [activeOrders, setActiveOrders] = useState<number>(0);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -251,50 +251,37 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* Not whitelisted: Apply Whitelist and View NFTs buttons in same row */}
-              {!isWhitelisted && (
-                <div className="mt-4 flex items-center justify-center gap-x-4">
+              {/* Apply Whitelist / View Invite Codes, Mint Status Banner, and View NFTs buttons in same row */}
+              {/* 当用户已申请成功白名单时，首页不显示"查看邀请码"按钮，只在展开按钮中显示 */}
+              <div className="mt-4 flex items-center justify-center gap-x-2 sm:gap-x-3 md:gap-x-4 flex-nowrap overflow-hidden">
+                {!isWhitelisted && (
                   <button
-                    onClick={() => setIsWhitelistModalOpen(true)}
+                    onClick={() => web3Data.setWhitelistModalOpen(true)}
                     className={cn(
-                      "inline-flex items-center justify-center rounded-[20px] px-4 py-2 text-sm font-medium transition-colors",
-                      "bg-[#000000] text-white hover:bg-gray-800",
-                      "min-w-[140px]"
+                      "inline-flex items-center justify-center rounded-[20px] px-3 sm:px-4 py-2 font-medium transition-colors h-[36px] flex-shrink-0",
+                      "bg-[#000000] text-white hover:bg-gray-800"
                     )}
                   >
-                    {tWhitelist('applyWhitelist')}
+                    <span className="whitespace-nowrap text-[12px] sm:text-[13px] md:text-sm leading-none">{tWhitelist('applyWhitelist')}</span>
                   </button>
-                  <Link
-                    href="/my-nfts"
-                    className={cn(
-                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-3 sm:px-4 py-2 font-medium transition-colors",
-                      "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                      "min-w-0"
-                    )}
-                  >
-                    <span className="whitespace-nowrap text-[12px] sm:text-[13px] md:text-sm">{t('hero.viewNftsButton')}</span>
-                    <ArrowRight className="h-4 w-4 flex-shrink-0" />
-                  </Link>
-                </div>
-              )}
-              
-              {/* Whitelisted: Mint Status Banner and View NFTs button in same row */}
-              {isWhitelisted && (
-                <div className="mt-4 flex items-center justify-center gap-x-4">
-                  <MintStatusBanner variant="light" />
-                  <Link
-                    href="/my-nfts"
-                    className={cn(
-                      "inline-flex items-center justify-center space-x-2 rounded-[20px] px-3 sm:px-4 py-2 font-medium transition-colors",
-                      "bg-[#CEF248] text-black hover:bg-[#B8D93F]",
-                      "min-w-0"
-                    )}
-                  >
-                    <span className="whitespace-nowrap text-[12px] sm:text-[13px] md:text-sm">{t('hero.viewNftsButton')}</span>
-                    <ArrowRight className="h-4 w-4 flex-shrink-0" />
-                  </Link>
-                </div>
-              )}
+                )}
+                {/* Whitelisted: Mint Status Banner - Shows current batch mintable quantity */}
+                {isWhitelisted && (
+                  <div className="flex-shrink-0">
+                    <MintStatusBanner variant="light" />
+                  </div>
+                )}
+                <Link
+                  href="/my-nfts"
+                  className={cn(
+                    "inline-flex items-center justify-center space-x-2 rounded-[20px] px-3 sm:px-4 py-2 font-medium transition-colors h-[36px] flex-shrink-0",
+                    "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
+                  )}
+                >
+                  <span className="whitespace-nowrap text-[12px] sm:text-[13px] md:text-sm leading-none">{t('hero.viewNftsButton')}</span>
+                  <ArrowRight className="h-4 w-4 flex-shrink-0" />
+                </Link>
+              </div>
             </>
           )}
         </div>
@@ -607,11 +594,6 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* Whitelist Modal */}
-      <WhitelistModal 
-        isOpen={isWhitelistModalOpen} 
-        onClose={() => setIsWhitelistModalOpen(false)} 
-      />
     </div>
   );
 }

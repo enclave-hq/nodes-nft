@@ -197,6 +197,10 @@ interface Web3Store extends Web3Data {
   
   // Set wallet info
   setWalletInfo: (walletManager: WalletManager | null, address: string | null, isConnected: boolean) => Promise<void>;
+  
+  // Whitelist modal state
+  isWhitelistModalOpen: boolean;
+  setWhitelistModalOpen: (open: boolean) => void;
 }
 
 // Utility function to format token amounts
@@ -470,6 +474,10 @@ export const useWeb3Store = create<Web3Store>()(
     isConnected: false,
     lastFetchTime: 0,
     lastRefreshTime: 0,
+    
+    // Whitelist modal state
+    isWhitelistModalOpen: false,
+    setWhitelistModalOpen: (open: boolean) => set({ isWhitelistModalOpen: open }),
     
     // Actions
     setWalletInfo: async (walletManager, address, isConnected) => {
