@@ -5,13 +5,11 @@ import Image from "next/image";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { useWeb3Data } from "@/lib/stores/web3Store";
 import { formatAddress, cn } from "@/lib/utils";
-import { Wallet, Copy, Check } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from '@/lib/i18n/provider';
 import { TokenBalance } from "@/lib/components/FormattedNumber";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { createInviteCodeRequest } from "@/lib/api/invite-codes";
-import { toast } from "react-hot-toast";
 
 export function Navbar() {
   const tCommon = useTranslations('common');
@@ -22,39 +20,10 @@ export function Navbar() {
   const web3Data = useWeb3Data();
   const [web3DropdownOpen, setWeb3DropdownOpen] = useState(false);
   const web3DropdownRef = useRef<HTMLDivElement>(null);
-  const [isRequestingInviteCode, setIsRequestingInviteCode] = useState(false);
-  const [copiedInviteCode, setCopiedInviteCode] = useState(false);
-  
-  // Get the first active invite code
-  const activeInviteCode = web3Data.inviteCodes?.ownedInviteCodes?.find(
-    code => code.status === 'active'
-  );
-  
-  // Check if user has pending invite codes
-  const hasPendingInviteCodes = web3Data.inviteCodes?.pendingInviteCodes && web3Data.inviteCodes.pendingInviteCodes.length > 0;
-  
-  // Check if user has any invite code (active or pending)
-  const hasAnyInviteCode = !!activeInviteCode || hasPendingInviteCodes;
-  
-  // Handle invite code request
-  const handleRequestInviteCode = async () => {
-    if (!isConnected || !account) {
-      toast.error(tWhitelist('connectWalletFirst'));
-      return;
-    }
-
-    setIsRequestingInviteCode(true);
-    try {
-      await createInviteCodeRequest(account, undefined, undefined);
-      toast.success(tWhitelist('applicationSubmitted'));
-      await web3Data.fetchInviteCodes();
-    } catch (error: any) {
-      console.error('Request invite code error:', error);
-      toast.error(error.message || tWhitelist('applicationFailed'));
-    } finally {
-      setIsRequestingInviteCode(false);
-    }
-  };
+  // Check if user has applied whitelist or invite code
+  const isWhitelisted = web3Data.whitelist.isWhitelisted;
+  // 只有已申请成功白名单时才显示"查看邀请码"，否则显示"申请白名单"
+  const shouldShowViewInviteCodes = isWhitelisted;
 
   const isCorrectNetwork = chainId === parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "97");
 
@@ -189,48 +158,15 @@ export function Navbar() {
                       
                       {/* Invite Code Request Section */}
                       <div className="pt-4 border-t border-gray-300 mt-4">
-                        {hasAnyInviteCode ? (
-                          <div className="bg-white border border-black/20 rounded-[20px] p-3 mb-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-black">{tWhitelist('myInviteCodes')}:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-black font-mono">
-                                  {activeInviteCode?.code || web3Data.inviteCodes?.pendingInviteCodes?.[0]?.code || '-'}
-                                </span>
-                                <button
-                                  onClick={async () => {
-                                    const code = activeInviteCode?.code || web3Data.inviteCodes?.pendingInviteCodes?.[0]?.code || '';
-                                    if (code) {
-                                      try {
-                                        await navigator.clipboard.writeText(code);
-                                        setCopiedInviteCode(true);
-                                        setTimeout(() => setCopiedInviteCode(false), 2000);
-                                      } catch (err) {
-                                        console.error('Failed to copy:', err);
-                                      }
-                                    }
-                                  }}
-                                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                  title={tWhitelist('copyInviteCode')}
-                                >
-                                  {copiedInviteCode ? (
-                                    <Check className="h-4 w-4 text-green-600" />
-                                  ) : (
-                                    <Copy className="h-4 w-4 text-gray-400" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={handleRequestInviteCode}
-                            disabled={isRequestingInviteCode}
-                            className="w-full rounded-[20px] bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-3"
-                          >
-                            {isRequestingInviteCode ? tWhitelist('applying') : tWhitelist('applyInviteCode')}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            web3Data.setWhitelistModalOpen(true);
+                            setWeb3DropdownOpen(false);
+                          }}
+                          className="w-full rounded-[20px] bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors mb-3"
+                        >
+                          {shouldShowViewInviteCodes ? tWhitelist('viewInviteCodes') : tWhitelist('applyWhitelist')}
+                        </button>
                       </div>
                       
                       {/* Disconnect Button */}
@@ -357,48 +293,15 @@ export function Navbar() {
                       
                       {/* Invite Code Request Section */}
                       <div className="pt-4 border-t border-gray-300 mt-4">
-                        {hasAnyInviteCode ? (
-                          <div className="bg-white border border-black/20 rounded-[20px] p-3 mb-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-black">{tWhitelist('myInviteCodes')}:</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-black font-mono">
-                                  {activeInviteCode?.code || web3Data.inviteCodes?.pendingInviteCodes?.[0]?.code || '-'}
-                                </span>
-                                <button
-                                  onClick={async () => {
-                                    const code = activeInviteCode?.code || web3Data.inviteCodes?.pendingInviteCodes?.[0]?.code || '';
-                                    if (code) {
-                                      try {
-                                        await navigator.clipboard.writeText(code);
-                                        setCopiedInviteCode(true);
-                                        setTimeout(() => setCopiedInviteCode(false), 2000);
-                                      } catch (err) {
-                                        console.error('Failed to copy:', err);
-                                      }
-                                    }
-                                  }}
-                                  className="p-1 hover:bg-gray-100 rounded transition-colors"
-                                  title={tWhitelist('copyInviteCode')}
-                                >
-                                  {copiedInviteCode ? (
-                                    <Check className="h-4 w-4 text-green-600" />
-                                  ) : (
-                                    <Copy className="h-4 w-4 text-gray-400" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={handleRequestInviteCode}
-                            disabled={isRequestingInviteCode}
-                            className="w-full rounded-[20px] bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-3"
-                          >
-                            {isRequestingInviteCode ? tWhitelist('applying') : tWhitelist('applyInviteCode')}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            web3Data.setWhitelistModalOpen(true);
+                            setWeb3DropdownOpen(false);
+                          }}
+                          className="w-full rounded-[20px] bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors mb-3"
+                        >
+                          {shouldShowViewInviteCodes ? tWhitelist('viewInviteCodes') : tWhitelist('applyWhitelist')}
+                        </button>
                       </div>
                       
                       {/* Disconnect Button */}

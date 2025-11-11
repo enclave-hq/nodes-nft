@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { useWallet } from '@/lib/providers/WalletProvider';
-import { WhitelistModal } from '@/components/WhitelistModal';
+import { useWeb3Data } from '@/lib/stores/web3Store';
 
 export default function SimpleMintPage() {
   const { isConnected } = useWallet();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const web3Data = useWeb3Data();
 
   // 如果未连接钱包，显示提示
   if (!isConnected) {
@@ -30,7 +29,7 @@ export default function SimpleMintPage() {
             <h1 className="text-3xl font-bold mb-4">白名单管理</h1>
             <p className="text-gray-600 mb-6">管理您的白名单状态和邀请码</p>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => web3Data.setWhitelistModalOpen(true)}
               className="px-6 py-3 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] transition-colors font-semibold"
             >
               打开白名单管理
@@ -38,11 +37,6 @@ export default function SimpleMintPage() {
           </div>
         </div>
       </div>
-
-      <WhitelistModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
     </>
   );
 }
