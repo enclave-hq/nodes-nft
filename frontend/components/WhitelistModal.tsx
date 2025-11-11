@@ -5,7 +5,7 @@ import { useWallet } from '@/lib/providers/WalletProvider';
 import { useWeb3Data } from '@/lib/stores/web3Store';
 import { useInviteCode, validateInviteCode, createInviteCodeRequest } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { X, Shield, Gift, Loader2, CheckCircle2, Clock } from 'lucide-react';
+import { X, Shield, Gift, Loader2, CheckCircle2, Clock, Copy, Check } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n/provider';
 
 interface WhitelistModalProps {
@@ -25,6 +25,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
   const [note, setNote] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [copiedInviteCodeId, setCopiedInviteCodeId] = useState<number | null>(null);
 
   // Load user invite code data
   useEffect(() => {
@@ -99,60 +100,77 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
   if (!isOpen) return null;
 
   // Get invite code status (from Store)
-  const inviteCodeStatus = inviteCodes.inviteCodeStatus;
-  const activeInviteCodes = inviteCodes.ownedInviteCodes;
-  const pendingInviteCodes = inviteCodes.pendingInviteCodes || [];
+  // 确保未申请邀请码时 inviteCodeStatus 为 'none'
+  const activeInviteCodes = inviteCodes?.ownedInviteCodes || [];
+  const pendingInviteCodes = inviteCodes?.pendingInviteCodes || [];
+  
+  // 判断邀请码状态：如果状态是 'pending' 但没有待审核的邀请码，视为未申请
+  let inviteCodeStatus: 'none' | 'pending' | 'approved_pending_activation' | 'approved' = 'none';
+  if (inviteCodes?.inviteCodeStatus) {
+    const rawStatus = inviteCodes.inviteCodeStatus;
+    // 如果状态是 'pending' 但 pendingInviteCodes 为空，视为未申请
+    if (rawStatus === 'pending' && pendingInviteCodes.length === 0 && activeInviteCodes.length === 0) {
+      inviteCodeStatus = 'none';
+    } else if (['pending', 'approved', 'approved_pending_activation'].includes(rawStatus)) {
+      inviteCodeStatus = rawStatus;
+    }
+  }
+  
+  // 调试日志：检查邀请码状态
+  console.log('🔍 WhitelistModal - raw inviteCodeStatus:', inviteCodes?.inviteCodeStatus, 'final inviteCodeStatus:', inviteCodeStatus, 'pendingInviteCodes:', pendingInviteCodes, 'activeInviteCodes:', activeInviteCodes);
 
   return (
     <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
       <div className="bg-[#FFFFFF] rounded-t-[28px] shadow-2xl w-full max-h-[90vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
         {/* Header */}
-        <div className="pt-3 px-4 pb-3 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            {address && (
+        <div className="pt-3 px-4 pb-3 relative">
+          <button
+            onClick={onClose}
+            className="text-gray-600 hover:text-gray-800 transition-colors p-1.5 absolute top-3 right-4 z-10"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="flex items-center justify-between mb-2 pr-10">
+            {address && !isWhitelisted && (
               <p className="text-sm text-black">{t('currentAddress')}</p>
             )}
-            <button
-              onClick={onClose}
-              className="text-gray-600 hover:text-gray-800 transition-colors p-1.5"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {isWhitelisted && (
+              <div className="flex items-center space-x-2">
+                <Shield className="h-4 w-4 text-gray-600" />
+                <h3 className="text-sm font-semibold text-black">我的白名单地址</h3>
+              </div>
+            )}
           </div>
-          {address && (
+          {address && !isWhitelisted && (
             <p className="text-xs font-mono text-black break-all text-center">{address}</p>
           )}
         </div>
 
+        {/* Address Section (for whitelisted users) */}
+        {isWhitelisted && address && (
+          <div className="px-4 pb-3 border-b border-gray-100">
+            <p className="text-xs font-mono text-black break-all text-center">
+              {address}
+            </p>
+          </div>
+        )}
+
         {/* Content */}
         <div className="px-4 pb-4 space-y-3.5">
+          {!isWhitelisted && (
+            <div className="border-b border-gray-100 pb-3"></div>
+          )}
 
           {/* Apply for Whitelist */}
           <div className="space-y-2.5">
-            <div className="flex items-center space-x-2">
-              <Shield className="h-4 w-4 text-gray-600" />
-              <h3 className="text-sm font-semibold text-black">{t('applyWhitelist')}</h3>
-            </div>
-            
-            {isWhitelisted ? (
-              <div className="bg-white border border-gray-300 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-black">
-                      {inviteCodeStatus === 'approved_pending_activation' 
-                        ? t('waitingForActivation')
-                        : t('whitelisted')}
-                    </p>
-                    <p className="text-xs text-gray-700 mt-1">
-                      {inviteCodeStatus === 'approved_pending_activation'
-                        ? t('waitingForActivationDescription')
-                        : t('whitelistedDescription')}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="h-5 w-5 text-[#CEF248] flex-shrink-0 ml-2" />
-                </div>
+            {!isWhitelisted && (
+              <div className="flex items-center space-x-2">
+                <Shield className="h-4 w-4 text-gray-600" />
+                <h3 className="text-sm font-semibold text-black">{t('applyWhitelist')}</h3>
               </div>
-            ) : (
+            )}
+            
+            {!isWhitelisted && (
               <div className="rounded-lg">
                 <div className="flex gap-2">
                   <input
@@ -193,28 +211,38 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                 <span className="ml-2 text-sm text-gray-500">{t('loading')}</span>
               </div>
             ) : inviteCodeStatus === 'approved' ? (
-              // Status: Has invite code (approved)
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-blue-900">{t('approved')}</p>
-                    <CheckCircle2 className="h-5 w-5 text-blue-500 flex-shrink-0" />
+              // Status: Has invite code (approved) - only show code and copy button
+              <div className="space-y-2">
+                {activeInviteCodes.map((code) => (
+                  <div key={code.id} className="flex items-center justify-between">
+                    <div className="flex-1 bg-gray-100 rounded-lg p-2.5 text-center">
+                      <p className="text-sm font-mono font-semibold text-black">
+                        {code.code}
+                      </p>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(code.code);
+                          setCopiedInviteCodeId(code.id);
+                          setTimeout(() => setCopiedInviteCodeId(null), 2000);
+                          toast.success(t('copyInviteCode') || '邀请码已复制');
+                        } catch (err) {
+                          console.error('Failed to copy:', err);
+                          toast.error('复制失败');
+                        }
+                      }}
+                      className="p-1 hover:bg-gray-200 rounded transition-colors ml-2"
+                      title={t('copyInviteCode')}
+                    >
+                      {copiedInviteCodeId === code.id ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4 text-gray-400" />
+                      )}
+                    </button>
                   </div>
-                  <div className="space-y-2">
-                    {activeInviteCodes.map((code) => (
-                      <div key={code.id} className="bg-gray-100 rounded-lg p-2.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-mono font-semibold text-black">
-                              {code.code}
-                            </p>
-                            <p className="text-xs text-blue-700 mt-1">{t('activeDescription')}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                ))}
               </div>
             ) : inviteCodeStatus === 'approved_pending_activation' ? (
               // Status: Approved but waiting for activation (NFT mint)
@@ -244,20 +272,20 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                 </div>
               </div>
             ) : inviteCodeStatus === 'pending' ? (
-              // Status: Pending (waiting for review)
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              // Status: Pending (waiting for review) - 已申请但未审核通过
+              <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(206, 242, 73, 0.15)', border: '1px solid rgba(206, 242, 73, 0.3)' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-yellow-900">{t('pending')}</p>
-                    <p className="text-xs text-yellow-700 mt-1">
+                    <p className="text-sm font-medium text-black">{t('pending')}</p>
+                    <p className="text-xs text-black mt-1">
                       {t('pendingDescription')}
                     </p>
                   </div>
-                  <Clock className="h-5 w-5 text-yellow-500 flex-shrink-0 ml-2" />
+                  <Clock className="h-5 w-5 text-black flex-shrink-0 ml-2" />
                 </div>
               </div>
             ) : (
-              // Status: No invite code
+              // Status: No invite code (inviteCodeStatus === 'none' or undefined) - 未申请邀请码，显示申请按钮
               <div>
                 <button
                   onClick={handleRequestInviteCode}

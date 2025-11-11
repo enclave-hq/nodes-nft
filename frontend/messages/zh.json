@@ -383,6 +383,8 @@
     "title": "白名单管理",
     "currentAddress": "当前连接地址",
     "applyWhitelist": "申请白名单",
+    "viewInviteCodes": "查看邀请码",
+    "currentBatchMintable": "当前批次可铸造数量",
     "whitelisted": "已加入白名单",
     "whitelistedDescription": "您已成功加入白名单，可以铸造NFT",
     "enterInviteCode": "请输入邀请码以加入白名单",
