@@ -100,9 +100,24 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
   if (!isOpen) return null;
 
   // Get invite code status (from Store)
-  const inviteCodeStatus = inviteCodes.inviteCodeStatus;
-  const activeInviteCodes = inviteCodes.ownedInviteCodes;
-  const pendingInviteCodes = inviteCodes.pendingInviteCodes || [];
+  // 确保未申请邀请码时 inviteCodeStatus 为 'none'
+  const activeInviteCodes = inviteCodes?.ownedInviteCodes || [];
+  const pendingInviteCodes = inviteCodes?.pendingInviteCodes || [];
+  
+  // 判断邀请码状态：如果状态是 'pending' 但没有待审核的邀请码，视为未申请
+  let inviteCodeStatus: 'none' | 'pending' | 'approved_pending_activation' | 'approved' = 'none';
+  if (inviteCodes?.inviteCodeStatus) {
+    const rawStatus = inviteCodes.inviteCodeStatus;
+    // 如果状态是 'pending' 但 pendingInviteCodes 为空，视为未申请
+    if (rawStatus === 'pending' && pendingInviteCodes.length === 0 && activeInviteCodes.length === 0) {
+      inviteCodeStatus = 'none';
+    } else if (['pending', 'approved', 'approved_pending_activation'].includes(rawStatus)) {
+      inviteCodeStatus = rawStatus;
+    }
+  }
+  
+  // 调试日志：检查邀请码状态
+  console.log('🔍 WhitelistModal - raw inviteCodeStatus:', inviteCodes?.inviteCodeStatus, 'final inviteCodeStatus:', inviteCodeStatus, 'pendingInviteCodes:', pendingInviteCodes, 'activeInviteCodes:', activeInviteCodes);
 
   return (
     <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
@@ -257,7 +272,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                 </div>
               </div>
             ) : inviteCodeStatus === 'pending' ? (
-              // Status: Pending (waiting for review)
+              // Status: Pending (waiting for review) - 已申请但未审核通过
               <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(206, 242, 73, 0.15)', border: '1px solid rgba(206, 242, 73, 0.3)' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
@@ -270,7 +285,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                 </div>
               </div>
             ) : (
-              // Status: No invite code - show apply button (regardless of whitelist status)
+              // Status: No invite code (inviteCodeStatus === 'none' or undefined) - 未申请邀请码，显示申请按钮
               <div>
                 <button
                   onClick={handleRequestInviteCode}
