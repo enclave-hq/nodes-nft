@@ -224,6 +224,7 @@ interface TokenBalanceProps {
   decimals?: number;
   className?: string;
   showSymbol?: boolean;
+  suffix?: string;
 }
 
 export function TokenBalance({
@@ -232,13 +233,14 @@ export function TokenBalance({
   decimals = 6,
   className,
   showSymbol = false,
+  suffix = "",
 }: TokenBalanceProps) {
   return (
     <FormattedNumber
       value={value}
       decimals={decimals}
       className={className}
-      suffix={showSymbol && symbol ? ` ${symbol}` : ""}
+      suffix={suffix || (showSymbol && symbol ? ` ${symbol}` : "")}
     />
   );
 }

@@ -15,7 +15,13 @@
     "create": "创建",
     "viewAll": "查看全部",
     "shares": "份额",
-    "share": "份额"
+    "share": "份额",
+    "allowance": "USDT 授权额度",
+    "viewDetails": "查看详情",
+    "collapse": "收起",
+    "refreshData": "刷新数据",
+    "selectLanguage": "选择语言",
+    "tabs": "标签页"
   },
   "navbar": {
     "home": "首页",
@@ -33,9 +39,9 @@
     },
     "stats": {
       "myNfts": "我的 NFT",
-      "eclvBalance": "$E 余额",
+      "eclvBalance": "余额",
       "usdtBalance": "USDT 余额",
-      "eclvLocked": "$E 锁仓中",
+      "eclvLocked": "锁仓中",
       "totalShares": "总份额",
       "listedShares": "挂单中",
       "notListed": "未挂单",
@@ -327,7 +333,12 @@
       "cancel": "取消",
       "nftPriceLabel": "NFT 价格 (USDT)",
       "nftPricePlaceholder": "输入 NFT 价格",
-      "nftPriceNote": "这是整个 NFT 的出售价格"
+      "nftPriceNote": "这是整个 NFT 的出售价格",
+      "mine": "我的",
+      "selectedNFT": "已选NFT #{id}",
+      "selectNFT": "选择NFT",
+      "noAvailableNFTs": "暂无可挂单的NFT",
+      "setPriceLabel": "设置出售价格"
     },
     "myNFTs": {
       "title": "我的NFT",
@@ -365,7 +376,8 @@
     "connectWallet": "请连接钱包",
     "insufficientBalance": "余额不足",
     "transactionFailed": "交易失败",
-    "tryAgain": "请重试"
+    "tryAgain": "请重试",
+    "wrongNetwork": "网络错误"
   },
   "whitelist": {
     "title": "白名单管理",
@@ -396,7 +408,8 @@
     "whitelistRegistered": "白名单注册成功！",
     "registerFailed": "注册失败",
     "applicationSubmitted": "邀请码申请已提交，请等待审核",
-    "applicationFailed": "申请失败"
+    "applicationFailed": "申请失败",
+    "copyInviteCode": "复制邀请码"
   },
   "mintStatus": {
     "applyWhitelistFirst": "请先",

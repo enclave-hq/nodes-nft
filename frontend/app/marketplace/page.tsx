@@ -11,7 +11,7 @@ import { formatTokenAmount, formatAddress, formatDate, cn, parseTokenAmount } fr
 import { NFTStatus, NFT_UNIFIED_CONFIG } from "@/lib/contracts/config";
 import { ShoppingCart, Store, Tag, Loader2, X, Plus, TrendingUp, ChevronDown, ChevronUp } from "lucide-react";
 import { RefreshButton } from "@/components/RefreshButton";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
 import { ListIcon } from "@/components/icons/ListIcon";
 
@@ -64,7 +64,7 @@ function SellOrderCard({
         </h3>
         {isOwnOrder && (
           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#CEF248] text-[#000000]">
-            我的
+            {t('mine')}
           </span>
         )}
       </div>
@@ -192,9 +192,9 @@ function CreateOrderModal({
 
   return (
     <div className="fixed inset-0 z-[60] modal-backdrop pointer-events-none" style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}>
-      <div className="w-full rounded-t-[28px] bg-[#FFFFFF] border-t border-[#000000]/10 p-4 shadow-xl max-h-[45vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
+      <div className="w-full rounded-t-[28px] bg-[#FFFFFF] border-t border-[#000000]/10 p-4 shadow-xl max-h-[90vh] overflow-y-auto modal-content pointer-events-auto" style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xl font-bold text-[#000000]">{t('title')}</h3>
+          <h3 className="text-[15px] font-bold text-[#000000]">{t('title')}</h3>
           <button
             onClick={onClose}
             className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
@@ -213,9 +213,9 @@ function CreateOrderModal({
             >
               <span className="text-[14px] font-medium text-[#000000]">
                 {selectedNftId ? (
-                  <>已选NFT #{selectedNftId}</>
+                  <>{t('selectedNFT', { id: selectedNftId })}</>
                 ) : (
-                  <>选择NFT {availableNFTs.length > 0 && `(${availableNFTs.length})`}</>
+                  <>{t('selectNFT')} {availableNFTs.length > 0 && `(${availableNFTs.length})`}</>
                 )}
               </span>
               {isNftSelectorOpen ? (
@@ -229,7 +229,7 @@ function CreateOrderModal({
               <div className="mt-2 rounded-lg border border-[#000000]/10 bg-[#FFFFFF] max-h-48 overflow-y-auto">
                 {availableNFTs.length === 0 ? (
                   <div className="p-3 text-center text-[14px] text-gray-600">
-                    暂无可挂单的NFT
+                    {t('noAvailableNFTs')}
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-200">
@@ -266,18 +266,23 @@ function CreateOrderModal({
           {/* Price Input */}
           <div className="space-y-2.5">
             <label className="block text-sm font-medium text-[#000000]">
-              设置出售价格
+              {t('setPriceLabel')}
             </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="block w-full px-3 py-2 text-sm text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' }}
-              placeholder={t('nftPricePlaceholder')}
-            />
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="block w-full px-3 py-2 pr-16 text-sm text-black rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border"
+                style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' }}
+                placeholder={t('nftPricePlaceholder')}
+              />
+              <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-black pointer-events-none">
+                USDT
+              </span>
+            </div>
           </div>
         </div>
 
@@ -321,6 +326,9 @@ export default function MarketplacePage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createOrderNFT, setCreateOrderNFT] = useState<{ nftId: number } | null>(null);
   const [activeTab, setActiveTab] = useState<'my-nfts' | 'orders'>('orders');
+  const tabContainerRef = useRef<HTMLDivElement>(null);
+  const tabButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [sliderStyle, setSliderStyle] = useState({ left: 0, width: 0 });
 
   const handleTabChange = (tab: 'my-nfts' | 'orders') => {
     // Prevent any layout shift by maintaining scroll position
@@ -331,6 +339,54 @@ export default function MarketplacePage() {
       window.scrollTo({ top: currentScrollY, behavior: 'instant' });
     });
   };
+
+  // 计算滑动背景的位置和宽度
+  const updateTabSliderPosition = () => {
+    const activeIndex = activeTab === 'orders' ? 0 : 1;
+    
+    if (tabButtonRefs.current[activeIndex] && tabContainerRef.current) {
+      const activeButton = tabButtonRefs.current[activeIndex];
+      const container = tabContainerRef.current;
+      
+      const buttonRect = activeButton.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      
+      // 增加一些宽度和调整位置，确保完全覆盖按钮区域
+      const padding = 2; // 左右各增加2px
+      setSliderStyle({
+        left: buttonRect.left - containerRect.left - padding,
+        width: buttonRect.width + padding * 2,
+      });
+    }
+  };
+
+  // 当 activeTab 改变时更新滑动位置
+  useEffect(() => {
+    // 使用 requestAnimationFrame 确保 DOM 已更新
+    requestAnimationFrame(() => {
+      // 再延迟一点确保布局完成
+      setTimeout(updateTabSliderPosition, 10);
+    });
+  }, [activeTab]);
+
+  // 组件挂载时初始化滑动位置
+  useEffect(() => {
+    // 多次尝试以确保 DOM 已渲染
+    const timers = [
+      setTimeout(updateTabSliderPosition, 0),
+      setTimeout(updateTabSliderPosition, 50),
+      setTimeout(updateTabSliderPosition, 100),
+    ];
+    
+    // 监听窗口大小改变
+    window.addEventListener('resize', updateTabSliderPosition);
+    
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+      window.removeEventListener('resize', updateTabSliderPosition);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const handleBuy = async (orderId: number) => {
     try {
@@ -398,18 +454,36 @@ export default function MarketplacePage() {
           <>
             {/* Tabs - Outside the card */}
             <div className="mb-4">
-              <nav className="flex items-center gap-4" aria-label="Tabs">
-                <div className="relative inline-flex items-center rounded-full bg-[#FFFFFF] border border-[#000000]/10 h-10">
+              <nav className="flex items-center gap-4" aria-label={tCommon('tabs')}>
+                <div
+                  ref={tabContainerRef}
+                  className="relative inline-flex items-center rounded-full bg-[#f3f4f6] border border-[#000000]/10 h-10"
+                >
+                  {/* Sliding Background */}
+                  <div
+                    className="absolute bg-[#CEF248] transition-all duration-300 ease-in-out"
+                    style={{
+                      left: `${sliderStyle.left}px`,
+                      width: `${sliderStyle.width}px`,
+                      height: '40px',
+                      borderRadius: '20px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      zIndex: 0,
+                    }}
+                  />
+                  
                   <button
+                    ref={(el) => (tabButtonRefs.current[0] = el)}
                     onClick={(e) => {
                       e.preventDefault();
                       handleTabChange('orders');
                     }}
                     className={cn(
-                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors",
+                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors relative z-10 h-10",
                       activeTab === 'orders'
-                        ? "bg-[#CEF248] text-black h-10"
-                        : "bg-transparent text-black hover:bg-gray-100 h-10"
+                        ? "text-black"
+                        : "text-black hover:text-gray-700"
                     )}
                   >
                     <span>{t('orders.title')}</span>
@@ -425,15 +499,16 @@ export default function MarketplacePage() {
                     )}
                   </button>
                   <button
+                    ref={(el) => (tabButtonRefs.current[1] = el)}
                     onClick={(e) => {
                       e.preventDefault();
                       handleTabChange('my-nfts');
                     }}
                     className={cn(
-                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors",
+                      "inline-flex items-center justify-center space-x-2 rounded-full px-4 text-sm font-medium transition-colors relative z-10 h-10",
                       activeTab === 'my-nfts'
-                        ? "bg-[#CEF248] text-black h-10"
-                        : "bg-transparent text-black hover:bg-gray-100 h-10"
+                        ? "text-black"
+                        : "text-black hover:text-gray-700"
                     )}
                   >
                     <span>{t('sidebar.title')}</span>
@@ -606,7 +681,7 @@ function MyNFTsSection({
             <div className="mb-4 rounded-[20px] bg-[#000000] px-4 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-[#FFFFFF]">{tMyNFTs('notOnSale')}</h3>
+                  <h3 className="text-[15px] font-semibold text-[#FFFFFF]">{tMyNFTs('notOnSale')}</h3>
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#CEF248] text-[#000000] text-xs font-bold">
                     {nftsWithoutOrders.length}
                   </span>
@@ -616,7 +691,7 @@ function MyNFTsSection({
                   className="rounded-[20px] bg-[#CEF248] px-4 py-2 text-sm font-medium text-[#000000] hover:bg-[#B8D93F] transition-colors flex items-center justify-center"
                 >
                   <ListIcon className="h-4 w-4 mr-2" />
-                  挂单出售
+                  {tMyNFTs('listForSale')}
                 </button>
               </div>
             </div>
@@ -715,7 +790,7 @@ function NFTListItem({
               NFT #{nftId}
             </h3>
             <span className="rounded-full px-2 py-1 text-xs font-medium bg-[#CEF248] text-[#000000]">
-              已挂单
+              {t('onSale')}
             </span>
           </div>
           

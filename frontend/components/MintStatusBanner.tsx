@@ -51,21 +51,23 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
           ? "bg-[#FFFFFF] border border-[#000000]/10" 
           : "bg-[#000000]"
       )}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
             <MintIcon className={cn(
-              "h-4 w-4",
+              "h-4 w-4 flex-shrink-0",
               isLight ? "text-[#000000]" : "text-[#FFFFFF]"
             )} />
             <span className={cn(
-              "text-[14px] font-medium",
+              "font-medium whitespace-nowrap",
+              "text-[12px] sm:text-[13px] md:text-[14px]",
               isLight ? "text-[#000000]" : "text-[#FFFFFF]"
             )}>
               {t('batchMintable')}
             </span>
           </div>
           <span className={cn(
-            "text-[16px] font-bold",
+            "font-bold flex-shrink-0",
+            "text-[14px] sm:text-[15px] md:text-[16px]",
             isLight ? "text-[#000000]" : "text-[#FFFFFF]"
           )}>
             {remainingMintCount}
