@@ -9,7 +9,6 @@ import { NFTStatus, NFT_UNIFIED_CONFIG, UNLOCK_CONFIG, TERMINATION_CONFIG, CONTR
 import { Shield, Loader2, Plus, AlertTriangle, Lock, Gift, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { RefreshButton } from "@/components/RefreshButton";
 import { MintStatusBanner } from "@/components/MintStatusBanner";
-import { WhitelistModal } from "@/components/WhitelistModal";
 import { useState, useEffect, useMemo } from "react";
 import toast from 'react-hot-toast';
 import { useTranslations } from "@/lib/i18n/provider";
@@ -586,7 +585,6 @@ export default function MyNFTsPage() {
   const { mintNFT, minting } = useMintNFT();
   const isWhitelisted = web3Data.whitelist.isWhitelisted;
   const whitelistLoading = web3Data.loading.whitelist;
-  const [isWhitelistModalOpen, setIsWhitelistModalOpen] = useState(false);
 
 
   const handleMint = async () => {
@@ -739,7 +737,7 @@ export default function MyNFTsPage() {
                 
                 <div className="max-w-md mx-auto">
                   <button
-                    onClick={() => setIsWhitelistModalOpen(true)}
+                    onClick={() => web3Data.setWhitelistModalOpen(true)}
                     className="w-full px-6 h-10 bg-[#CEF248] text-black rounded-[20px] hover:bg-[#B8D93F] font-semibold flex items-center justify-center space-x-2"
                   >
                     <Gift className="h-4 w-4" />
@@ -752,37 +750,17 @@ export default function MyNFTsPage() {
             {/* Whitelisted User Section - States 2 & 3 */}
             {isWhitelisted && (
               <div className="space-y-6">
-                {/* Whitelist Status Card */}
-                <div className="rounded-[28px] border-2 border-gray-300 bg-white p-6 sm:p-8">
-                  <div className="text-center mb-4">
-                    <Shield className="mx-auto h-12 w-12 sm:h-16 sm:w-16 text-[#CEF248]" />
-                    <h3 className="mt-4 text-xl sm:text-2xl font-bold text-black">
-                      {tMyNFTs('whitelisted')}
-                    </h3>
-                  </div>
-                  
-                  <div className="text-center">
-                    <button
-                      onClick={() => setIsWhitelistModalOpen(true)}
-                      className="inline-flex items-center space-x-2 px-6 py-3 bg-[#CEF248] border-2 border-transparent text-black rounded-[20px] hover:bg-[#B8D93F] font-semibold transition-colors"
-                    >
-                      <Gift className="h-4 w-4" />
-                      <span>{tMyNFTs('viewMyInviteCodes')}</span>
-                    </button>
-                  </div>
-                </div>
-
                 {/* Batch Info and Mint Section */}
                 {batchLoading ? (
-                  <div className="rounded-[28px] border-2 border-dashed border-gray-700 bg-[#000000] p-6 sm:p-12 text-center">
-                    <Loader2 className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-gray-400 animate-spin" />
-                    <p className="mt-4 text-gray-300">{tMyNFTs('loadingBatchInfo')}</p>
+                  <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-6 sm:p-12 text-center">
+                    <Loader2 className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-[#000000] animate-spin" />
+                    <p className="mt-4 text-[#000000]">{tMyNFTs('loadingBatchInfo')}</p>
                   </div>
                 ) : !activeBatch ? (
-                  <div className="rounded-[28px] border-2 border-dashed border-yellow-600/50 bg-[#000000] p-6 sm:p-12 text-center">
-                    <AlertTriangle className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-yellow-400" />
-                    <h3 className="mt-4 text-lg font-medium text-white">{tBatch('noActiveBatch')}</h3>
-                    <p className="mt-2 text-sm text-gray-300">
+                  <div className="rounded-[20px] border border-[#000000]/10 bg-[#FFFFFF] p-6 sm:p-12 text-center">
+                    <AlertTriangle className="mx-auto h-8 w-8 sm:h-12 sm:w-12 text-[#000000]" />
+                    <h3 className="mt-4 text-lg font-medium text-[#000000]">{tBatch('noActiveBatch')}</h3>
+                    <p className="mt-2 text-sm text-[#000000]">
                       {tMyNFTs('noActiveBatchDescription')}
                     </p>
                   </div>
@@ -867,10 +845,6 @@ export default function MyNFTsPage() {
         )}
       </div>
 
-      <WhitelistModal 
-        isOpen={isWhitelistModalOpen} 
-        onClose={() => setIsWhitelistModalOpen(false)} 
-      />
     </div>
   );
 }

@@ -46,7 +46,7 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
     const isLight = variant === 'light';
     return (
       <div className={cn(
-        "rounded-[20px] px-4 py-2",
+        "rounded-[20px] px-3 sm:px-4 py-2 h-[36px] flex items-center",
         isLight 
           ? "bg-[#FFFFFF] border border-[#000000]/10" 
           : "bg-[#000000]"
@@ -58,16 +58,16 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
               isLight ? "text-[#000000]" : "text-[#FFFFFF]"
             )} />
             <span className={cn(
-              "font-medium whitespace-nowrap",
-              "text-[12px] sm:text-[13px] md:text-[14px]",
+              "font-medium whitespace-nowrap leading-none",
+              "text-[12px] sm:text-[13px] md:text-sm",
               isLight ? "text-[#000000]" : "text-[#FFFFFF]"
             )}>
               {t('batchMintable')}
             </span>
           </div>
           <span className={cn(
-            "font-bold flex-shrink-0",
-            "text-[14px] sm:text-[15px] md:text-[16px]",
+            "font-bold flex-shrink-0 leading-none",
+            "text-[12px] sm:text-[13px] md:text-sm",
             isLight ? "text-[#000000]" : "text-[#FFFFFF]"
           )}>
             {remainingMintCount}
@@ -78,11 +78,17 @@ export function MintStatusBanner({ variant = 'dark' }: { variant?: 'dark' | 'lig
   }
 
   // State 3: No mintable quota
+  const isLight = variant === 'light';
   return (
-    <div className="rounded-[20px] bg-gray-50 border border-gray-200 px-4 py-2">
+    <div className={cn(
+      "rounded-[20px] px-3 sm:px-4 py-2 h-[36px] flex items-center",
+      isLight 
+        ? "bg-gray-50 border border-gray-200" 
+        : "bg-gray-50 border border-gray-200"
+    )}>
       <div className="flex items-center justify-center space-x-2">
         <AlertTriangle className="h-4 w-4 text-gray-600" />
-        <span className="text-[14px] font-medium text-gray-900">
+        <span className="text-[12px] sm:text-[13px] md:text-sm font-medium text-gray-900 leading-none">
           {tBatch('waitForNextBatch')}
         </span>
       </div>
