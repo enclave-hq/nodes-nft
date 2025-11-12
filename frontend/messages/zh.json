@@ -316,7 +316,8 @@
       "createdTime": "创建时间",
       "onSale": "已挂单",
       "revoking": "撤销中...",
-      "revokeListing": "撤销挂单"
+      "revokeListing": "撤销挂单",
+      "mine": "我的"
     },
     "createOrder": {
       "title": "创建出售订单",
