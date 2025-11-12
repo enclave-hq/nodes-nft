@@ -24,7 +24,7 @@ export interface SellOrderWithDetails extends SellOrder {
  * Hook to get sell orders for a specific NFT
  */
 export function useNFTSellOrders(nftId: number) {
-  const { walletManager } = useWallet();
+  const { walletManager, address } = useWallet();
   const [orders, setOrders] = useState<SellOrderWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +134,7 @@ export function useNFTSellOrders(nftId: number) {
     } finally {
       setIsLoading(false);
     }
-  }, [walletManager, nftId]);
+  }, [walletManager, nftId, address]);
 
   return {
     data: orders,
@@ -150,6 +150,7 @@ export function useNFTSellOrders(nftId: number) {
  */
 export function useAllSellOrders() {
   const web3Store = useWeb3Store();
+  const { address } = useWallet();
 
   // Use data from Web3Store
   const orders = web3Store.sellOrders || [];
@@ -164,9 +165,9 @@ export function useAllSellOrders() {
   return {
     data: orders.map(order => ({
       ...order,
-      price: BigInt(order.price || '0'),
-      sellerDisplay: formatAddress(order.seller),
-      createdAtDisplay: formatDate(order.createdAt)
+      price: typeof order.price === 'bigint' ? order.price : BigInt(order.price || '0'),
+      sellerDisplay: order.sellerDisplay || formatAddress(order.seller),
+      createdAtDisplay: order.createdAtDisplay || formatDate(order.createdAt)
     } as SellOrderWithDetails)),
     isLoading,
     error,

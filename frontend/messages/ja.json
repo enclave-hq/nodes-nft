@@ -321,7 +321,8 @@
       "createdTime": "作成日時",
       "onSale": "出品中",
       "revoking": "取り消し中...",
-      "revokeListing": "出品を取り消す"
+      "revokeListing": "出品を取り消す",
+      "mine": "マイ"
     },
     "createOrder": {
       "title": "売却注文を作成",

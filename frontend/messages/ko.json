@@ -313,7 +313,8 @@
       "createdTime": "생성 시간",
       "onSale": "판매 중",
       "revoking": "취소 중...",
-      "revokeListing": "판매 취소"
+      "revokeListing": "판매 취소",
+      "mine": "내"
     },
     "createOrder": {
       "title": "판매 주문 생성",
