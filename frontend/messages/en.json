@@ -308,7 +308,8 @@
       "createdTime": "Created Time",
       "onSale": "On Sale",
       "revoking": "Revoking...",
-      "revokeListing": "Revoke Listing"
+      "revokeListing": "Revoke Listing",
+      "mine": "Mine"
     },
     "createOrder": {
       "title": "Create Sell Order",
