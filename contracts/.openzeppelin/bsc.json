@@ -1,0 +1,577 @@
+{
+  "manifestVersion": "3.2",
+  "proxies": [
+    {
+      "address": "0x8b972C7714ef72fff0f0466DE6EBFf537d748040",
+      "txHash": "0x0e4a426ba27cd119541a8b658476f3b15e09f8be6c1b5e2d13ea8fda545ec8a0",
+      "kind": "uups"
+    },
+    {
+      "address": "0x1e59d9580190eD2748b15D02f651fa903F04c42B",
+      "txHash": "0xff4e3909104256e275e4fbe27ada1d27258058503341210a2e0ef0f5d987c58e",
+      "kind": "uups"
+    },
+    {
+      "address": "0xa5020E751277BbC90b7c8CdeAb4434b47F543d91",
+      "txHash": "0x0f3a8564bfa6f3f06ffc4d79660f84d52dbb4c9163d8a9f8442018155eeea565",
+      "kind": "uups"
+    }
+  ],
+  "impls": {
+    "64790df58d2211105937a4c97b9af05a6497fc7cb545b9c713272984b384c06d": {
+      "address": "0x1D556d15d71026D2615F7332A2aA3b5027D00D8E",
+      "txHash": "0x721d95295be673d7bb0598fbe62ec3a905788f077c1514179b5dd8ed3c39e136",
+      "layout": {
+        "solcVersion": "0.8.22",
+        "storage": [
+          {
+            "label": "globalState",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_struct(GlobalState)10242_storage",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:138"
+          },
+          {
+            "label": "nodeNFT",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_contract(NodeNFT)14976",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:141"
+          },
+          {
+            "label": "eclvToken",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_contract(EnclaveToken)10159",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:144"
+          },
+          {
+            "label": "usdtToken",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_contract(IERC20)2122",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:147"
+          },
+          {
+            "label": "oracle",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_address",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:150"
+          },
+          {
+            "label": "treasury",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_address",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:153"
+          },
+          {
+            "label": "multisigNode",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_address",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:156"
+          },
+          {
+            "label": "multisigRewardDistributed",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:159"
+          },
+          {
+            "label": "multisigRewardWithdrawn",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:162"
+          },
+          {
+            "label": "whitelist",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:165"
+          },
+          {
+            "label": "whitelistCount",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_uint256",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:168"
+          },
+          {
+            "label": "transfersEnabled",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_bool",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:176"
+          },
+          {
+            "label": "batches",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_mapping(t_uint256,t_struct(Batch)10256_storage)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:179"
+          },
+          {
+            "label": "currentBatchId",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_uint256",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:182"
+          },
+          {
+            "label": "totalMinted",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_uint256",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:190"
+          },
+          {
+            "label": "nftPools",
+            "offset": 0,
+            "slot": "18",
+            "type": "t_mapping(t_uint256,t_struct(NFTPool)10277_storage)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:193"
+          },
+          {
+            "label": "userNFTList",
+            "offset": 0,
+            "slot": "19",
+            "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:196"
+          },
+          {
+            "label": "rewardTokens",
+            "offset": 0,
+            "slot": "20",
+            "type": "t_array(t_address)dyn_storage",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:199"
+          },
+          {
+            "label": "isRewardToken",
+            "offset": 0,
+            "slot": "21",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:202"
+          },
+          {
+            "label": "sellOrders",
+            "offset": 0,
+            "slot": "22",
+            "type": "t_mapping(t_uint256,t_struct(SellOrder)10292_storage)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:205"
+          },
+          {
+            "label": "nftActiveOrder",
+            "offset": 0,
+            "slot": "23",
+            "type": "t_mapping(t_uint256,t_uint256)",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:208"
+          },
+          {
+            "label": "nextOrderId",
+            "offset": 0,
+            "slot": "24",
+            "type": "t_uint256",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:211"
+          },
+          {
+            "label": "tgeTime",
+            "offset": 0,
+            "slot": "25",
+            "type": "t_uint256",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:215"
+          },
+          {
+            "label": "marketFeeRate",
+            "offset": 0,
+            "slot": "26",
+            "type": "t_uint256",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:218"
+          },
+          {
+            "label": "activeOrderIds",
+            "offset": 0,
+            "slot": "27",
+            "type": "t_array(t_uint256)dyn_storage",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:221"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "28",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "NFTManager",
+            "src": "contracts/NFTManager.sol:1726"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)73_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)13_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(ReentrancyGuardStorage)226_storage": {
+            "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
+            "members": [
+              {
+                "label": "_status",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_address)dyn_storage": {
+            "label": "address[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_contract(EnclaveToken)10159": {
+            "label": "contract EnclaveToken",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IERC20)2122": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(NodeNFT)14976": {
+            "label": "contract NodeNFT",
+            "numberOfBytes": "20"
+          },
+          "t_enum(NFTStatus)10221": {
+            "label": "enum NFTManager.NFTStatus",
+            "members": [
+              "Active",
+              "PendingTermination",
+              "Terminated"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_enum(OrderStatus)10226": {
+            "label": "enum NFTManager.OrderStatus",
+            "members": [
+              "Active",
+              "Cancelled",
+              "Filled"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Batch)10256_storage)": {
+            "label": "mapping(uint256 => struct NFTManager.Batch)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(NFTPool)10277_storage)": {
+            "label": "mapping(uint256 => struct NFTManager.NFTPool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(SellOrder)10292_storage)": {
+            "label": "mapping(uint256 => struct NFTManager.SellOrder)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_uint256)": {
+            "label": "mapping(uint256 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Batch)10256_storage": {
+            "label": "struct NFTManager.Batch",
+            "members": [
+              {
+                "label": "batchId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "maxMintable",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "currentMinted",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "mintPrice",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "active",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "createdAt",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_struct(GlobalState)10242_storage": {
+            "label": "struct NFTManager.GlobalState",
+            "members": [
+              {
+                "label": "accProducedPerNFT",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "accRewardPerNFT",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "totalActiveNFTs",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "lastUpdateTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              }
+            ],
+            "numberOfBytes": "128"
+          },
+          "t_struct(NFTPool)10277_storage": {
+            "label": "struct NFTManager.NFTPool",
+            "members": [
+              {
+                "label": "nftId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(NFTStatus)10221",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "createdAt",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "terminationInitiatedAt",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "unlockedWithdrawn",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "producedWithdrawn",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "rewardWithdrawn",
+                "type": "t_mapping(t_address,t_uint256)",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "minter",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "7"
+              }
+            ],
+            "numberOfBytes": "256"
+          },
+          "t_struct(SellOrder)10292_storage": {
+            "label": "struct NFTManager.SellOrder",
+            "members": [
+              {
+                "label": "orderId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "nftId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "seller",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "price",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "createdAt",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(OrderStatus)10226",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
