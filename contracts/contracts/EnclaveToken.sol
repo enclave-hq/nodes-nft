@@ -104,12 +104,13 @@ contract EnclaveToken is ERC20, Ownable {
     /* ========== CONSTRUCTOR ========== */
     
     /**
-     * @notice Constructor - mints initial supply to treasury address
-     * @param treasury_ Treasury address to receive initial 70M tokens
+     * @notice Constructor - no initial minting, tokens will be minted by oracle as needed
+     * @dev Initial supply (70M) can be minted by oracle through mineTokens() function
+     *      This allows flexible distribution based on actual needs
      */
-    constructor(address treasury_) ERC20("$E", "$E") Ownable(msg.sender) {
-        require(treasury_ != address(0), "Invalid treasury address");
-        _mint(treasury_, INITIAL_SUPPLY);
+    constructor() ERC20("$E", "$E") Ownable(msg.sender) {
+        // No initial minting - tokens will be minted by oracle as needed
+        // Initial supply (70M) can be distributed gradually through mineTokens()
     }
     
     /* ========== ADMIN FUNCTIONS ========== */
@@ -210,27 +211,60 @@ contract EnclaveToken is ERC20, Ownable {
 
     /**
      * @notice Mine tokens (called by Oracle)
-     * @param to Address to receive minted tokens
+     * @dev Flexible minting mechanism:
+     *      - Before TGE: Can mint initial supply (70M) as needed for distribution
+     *        * Can mint to TokenVesting contract for locked allocations (Team, SAFT1, SAFT2)
+     *        * Can mint to Treasury, Liquidity pools, Airdrop addresses, etc.
+     *        * No year restrictions, but total cannot exceed INITIAL_SUPPLY (70M)
+     *      - After TGE: Follow annual mining rules (5M/year for first 6 years, then dynamic)
+     *        * Mining rewards for NFT holders and multisig nodes
+     *        * Subject to annual mining allowance limits
+     * @param to Address to receive minted tokens (can be TokenVesting, Treasury, etc.)
      * @param amount Amount of tokens to mine
      */
     function mineTokens(address to, uint256 amount) external onlyOracle {
-        require(tgeTime > 0, "TGE time not set");
         require(amount > 0, "Amount must be positive");
         require(to != address(0), "Invalid recipient");
         
-        uint256 currentYear = getCurrentYear();
-        uint256 allowance = calculateMiningAllowance();
+        uint256 currentSupply = totalSupply();
+        require(currentSupply + amount <= MAX_SUPPLY, "Exceeds max supply");
         
-        require(amount <= allowance, "Exceeds mining allowance");
-        
-        // Update records
-        totalMined += amount;
-        yearlyMined[currentYear] += amount;
-        
-        // Mint tokens (internal call, no need for minter check)
-        _mint(to, amount);
-        
-        emit TokensMined(to, amount, totalMined, currentYear);
+        // If TGE is not set yet, allow minting initial supply (70M) as needed
+        // This allows flexible distribution to TokenVesting, Treasury, Liquidity, etc.
+        if (tgeTime == 0) {
+            // Before TGE: can mint up to INITIAL_SUPPLY (70M) without year restrictions
+            // This allows gradual distribution based on actual needs:
+            // - Mint to TokenVesting for Team/SAFT1/SAFT2 (locked allocations)
+            // - Mint to Treasury for Ecosystem, CEX Listing, etc.
+            // - Mint to Liquidity pools
+            // - Mint to Airdrop addresses
+            uint256 canMintBeforeTGE = INITIAL_SUPPLY - currentSupply;
+            require(amount <= canMintBeforeTGE, "Exceeds initial supply limit");
+            
+            // Update records (no year tracking before TGE)
+            totalMined += amount;
+            
+            // Mint tokens
+            _mint(to, amount);
+            
+            emit TokensMined(to, amount, totalMined, 0);
+        } else {
+            // After TGE: follow mining rules with year restrictions
+            // This is for ongoing mining rewards (30M over 6 years, then dynamic)
+            uint256 currentYear = getCurrentYear();
+            uint256 allowance = calculateMiningAllowance();
+            
+            require(amount <= allowance, "Exceeds mining allowance");
+            
+            // Update records
+            totalMined += amount;
+            yearlyMined[currentYear] += amount;
+            
+            // Mint tokens
+            _mint(to, amount);
+            
+            emit TokensMined(to, amount, totalMined, currentYear);
+        }
     }
 
     /**

@@ -166,7 +166,7 @@ export function useAllSellOrders() {
     data: orders.map(order => ({
       ...order,
       price: typeof order.price === 'bigint' ? order.price : BigInt(order.price || '0'),
-      sellerDisplay: order.sellerDisplay || formatAddress(order.seller),
+      sellerDisplay: formatAddress(order.seller),
       createdAtDisplay: order.createdAtDisplay || formatDate(order.createdAt)
     } as SellOrderWithDetails)),
     isLoading,

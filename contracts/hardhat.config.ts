@@ -32,7 +32,8 @@ const config: HardhatUserConfig = {
       url: process.env.BSC_MAINNET_RPC_URL || "https://bsc-dataseed1.binance.org/",
       chainId: 56,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 5000000000, // 5 gwei
+      // Let Hardhat auto-detect gas price from network (removed hardcoded 5 gwei)
+      // gasPrice: 5000000000, // 5 gwei - commented out to use chain's current gas price
     },
   },
   etherscan: {
@@ -47,10 +48,10 @@ const config: HardhatUserConfig = {
     cache: "./cache",
     artifacts: "./artifacts",
   },
-  // Temporarily exclude TokenVesting to allow TestUSDT deployment
-  soliditySources: {
-    exclude: ["TokenVesting.sol"],
-  },
+  // TokenVesting is now included for vesting schedule management
+  // soliditySources: {
+  //   exclude: ["TokenVesting.sol"],
+  // },
 };
 
 export default config;
