@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { ContractService } from '../contract/contract.service';
 import { InviteCodesService } from '../invite-codes/invite-codes.service';
+import { MetricsService } from '../metrics/metrics.service';
 import { ethers } from 'ethers';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class RevenueService {
     private prisma: PrismaService,
     private contractService: ContractService,
     private inviteCodesService: InviteCodesService,
+    private metricsService: MetricsService,
   ) {}
 
   /**
@@ -855,6 +857,7 @@ export class RevenueService {
     let referralRewardCreated = false;
     let inviteCodeActivated = false;
 
+    const startTime = Date.now();
     try {
       // 1. Read contract Manager information and create/update NftRecord and RevenueRecord
       console.log(`🔄 Processing NFT mint callback for NFT ${nftId}...`);
@@ -1022,6 +1025,15 @@ export class RevenueService {
         console.log(`ℹ️ No pending invite code to activate for ${normalizedMinterAddress}`);
       }
 
+      // 记录 metrics
+      const duration = (Date.now() - startTime) / 1000;
+      this.metricsService.nftMintSuccess.inc();
+      this.metricsService.nftMintDuration.observe(duration);
+      
+      // 更新总铸造数
+      const totalMinted = await this.prisma.nftRecord.count();
+      this.metricsService.nftTotalMinted.set(totalMinted);
+
       return {
         success: true,
         nftRecordCreated,
@@ -1031,6 +1043,13 @@ export class RevenueService {
       };
     } catch (error: any) {
       console.error(`❌ Error handling NFT mint callback for NFT ${nftId}:`, error);
+      
+      // 记录 metrics
+      const errorType = error.message?.substring(0, 50) || 'unknown';
+      this.metricsService.nftMintFailed.inc({ error_type: errorType });
+      this.metricsService.errorsTotal.inc();
+      this.metricsService.errorsByType.inc({ error_type: errorType });
+      
       throw new BadRequestException(`Failed to process NFT mint callback: ${error.message}`);
     }
   }

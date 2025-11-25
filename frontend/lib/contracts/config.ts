@@ -1,34 +1,73 @@
 /**
+ * Network configuration management
+ * 
+ * This module automatically selects the correct network configuration
+ * based on NEXT_PUBLIC_NETWORK environment variable.
+ * 
+ * To switch networks, simply set NEXT_PUBLIC_NETWORK in your .env.local:
+ *   - NEXT_PUBLIC_NETWORK=testnet  (for BSC Testnet)
+ *   - NEXT_PUBLIC_NETWORK=mainnet  (for BSC Mainnet)
+ * 
+ * All other contract addresses and network settings will be automatically
+ * configured based on this single variable.
+ */
+import { getNetworkConfig, getCurrentNetworkType, type NetworkConfig } from './networkConfig';
+
+// Get the active network configuration
+const activeNetworkConfig: NetworkConfig = getNetworkConfig();
+
+/**
  * Contract addresses configuration
+ * Automatically configured based on NEXT_PUBLIC_NETWORK
  */
 export const CONTRACT_ADDRESSES = {
-  enclaveToken: process.env.NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS as `0x${string}`,
-  nodeNFT: process.env.NEXT_PUBLIC_NODE_NFT_ADDRESS as `0x${string}`,
-  nftManager: process.env.NEXT_PUBLIC_NFT_MANAGER_ADDRESS as `0x${string}`,
-  usdt: process.env.NEXT_PUBLIC_USDT_ADDRESS as `0x${string}`,
+  enclaveToken: (
+    process.env.NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS || 
+    activeNetworkConfig.contracts.enclaveToken
+  ) as `0x${string}`,
+  nodeNFT: (
+    process.env.NEXT_PUBLIC_NODE_NFT_ADDRESS || 
+    activeNetworkConfig.contracts.nodeNFT
+  ) as `0x${string}`,
+  nftManager: (
+    process.env.NEXT_PUBLIC_NFT_MANAGER_ADDRESS || 
+    activeNetworkConfig.contracts.nftManager
+  ) as `0x${string}`,
+  usdt: (
+    process.env.NEXT_PUBLIC_USDT_ADDRESS || 
+    activeNetworkConfig.contracts.usdt
+  ) as `0x${string}`,
+  tokenVesting: (
+    process.env.NEXT_PUBLIC_VESTING_ADDRESS || 
+    activeNetworkConfig.contracts.tokenVesting
+  ) as `0x${string}`,
 } as const;
 
 /**
  * Network configuration
+ * Automatically configured based on NEXT_PUBLIC_NETWORK
  */
 export const NETWORK_CONFIG = {
-  chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "97"),
-  rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://data-seed-prebsc-2-s1.binance.org:8545/",
-  blockExplorer: process.env.NEXT_PUBLIC_CHAIN_ID === "56"
-    ? "https://bscscan.com"
-    : "https://testnet.bscscan.com",
-  isTestnet: process.env.NEXT_PUBLIC_ENABLE_TESTNET === "true",
+  chainId: parseInt(
+    process.env.NEXT_PUBLIC_CHAIN_ID || 
+    activeNetworkConfig.chainId.toString()
+  ),
+  rpcUrl: (
+    process.env.NEXT_PUBLIC_RPC_URL || 
+    activeNetworkConfig.rpcUrl
+  ),
+  blockExplorer: activeNetworkConfig.blockExplorer,
+  isTestnet: activeNetworkConfig.isTestnet,
+  name: activeNetworkConfig.name,
 } as const;
 
 // Fallback RPC node list, sorted by reliability
-export const FALLBACK_RPC_URLS = [
-  "https://data-seed-prebsc-2-s1.binance.org:8545",
-  "https://data-seed-prebsc-1-s2.binance.org:8545", 
-  "https://data-seed-prebsc-2-s2.binance.org:8545",
-  "https://data-seed-prebsc-1-s3.binance.org:8545",
-  "https://data-seed-prebsc-2-s3.binance.org:8545",
-  "https://data-seed-prebsc-1-s1.binance.org:8545", // Original main node as last fallback
-] as const;
+export const FALLBACK_RPC_URLS = activeNetworkConfig.fallbackRpcUrls as readonly string[];
+
+/**
+ * Current network type (testnet or mainnet)
+ */
+export const CURRENT_NETWORK_TYPE = getCurrentNetworkType();
 
 /**
  * NFT status enumeration (must match contract)
@@ -94,18 +133,7 @@ export const TOKEN_DECIMALS = {
 } as const;
 
 /**
- * Gas configuration for BSC Testnet
+ * Gas configuration
+ * Automatically configured based on NEXT_PUBLIC_NETWORK
  */
-export const GAS_CONFIG = {
-  // Gas price for BSC Testnet (in wei)
-  gasPrice: "300000000", // 0.3 Gwei = 300000000 wei
-  // Gas limits for different operations
-  gasLimits: {
-    erc20Transfer: 21000,
-    erc20Approve: 100000, // Increased USDT approval gas limit
-    contractCall: 300000, // Increased general contract call gas limit (for claimProduced, claimReward, etc.)
-    createSellOrder: 500000, // Creating sell orders requires more gas (increased from 300k to 500k)
-    buyNFT: 500000, // Buying NFT requires more gas (increased from 400k to 500k)
-    mintNFT: 500000, // Increased mintNFT gas limit
-  },
-} as const;
+export const GAS_CONFIG = activeNetworkConfig.gasConfig as const;

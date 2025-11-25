@@ -13,4 +13,5 @@ export * from './batches';
 export * from './users';
 export * from './nfts';
 export * from './stats';
+export * from './contract';
 

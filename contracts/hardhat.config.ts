@@ -10,17 +10,34 @@ const config: HardhatUserConfig = {
       optimizer: {
         enabled: true,
         runs: 1, // Minimum runs to minimize contract size (for very large contracts)
+        details: {
+          yul: true,
+          yulDetails: {
+            stackAllocation: true,
+            optimizerSteps: "dhfoDgvulfnTUtnIf" // Aggressive optimization for size
+          }
+        }
       },
       viaIR: true, // Enable IR-based code generation for better optimization
+      metadata: {
+        bytecodeHash: "none" // Reduce bytecode size
+      },
+      outputSelection: {
+        "*": {
+          "*": ["abi", "evm.bytecode", "evm.deployedBytecode", "evm.methodIdentifiers"]
+        }
+      }
     },
   },
   networks: {
     hardhat: {
       chainId: 31337,
+      allowUnlimitedContractSize: true, // Allow large contracts for testing
     },
     localhost: {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
+      allowUnlimitedContractSize: true, // Allow large contracts for testing
     },
     bscTestnet: {
       url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",

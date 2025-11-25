@@ -385,29 +385,51 @@ export const callContractWithFallback = async (
 };
 
 // Initialize environment configuration
+// Uses the centralized network configuration system
 const initializeEnvConfig = (): EnvConfig => {
+  // Import network config (dynamic import to avoid circular dependencies)
+  const { getNetworkConfig } = require('../contracts/networkConfig');
+  const networkConfig = getNetworkConfig();
+  
   const config: EnvConfig = {
     network: {
-      chainId: parseInt(process.env.NEXT_PUBLIC_CHAIN_ID || "97"),
-      rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545/",
-      blockExplorer: process.env.NEXT_PUBLIC_CHAIN_ID === "56"
-        ? "https://bscscan.com"
-        : "https://testnet.bscscan.com",
-      isTestnet: process.env.NEXT_PUBLIC_ENABLE_TESTNET === "true",
+      chainId: parseInt(
+        process.env.NEXT_PUBLIC_CHAIN_ID || 
+        networkConfig.chainId.toString()
+      ),
+      rpcUrl: (
+        process.env.NEXT_PUBLIC_RPC_URL || 
+        networkConfig.rpcUrl
+      ),
+      blockExplorer: networkConfig.blockExplorer,
+      isTestnet: networkConfig.isTestnet,
     },
     contracts: {
-      enclaveToken: process.env.NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS || '',
-      nodeNFT: process.env.NEXT_PUBLIC_NODE_NFT_ADDRESS || '',
-      nftManager: process.env.NEXT_PUBLIC_NFT_MANAGER_ADDRESS || '',
-      usdt: process.env.NEXT_PUBLIC_USDT_ADDRESS || '',
+      enclaveToken: (
+        process.env.NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS || 
+        networkConfig.contracts.enclaveToken
+      ),
+      nodeNFT: (
+        process.env.NEXT_PUBLIC_NODE_NFT_ADDRESS || 
+        networkConfig.contracts.nodeNFT
+      ),
+      nftManager: (
+        process.env.NEXT_PUBLIC_NFT_MANAGER_ADDRESS || 
+        networkConfig.contracts.nftManager
+      ),
+      usdt: (
+        process.env.NEXT_PUBLIC_USDT_ADDRESS || 
+        networkConfig.contracts.usdt
+      ),
     },
     features: {
       debug: process.env.NEXT_PUBLIC_DEBUG === "true",
-      testnet: process.env.NEXT_PUBLIC_ENABLE_TESTNET === "true",
+      testnet: networkConfig.isTestnet,
     },
   };
   
   console.log('🔧 Initializing Web3 config:', config);
+  console.log('🌐 Active Network:', networkConfig.name, `(Chain ID: ${networkConfig.chainId})`);
   return config;
 };
 

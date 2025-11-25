@@ -1,125 +1,202 @@
-# Local Test Report
+# 合约测试报告
 
-**Date**: October 27, 2025  
-**Tested on**: Hardhat Local Network
+**测试时间**: 2025年11月25日  
+**测试环境**: Hardhat Network (本地节点)  
+**测试结果**: ✅ **226 个测试全部通过**
 
-## Test Summary
+---
 
-✅ **ALL CORE TESTS PASSED** (4/4)
+## 测试文件结构
 
-### Test 1: Contract Deployment ✅
-- Deployed TestUSDT (mock token for testing)
-- Deployed EnclaveToken ($E) with 100M initial supply
-- Deployed NodeNFT (ERC-721)
-- Deployed NFTManager (upgradeable proxy)
-- Configured contracts and initialized test accounts
-- **Result**: All contracts deployed successfully
+| 文件名 | 测试数量 | 测试内容 |
+|--------|----------|----------|
+| `AccessControl.test.ts` | 27 | 权限控制测试 |
+| `EclvTokenUpgrade.test.ts` | 11 | ECLV Token 升级场景测试 |
+| `FullIntegration.test.ts` | 15 | 端到端集成测试 |
+| `Integration.test.ts` | 26 | 集成流程测试 |
+| `NFTManager.test.ts` | 61 | NFT 管理功能测试 |
+| `StateValidation.test.ts` | 25 | 状态变化验证测试 |
+| `TGE.test.ts` | 5 | TGE 时间管理测试 |
+| `TokenVesting.test.ts` | 56 | Token Vesting 功能测试 |
 
-### Test 2: NFT Minting ✅
-- Alice minted Standard NFT (#1) for 10,000 USDT
-- Bob minted Premium NFT (#2) for 50,000 USDT
-- NFT pools created correctly with proper configurations
-- Alice received 10 shares in NFT #1
-- Bob received 10 shares in NFT #2
-- Global weighted shares calculated correctly (10 + 60 = 70)
-- **Result**: Minting works correctly, all shares assigned
+---
 
-### Test 3: Distribution & Claiming ✅
-- Oracle distributed 1,000 $E production
-- Oracle distributed 500 USDT rewards
-- Pending rewards calculated correctly:
-  - NFT #1 (Standard, weight=1): 142.86 $E, 71.43 USDT
-  - NFT #2 (Premium, weight=6): 857.14 $E, 428.57 USDT
-- Alice and Bob successfully claimed their rewards
-- Reward ratio verified: Bob received exactly 6x more than Alice ✅
-- **Result**: Distribution and claiming work perfectly
+## 测试分类详情
 
-### Test 4: Marketplace & Share Trading ✅
-- **P2P Transfer**: Alice transferred 3 shares to Bob
-- **Sell Order Creation**: Alice created order to sell 2 shares for 6,000 USDT each
-- **Buy Order**: Charlie bought 2 shares from Alice's order for 12,000 USDT
-- **Order Cancellation**: Bob successfully canceled his sell order
-- **Final Share Distribution**:
-  - Alice: 5 shares
-  - Bob: 3 shares
-  - Charlie: 2 shares
-  - Total: 10 shares ✅
-- **Result**: All marketplace functions working correctly
+### 1. 权限控制测试 (AccessControl.test.ts)
 
-### Test 5: Shareholders List Feature ✅ 🆕
-- Successfully added shareholders list to NFT pools
-- List dynamically updates on share transfers
-- Verified 3 shareholders after marketplace operations:
-  1. Alice (0x7099...79C8): 5 shares
-  2. Bob (0x3C44...93BC): 3 shares
-  3. Charlie (0x90F7...b906): 2 shares
-- **Result**: Shareholders list feature working correctly
+**测试目的**: 验证各角色的权限边界正确
 
-## New Features Implemented
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| Owner 权限 | `setMaster` 只能由 owner 调用 | ✅ |
+| Master 权限 | 批次管理、白名单、手续费等配置 | ✅ |
+| Oracle 权限 | 奖励分发、产出分发 | ✅ |
+| Operator 权限 | 操作员特定功能 | ✅ |
+| 普通用户限制 | 非授权操作应 revert | ✅ |
 
-### 1. `getUserShareCount(nftId, user)` Function
-- Returns the number of shares a user owns in a specific NFT
-- Solves the issue where `userShares` mapping couldn't be directly queried due to nested mappings
+### 2. ECLV Token 升级测试 (EclvTokenUpgrade.test.ts)
 
-### 2. `getShareholders(nftId)` Function
-- Returns array of all addresses holding shares in an NFT
-- Automatically updated on transfers and purchases
-- Addresses are removed when shares drop to zero
+**测试目的**: 验证 ECLV Token 地址更新场景
 
-### 3. Internal Helper Functions
-- `_addShareholder(nftId, user)`: Adds address to shareholders list (prevents duplicates)
-- `_removeShareholder(nftId, user)`: Removes address when shares reach zero
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| TGE 前更换 | 无 NFT 铸造时允许更换 | ✅ |
+| TGE 前更换 | 有 NFT 铸造时允许更换 | ✅ |
+| TGE 后限制 | 设置 TGE 后禁止更换 | ✅ |
+| vaultRewards 迁移 | 旧地址余额迁移到新地址 | ✅ |
+| rewardTokens 更新 | 列表正确更新 | ✅ |
+| 边界条件 | 零地址、相同地址、权限检查 | ✅ |
+| 完整流程 | 铸造 → 更换 → 设 TGE → 解锁 → 提取 | ✅ |
 
-## Key Achievements
+### 3. 端到端集成测试 (FullIntegration.test.ts)
 
-1. ✅ **Core Minting**: Users can mint Standard and Premium NFTs with correct USDT payments
-2. ✅ **Reward Distribution**: O(1) gas oracle distribution using global accumulated index model
-3. ✅ **Weighted Rewards**: Premium NFTs correctly receive 6x more rewards than Standard
-4. ✅ **Share Transfers**: P2P transfers work with automatic reward settlement
-5. ✅ **Marketplace**: On-chain order book for buying/selling shares
-6. ✅ **Shareholders Tracking**: Dynamic list of all shareholders per NFT
-7. ✅ **Contract Upgradeability**: NFTManager uses UUPS proxy pattern
+**测试目的**: 验证完整业务流程
 
-## Test Scripts
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| 完整生命周期 | 铸造 → 分发 → 领取 → 解锁 → 提取 | ✅ |
+| Token 挖矿 | NFTManager 通过 EnclaveToken 挖矿 | ✅ |
+| 多用户场景 | 多用户同时操作 | ✅ |
+| 奖励累积 | 多轮分发累积正确 | ✅ |
+| Vesting 集成 | TokenVesting 与系统集成 | ✅ |
 
-All test scripts are located in `/contracts/scripts/`:
-- `local-01-deploy-all.ts`: Deploy all contracts
-- `local-02-test-mint.ts`: Test NFT minting
-- `local-03-test-distribution.ts`: Test reward distribution and claiming
-- `local-04-test-marketplace.ts`: Test share trading and marketplace
-- `local-05-test-unlock.ts`: Test unlock mechanism (in progress)
-- `run-all-local-tests.sh`: Run all tests in sequence
+### 4. NFT 管理测试 (NFTManager.test.ts)
 
-## Quick Start
+**测试目的**: 验证 NFT 相关功能
 
-```bash
-# Terminal 1: Start local node
-cd contracts
-npx hardhat node
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| NFT 铸造 | 白名单用户铸造 | ✅ |
+| 批次管理 | 创建、激活、停用批次 | ✅ |
+| 白名单管理 | 添加、移除白名单 | ✅ |
+| NFT 转让 | 市场交易、所有权转移 | ✅ |
+| 终止流程 | 发起 → 冷却 → 确认终止 | ✅ |
+| 解锁计算 | 锁定期、解锁周期、金额计算 | ✅ |
 
-# Terminal 2: Run all tests
-cd contracts
-./scripts/run-all-local-tests.sh
-```
+### 5. 状态变化验证测试 (StateValidation.test.ts) 🆕
 
-## Next Steps
+**测试目的**: 验证每次操作后状态变化符合预期
 
-1. ✅ Complete local testing
-2. 🔄 Deploy to BSC Testnet
-3. 🔄 Integrate frontend with deployed contracts
-4. 🔄 End-to-end testing
-5. 🔄 Production deployment
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| **奖励分发状态** | | |
+| 单 NFT 分发 | accProducedPerNFT 增加、pending 增加 | ✅ |
+| 多 NFT 分发 | 各 NFT 获得相同奖励 | ✅ |
+| 多轮分发 | 奖励正确累积 | ✅ |
+| USDT 分发 | vaultRewards 和 pending 更新 | ✅ |
+| **奖励领取状态** | | |
+| 完整提取 | 余额增加、pending 归零 | ✅ |
+| 部分提取后再分发 | 状态正确累积 | ✅ |
+| 一次性提取累积 | 累积金额正确 | ✅ |
+| USDT 领取 | 余额和 vaultRewards 变化 | ✅ |
+| 批量领取 | claimProduced + claimAllRewards 组合 | ✅ |
+| **NFT 解锁状态** | | |
+| TGE 前 | 解锁金额为 0 | ✅ |
+| 锁定期内 | 解锁金额为 0 | ✅ |
+| 锁定期后 | 有解锁金额 | ✅ |
+| 完全解锁 | 不超过总量 | ✅ |
+| withdrawUnlocked | unlockedWithdrawn 正确更新 | ✅ |
+| **边界条件** | | |
+| 零值分发 | 应 revert | ✅ |
+| 领取 0 奖励 | 成功但不转移 | ✅ |
+| 大量 NFT | 精度正确 | ✅ |
+| 重复领取 | 第二次领取 0 | ✅ |
+| 重复提取 | 无新解锁时 revert | ✅ |
+| **市场交易状态** | | |
+| 创建卖单 | 订单状态正确 | ✅ |
+| 购买 NFT | NFT 转移、资金分配 | ✅ |
+| 取消卖单 | 订单状态更新 | ✅ |
+| **Token 挖矿状态** | | |
+| mineTokens | totalSupply 和余额变化 | ✅ |
+| getMiningStats | 统计正确更新 | ✅ |
+| burn | totalSupply 减少 | ✅ |
 
-## Notes
+### 6. TGE 测试 (TGE.test.ts)
 
-- All tests use Hardhat's local network for fast, free, and deterministic testing
-- Test accounts are pre-funded with ETH and TestUSDT
-- The oracle role is performed by the deployer account for testing
-- All gas costs are tracked and optimized (O(1) oracle distribution)
+**测试目的**: 验证 TGE 时间管理
 
-## Conclusion
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| 设置 TGE | Owner 设置 TGE 时间 | ✅ |
+| 读取 TGE | 各合约正确读取 TGE | ✅ |
+| 重复设置 | 禁止重复设置 | ✅ |
+| 权限检查 | 非 owner 无法设置 | ✅ |
+| 传播验证 | NFTManager 正确读取 EnclaveToken.tgeTime | ✅ |
 
-✅ **All core functionality has been successfully tested and verified!**
+### 7. Token Vesting 测试 (TokenVesting.test.ts)
 
-The system is ready for testnet deployment. All smart contracts are working as designed, with proper gas optimization, reward distribution, and share tracking mechanisms in place.
+**测试目的**: 验证 Vesting 功能
 
+| 测试项 | 验证内容 | 结果 |
+|--------|----------|------|
+| 创建 Schedule | 参数验证、状态设置 | ✅ |
+| 批量创建 | batchCreate 功能 | ✅ |
+| 释放计算 | 锁定期、线性释放 | ✅ |
+| 释放操作 | release、releaseAll | ✅ |
+| 撤销 Schedule | revoke 功能 | ✅ |
+| 紧急提取 | emergencyWithdraw | ✅ |
+| 配置读取 | 从 configSource 读取 | ✅ |
+
+---
+
+## 关键业务逻辑验证
+
+### 奖励分发机制
+- **分发比例**: 80% NFT + 20% Multisig
+- **NFT 奖励计算**: `nftAmount / MAX_SUPPLY` (按最大供应量，非活跃数量)
+- **多余部分**: 进入 vault
+
+### 代币解锁机制
+- **锁定期**: 365 天
+- **解锁周期**: 25 个月，每月 4%
+- **计算公式**: `(periods * 4% * ECLV_PER_NFT) / 100`
+
+### NFT 终止流程
+- **步骤**: 发起 → 冷却期(1天) → 确认
+- **影响**: 终止后不再获得新奖励，但可领取已分发奖励
+
+---
+
+## 测试覆盖情况
+
+| 合约/模块 | 覆盖状态 | 说明 |
+|-----------|----------|------|
+| EnclaveToken | ✅ 完整 | 挖矿、TGE、销毁 |
+| NFTManager (Diamond) | ✅ 完整 | 所有 Facet 功能 |
+| AdminFacet | ✅ 完整 | 配置管理、权限控制 |
+| NFTManagerFacet | ✅ 完整 | 铸造、解锁、终止 |
+| RewardFacet | ✅ 完整 | 分发、领取 |
+| MarketplaceFacet | ✅ 完整 | 创建、购买、取消订单 |
+| TokenVesting | ✅ 完整 | 创建、释放、撤销 |
+| NodeNFT | ✅ 完整 | 铸造、转移 |
+
+---
+
+## 建议的后续测试
+
+### 高优先级
+1. **Gas 优化测试**: 验证批量操作的 gas 消耗
+2. **并发操作测试**: 模拟多用户同时操作
+3. **极端值测试**: MAX_SUPPLY 边界、大金额分发
+
+### 中优先级
+4. **升级兼容性测试**: Diamond facet 升级后的状态保持
+5. **重入攻击测试**: 验证 nonReentrant 保护
+6. **时间操纵测试**: 验证时间相关计算的边界
+
+---
+
+## 结论
+
+✅ **所有 226 个测试用例通过**
+
+测试覆盖了：
+- 权限控制 (Access Control)
+- 核心业务流程 (NFT 铸造、奖励分发、代币解锁)
+- 状态变化验证 (每次操作后的状态检查)
+- 边界条件 (零值、重复操作、时间边界)
+- 集成测试 (端到端流程)
+- 特殊场景 (ECLV Token 升级、TGE 管理)
+
+合约功能符合设计预期，可以进行下一步部署准备。

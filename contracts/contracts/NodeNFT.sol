@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 interface INFTManager {
     function onNFTTransfer(address from, address to, uint256 nftId) external;
+    function transfersEnabled() external view returns (bool);
 }
 
 /**
@@ -156,20 +157,17 @@ contract NodeNFT is ERC721, Ownable {
         if (from != address(0) && to != address(0)) {
             // Check if transfers are enabled in NFTManager
             require(nftManager != address(0), "NFT Manager not set");
-            (bool success, bytes memory data) = nftManager.staticcall(
-                abi.encodeWithSignature("transfersEnabled()")
-            );
-            require(success, "Failed to check transfers enabled");
-            bool transfersEnabled = abi.decode(data, (bool));
-            require(transfersEnabled, "Transfers not enabled");
+            
+            // Use interface call for type safety
+            INFTManager manager = INFTManager(nftManager);
+            require(manager.transfersEnabled(), "Transfers not enabled");
             
             // IMPORTANT: Notify NFTManager to sync userNFTList when NFT is transferred directly
             // This ensures userNFTList stays in sync even when transfers bypass NFTManager functions
-            // Note: We use call() instead of direct interface call to ensure msg.sender is this contract
-            (bool syncSuccess, ) = nftManager.call(
-                abi.encodeWithSignature("onNFTTransfer(address,address,uint256)", from, to, firstTokenId)
-            );
-            if (!syncSuccess) {
+            // Use try-catch to handle potential failures gracefully
+            try manager.onNFTTransfer(from, to, firstTokenId) {
+                // Success - userNFTList synced
+            } catch {
                 // If sync fails, revert the transfer to ensure data consistency
                 // This is critical - we cannot allow transfers without syncing userNFTList
                 revert("Failed to sync userNFTList on transfer");

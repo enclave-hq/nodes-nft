@@ -1,59 +1,90 @@
 import { ethers } from "hardhat";
 import * as dotenv from "dotenv";
+import * as readline from "readline";
 
 dotenv.config();
 
+// Helper function to get user input
+function askQuestion(query: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
 /**
- * @notice Deploy TokenVesting contract and set up vesting schedules
+ * @notice Deploy TokenVesting contract and set up vesting schedules (Interactive)
  * 
  * Usage:
  *   npx hardhat run scripts/deploy-vesting.ts --network <network>
  */
 async function main() {
-  console.log("🚀 Deploying TokenVesting Contract...\n");
+  console.log("🚀 Deploying TokenVesting Contract (Interactive Mode)...\n");
 
   const [deployer] = await ethers.getSigners();
   console.log("Deployer:", deployer.address);
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Balance:", ethers.formatEther(balance), "ETH/BNB\n");
 
-  // Get token address from environment or use default
-  const TOKEN_ADDRESS = process.env.TOKEN_ADDRESS || process.env.ENCLAVE_TOKEN_ADDRESS;
-  if (!TOKEN_ADDRESS || TOKEN_ADDRESS === "") {
-    throw new Error("❌ Please set TOKEN_ADDRESS or ENCLAVE_TOKEN_ADDRESS in .env file");
+  // Get NFTManager address (config source) from environment
+  let configSource = process.env.NFT_MANAGER_ADDRESS || process.env.MANAGER_ADDRESS || "";
+  if (!configSource || configSource === "") {
+    configSource = await askQuestion("Enter NFTManager Address (config source): ");
+    if (!configSource || configSource === "") {
+      throw new Error("❌ NFTManager address is required");
+    }
   }
-  console.log("Token Address:", TOKEN_ADDRESS);
+  console.log("✅ Config Source (NFTManager):", configSource);
 
-  // Get multisig address for owner (or use deployer for testing)
-  const MULTISIG_ADDRESS = process.env.MULTISIG_ADDRESS || deployer.address;
-  console.log("Owner (Multisig):", MULTISIG_ADDRESS, "\n");
+  // Get multisig address for owner (interactive or from env)
+  let MULTISIG_ADDRESS = process.env.MULTISIG_ADDRESS;
+  if (!MULTISIG_ADDRESS || MULTISIG_ADDRESS === "") {
+    const input = await askQuestion(`Enter Owner/Multisig Address (press Enter to use deployer ${deployer.address}): `);
+    MULTISIG_ADDRESS = input || deployer.address;
+  }
+  console.log("✅ Owner (Multisig):", MULTISIG_ADDRESS, "\n");
 
   // Deploy TokenVesting
   console.log("1️⃣  Deploying TokenVesting...");
   const TokenVesting = await ethers.getContractFactory("TokenVesting");
-  const vesting = await TokenVesting.deploy(TOKEN_ADDRESS, MULTISIG_ADDRESS);
+  // TokenVesting now takes configSource (NFTManager) and owner
+  const vesting = await TokenVesting.deploy(configSource, MULTISIG_ADDRESS);
   await vesting.waitForDeployment();
   const vestingAddress = await vesting.getAddress();
   console.log("✅ TokenVesting deployed to:", vestingAddress);
+  
+  // Verify that TokenVesting read the correct token address from NFTManager
+  const tokenAddress = await vesting.token();
+  console.log("✅ Token address (from NFTManager):", tokenAddress);
 
-  // Get TGE time (from environment or use current time)
-  let tgeTime: bigint;
-  if (process.env.TGE_TIME) {
-    tgeTime = BigInt(process.env.TGE_TIME);
+  // Get TGE time from EnclaveToken (via NFTManager)
+  console.log("\n2️⃣  Reading TGE time from EnclaveToken (via NFTManager)...");
+  const tgeTime = await vesting.tgeTime();
+  if (tgeTime > 0) {
+    console.log("✅ TGE Time (from EnclaveToken):", tgeTime.toString(), "(" + new Date(Number(tgeTime) * 1000).toISOString() + ")");
   } else {
-    // Use current block timestamp as TGE (for testing)
-    const blockNumber = await ethers.provider.getBlockNumber();
-    const block = await ethers.provider.getBlock(blockNumber);
-    tgeTime = BigInt(block?.timestamp || Math.floor(Date.now() / 1000));
-    console.log("⚠️  Using current block timestamp as TGE (for testing only)");
+    console.log("⚠️  TGE Time not set in EnclaveToken yet");
+    console.log("   Please set TGE time in EnclaveToken first using: EnclaveToken.setTGETime()");
+    const continueInput = await askQuestion("Continue anyway? (y/n): ");
+    if (continueInput.toLowerCase() !== "y") {
+      throw new Error("Deployment cancelled - TGE time must be set first");
+    }
   }
-  console.log("TGE Time:", tgeTime.toString(), "(" + new Date(Number(tgeTime) * 1000).toISOString() + ")");
 
-  // Set TGE time
-  console.log("\n2️⃣  Setting TGE time...");
-  const setTGETx = await vesting.setTGETime(tgeTime);
-  await setTGETx.wait();
-  console.log("✅ TGE time set");
+  // TGE time is now managed by EnclaveToken, no need to set it here
+  // Verify TGE time is set
+  const currentTgeTime = await vesting.tgeTime();
+  if (currentTgeTime == 0) {
+    console.log("⚠️  Warning: TGE time is not set in EnclaveToken");
+    console.log("   Vesting schedules cannot be created until TGE time is set");
+  }
 
   // Vesting schedule configuration
   // Based on TOKEN_DISTRIBUTION.md:
@@ -89,6 +120,12 @@ async function main() {
     },
   ];
 
+  // Check TGE time before creating schedules
+  const currentTgeTime = await vesting.tgeTime();
+  if (currentTgeTime == 0) {
+    throw new Error("❌ TGE time must be set in EnclaveToken before creating vesting schedules");
+  }
+
   console.log("\n3️⃣  Creating vesting schedules...");
   for (const schedule of vestingSchedules) {
     console.log(`   Creating schedule for ${schedule.name}:`);
@@ -110,7 +147,8 @@ async function main() {
   // Transfer tokens to vesting contract (if needed)
   if (process.env.TRANSFER_TOKENS === "true") {
     console.log("4️⃣  Transferring tokens to vesting contract...");
-    const token = await ethers.getContractAt("EnclaveToken", TOKEN_ADDRESS);
+    const tokenAddress = await vesting.token();
+    const token = await ethers.getContractAt("EnclaveToken", tokenAddress);
     const totalAmount = vestingSchedules.reduce(
       (sum, s) => sum + s.totalAmount,
       BigInt(0)
@@ -131,9 +169,16 @@ async function main() {
   console.log("📋 Deployment Summary");
   console.log("=".repeat(60));
   console.log("TokenVesting Address:", vestingAddress);
-  console.log("Token Address:", TOKEN_ADDRESS);
+  console.log("Config Source (NFTManager):", configSource);
+  const tokenAddress = await vesting.token();
+  console.log("Token Address (from NFTManager):", tokenAddress);
   console.log("Owner (Multisig):", MULTISIG_ADDRESS);
-  console.log("TGE Time:", tgeTime.toString(), "(" + new Date(Number(tgeTime) * 1000).toISOString() + ")");
+  const finalTgeTime = await vesting.tgeTime();
+  if (finalTgeTime > 0) {
+    console.log("TGE Time (from EnclaveToken):", finalTgeTime.toString(), "(" + new Date(Number(finalTgeTime) * 1000).toISOString() + ")");
+  } else {
+    console.log("TGE Time: Not set (must be set in EnclaveToken)");
+  }
   console.log("\nVesting Schedules:");
   for (const schedule of vestingSchedules) {
     const startTime = Number(tgeTime) + Number(schedule.lockPeriod);
@@ -150,9 +195,10 @@ async function main() {
   if (process.env.VERIFY_CONTRACT === "true") {
     console.log("\n5️⃣  Verifying contract on Etherscan...");
     try {
+      const tokenAddress = await vesting.token();
       await hre.run("verify:verify", {
         address: vestingAddress,
-        constructorArguments: [TOKEN_ADDRESS, MULTISIG_ADDRESS],
+        constructorArguments: [configSource, MULTISIG_ADDRESS],
       });
       console.log("✅ Contract verified");
     } catch (error) {

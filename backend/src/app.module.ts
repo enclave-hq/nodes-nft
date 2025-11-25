@@ -10,6 +10,7 @@ import { WhitelistModule } from './modules/whitelist/whitelist.module';
 import { BatchesModule } from './modules/batches/batches.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { RevenueModule } from './modules/revenue/revenue.module';
+import { MetricsModule } from './modules/metrics/metrics.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RevenueModule } from './modules/revenue/revenue.module';
     BatchesModule,
     StatsModule,
     RevenueModule,
+    MetricsModule,
   ],
 })
 export class AppModule {}

@@ -242,25 +242,84 @@ export class NftsService {
    * Get all NFTs of a user
    * @param address User address
    * @returns Array of NFTs
+   * @description 
+   * - Queries NFT IDs from contract (real-time, accurate)
+   * - Fetches metadata from database (invite code associations, etc.)
+   * - Combines both for complete NFT information
    */
   async getNFTsByUser(address: string) {
-    const records = await this.prisma.nftRecord.findMany({
-      where: { ownerAddress: address.toLowerCase() },
-      include: {
-        inviteCode: true,
-        rootInviteCode: true,
-      },
-    });
+    try {
+      // Step 1: Get NFT IDs from contract (real-time, accurate)
+      const nftIds = await this.contractService.getUserNFTs(address);
+      
+      if (nftIds.length === 0) {
+        return [];
+      }
 
-    // Transform to match frontend NFT interface
-    return records.map(record => ({
-      id: record.nftId,
-      tokenId: record.nftId.toString(),
-      ownerAddress: record.ownerAddress,
-      inviteCodeId: record.inviteCodeId || 0,
-      createdAt: record.createdAt.toISOString(),
-      updatedAt: record.createdAt.toISOString(),
-    }));
+      // Step 2: Get metadata from database for these NFTs
+      const records = await this.prisma.nftRecord.findMany({
+        where: { 
+          nftId: { in: nftIds }
+        },
+        include: {
+          inviteCode: true,
+          rootInviteCode: true,
+        },
+      });
+
+      // Step 3: Create a map for quick lookup
+      const recordMap = new Map(records.map(r => [r.nftId, r]));
+
+      // Step 4: Combine contract data with database metadata
+      // Return NFTs in the order returned by contract, with metadata if available
+      return nftIds.map(nftId => {
+        const record = recordMap.get(nftId);
+        
+        if (record) {
+          // NFT has metadata in database
+          return {
+            id: record.nftId,
+            tokenId: record.nftId.toString(),
+            ownerAddress: address, // Use address from parameter (current owner from contract)
+            inviteCodeId: record.inviteCodeId || 0,
+            createdAt: record.createdAt.toISOString(),
+            updatedAt: record.createdAt.toISOString(),
+          };
+        } else {
+          // NFT exists in contract but not in database (newly minted or not synced)
+          // Return basic info from contract
+          return {
+            id: nftId,
+            tokenId: nftId.toString(),
+            ownerAddress: address, // Current owner from contract
+            inviteCodeId: 0, // No metadata available
+            createdAt: new Date().toISOString(), // Fallback timestamp
+            updatedAt: new Date().toISOString(),
+          };
+        }
+      });
+    } catch (error: any) {
+      console.error(`Error getting NFTs for user ${address}:`, error);
+      
+      // Fallback: If contract query fails, try database (may be outdated)
+      console.warn('⚠️ Falling back to database query (may be outdated)');
+      const records = await this.prisma.nftRecord.findMany({
+        where: { ownerAddress: address.toLowerCase() },
+        include: {
+          inviteCode: true,
+          rootInviteCode: true,
+        },
+      });
+
+      return records.map(record => ({
+        id: record.nftId,
+        tokenId: record.nftId.toString(),
+        ownerAddress: record.ownerAddress,
+        inviteCodeId: record.inviteCodeId || 0,
+        createdAt: record.createdAt.toISOString(),
+        updatedAt: record.createdAt.toISOString(),
+      }));
+    }
   }
 }
 

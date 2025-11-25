@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./EnclaveToken.sol";
+import "./interfaces/IConfigRegistry.sol";
 
 /**
  * @title TokenVesting
@@ -48,11 +50,11 @@ contract TokenVesting is Ownable, ReentrancyGuard {
 
     /* ========== STATE VARIABLES ========== */
     
-    /// @notice The token being vested
-    IERC20 public immutable token;
+    /// @notice Configuration source (NFTManager) - single source of truth for all config
+    IConfigRegistry public immutable configSource;
     
-    /// @notice TGE timestamp (Token Generation Event)
-    uint256 public tgeTime;
+    // token and eclvToken removed - always read from configSource.eclvToken()
+    // tgeTime removed - now read from eclvToken.tgeTime() (single source of truth)
     
     /// @notice Next schedule ID counter
     uint256 public nextScheduleId;
@@ -94,7 +96,9 @@ contract TokenVesting is Ownable, ReentrancyGuard {
         uint256 timestamp
     );
     
-    event TGESet(uint256 tgeTime);
+    // TGESet event removed - TGE is now managed by EnclaveToken
+    
+    event ConfigSourceSet(address indexed configSource);
     
     event VestingScheduleUpdated(
         uint256 indexed scheduleId,
@@ -124,29 +128,51 @@ contract TokenVesting is Ownable, ReentrancyGuard {
     
     /**
      * @notice Creates a TokenVesting contract
-     * @param token_ Address of the ERC20 token to be vested
+     * @param configSource_ Address of NFTManager (configuration source)
      * @param owner_ Address of the contract owner (can add vesting schedules)
      */
-    constructor(address token_, address owner_) Ownable(owner_) {
-        require(token_ != address(0), "TokenVesting: invalid token address");
+    constructor(address configSource_, address owner_) Ownable(owner_) {
+        require(configSource_ != address(0), "TokenVesting: invalid config source address");
         require(owner_ != address(0), "TokenVesting: invalid owner address");
         
-        token = IERC20(token_);
+        configSource = IConfigRegistry(configSource_);
+        
+        // Verify ECLV Token is set in configSource
+        address eclvTokenAddress = configSource.eclvToken();
+        require(eclvTokenAddress != address(0), "TokenVesting: ECLV token not set in config source");
+        
+        emit ConfigSourceSet(configSource_);
     }
 
     /* ========== ADMIN FUNCTIONS ========== */
     
+    // setTGETime removed - TGE is now managed by EnclaveToken
+    // Use EnclaveToken.setTGETime() to set TGE time
+    
     /**
-     * @notice Set TGE time (can only be set once)
-     * @param tgeTime_ TGE timestamp
+     * @notice Get TGE time from EnclaveToken (single source of truth)
+     * @return TGE timestamp
      */
-    function setTGETime(uint256 tgeTime_) external onlyOwner {
-        require(tgeTime_ > 0, "TokenVesting: invalid TGE time");
-        require(tgeTime_ <= block.timestamp, "TokenVesting: TGE time cannot be in the future");
-        require(tgeTime == 0 || tgeTime == tgeTime_, "TokenVesting: TGE time already set");
-        
-        tgeTime = tgeTime_;
-        emit TGESet(tgeTime_);
+    function tgeTime() public view returns (uint256) {
+        return _getEclvToken().tgeTime();
+    }
+    
+    /* ========== INTERNAL HELPER FUNCTIONS ========== */
+    
+    /**
+     * @notice Get current ECLV Token contract (always read from configSource)
+     * @return EnclaveToken instance
+     */
+    function _getEclvToken() internal view returns (EnclaveToken) {
+        return EnclaveToken(configSource.eclvToken());
+    }
+    
+    /**
+     * @notice Get current token contract (always read from configSource)
+     * @return IERC20 token instance
+     */
+    function _getToken() internal view returns (IERC20) {
+        return IERC20(configSource.eclvToken());
     }
 
     /**
@@ -166,12 +192,15 @@ contract TokenVesting is Ownable, ReentrancyGuard {
         require(beneficiary != address(0), "TokenVesting: invalid beneficiary");
         require(totalAmount > 0, "TokenVesting: invalid amount");
         require(releaseDuration > 0, "TokenVesting: invalid release duration");
-        require(tgeTime > 0, "TokenVesting: TGE time not set");
+        
+        // Read TGE time from EnclaveToken (single source of truth)
+        uint256 tgeTime_ = _getEclvToken().tgeTime();
+        require(tgeTime_ > 0, "TokenVesting: TGE time not set in EnclaveToken");
         
         scheduleId = nextScheduleId;
         nextScheduleId++;
         
-        uint256 startTime = tgeTime + lockPeriod;
+        uint256 startTime = tgeTime_ + lockPeriod;
         uint256 endTime = startTime + releaseDuration;
         
         vestingSchedules[scheduleId] = VestingSchedule({
@@ -182,7 +211,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
             startTime: startTime,
             endTime: endTime,
             released: 0,
-            tgeTime: tgeTime
+            tgeTime: tgeTime_  // Store TGE time in schedule for historical reference
         });
         
         // Add to beneficiary's schedule list
@@ -291,7 +320,10 @@ contract TokenVesting is Ownable, ReentrancyGuard {
      */
     function emergencyWithdraw(uint256 amount) external onlyOwner {
         require(amount > 0, "TokenVesting: invalid amount");
-        token.safeTransfer(owner(), amount);
+        IERC20 token_ = _getToken();
+        uint256 balance = token_.balanceOf(address(this));
+        require(balance >= amount, "TokenVesting: insufficient balance");
+        token_.safeTransfer(owner(), amount);
     }
 
     /* ========== PUBLIC FUNCTIONS ========== */
@@ -309,13 +341,14 @@ contract TokenVesting is Ownable, ReentrancyGuard {
         require(releasable > 0, "TokenVesting: no tokens to release");
         
         // Check contract balance
-        uint256 contractBalance = token.balanceOf(address(this));
+        IERC20 token_ = _getToken();
+        uint256 contractBalance = token_.balanceOf(address(this));
         require(contractBalance >= releasable, "TokenVesting: insufficient contract balance");
         
         schedule.released += releasable;
         totalReleased += releasable;
         
-        token.safeTransfer(schedule.beneficiary, releasable);
+        token_.safeTransfer(schedule.beneficiary, releasable);
         
         emit TokensReleased(scheduleId, schedule.beneficiary, releasable, block.timestamp);
     }
@@ -374,11 +407,12 @@ contract TokenVesting is Ownable, ReentrancyGuard {
         require(totalReleasable > 0, "TokenVesting: no tokens to release");
         
         // Check contract balance
-        uint256 contractBalance = token.balanceOf(address(this));
+        IERC20 token_ = _getToken();
+        uint256 contractBalance = token_.balanceOf(address(this));
         require(contractBalance >= totalReleasable, "TokenVesting: insufficient contract balance");
         
         totalReleased += totalReleasable;
-        token.safeTransfer(beneficiary, totalReleasable);
+        token_.safeTransfer(beneficiary, totalReleasable);
     }
 
     /**
@@ -526,7 +560,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
      * @return Balance of tokens in the contract
      */
     function getContractBalance() external view returns (uint256) {
-        return token.balanceOf(address(this));
+        return _getToken().balanceOf(address(this));
     }
 
     /**
@@ -537,7 +571,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
      */
     function checkBalanceSufficiency() external view returns (bool, uint256 requiredAmount, uint256 currentBalance) {
         requiredAmount = totalVested;
-        currentBalance = token.balanceOf(address(this));
+        currentBalance = _getToken().balanceOf(address(this));
         return (currentBalance >= requiredAmount, requiredAmount, currentBalance);
     }
 
@@ -555,7 +589,7 @@ contract TokenVesting is Ownable, ReentrancyGuard {
         returns (bool, uint256 requiredAmount, uint256 currentBalance) 
     {
         requiredAmount = vestingSchedules[scheduleId].totalAmount;
-        currentBalance = token.balanceOf(address(this));
+        currentBalance = _getToken().balanceOf(address(this));
         return (currentBalance >= requiredAmount, requiredAmount, currentBalance);
     }
 

@@ -559,7 +559,7 @@ function NFTList({ nfts }: { nfts: Array<{ id: number }> }) {
   );
 
   return (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {uniqueNFTs.map((nft: { id: number }) => (
         <NFTCard 
           key={nft.id} 
