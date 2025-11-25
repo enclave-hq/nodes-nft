@@ -11,10 +11,80 @@ export class WhitelistService {
 
   /**
    * Get whitelist with pagination
-   * Note: Contract doesn't support enumerating whitelist, so we use database history
-   * But we verify each address against contract to ensure accuracy
+   * Now uses getAllWhitelistedAddresses() from contract for real-time accuracy
    */
   async getWhitelist(page: number = 1, limit: number = 50, search?: string) {
+    try {
+      // Get all whitelisted addresses from contract (real-time, accurate)
+      const allAddresses = await this.contractService.getAllWhitelistedAddresses();
+      
+      // Filter by search if provided
+      let filteredAddresses = allAddresses;
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredAddresses = allAddresses.filter(addr => 
+          addr.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // Get metadata from database (addedAt, addedBy)
+      const historyRecords = await this.prisma.whitelistHistory.findMany({
+        where: { 
+          action: 'add',
+          address: { in: filteredAddresses },
+        },
+        orderBy: { createdAt: 'desc' },
+        distinct: ['address'],
+      });
+
+      // Create a map of address -> metadata
+      const metadataMap = new Map<string, { addedAt: Date; addedBy: string }>();
+      historyRecords.forEach(record => {
+        metadataMap.set(record.address.toLowerCase(), {
+          addedAt: record.createdAt,
+          addedBy: record.adminAddress || 'unknown',
+        });
+      });
+
+      // Build entries with metadata
+      const entries = filteredAddresses.map(address => {
+        const metadata = metadataMap.get(address.toLowerCase());
+        return {
+          address,
+          addedAt: metadata?.addedAt.toISOString() || new Date().toISOString(),
+          addedBy: metadata?.addedBy || 'unknown',
+        };
+      });
+
+      // Sort by addedAt (newest first)
+      entries.sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+
+      // Paginate
+      const totalCount = entries.length;
+      const totalPages = Math.ceil(totalCount / limit);
+      const skip = (page - 1) * limit;
+      const paginatedEntries = entries.slice(skip, skip + limit);
+
+      return {
+        data: paginatedEntries,
+        total: totalCount,
+        page,
+        limit,
+        totalPages,
+      };
+    } catch (error: any) {
+      console.error('❌ Error in WhitelistService.getWhitelist():', error);
+      // Fallback to old method if contract query fails
+      console.warn('⚠️ Falling back to database history method');
+      return this.getWhitelistFromDatabase(page, limit, search);
+    }
+  }
+
+  /**
+   * Fallback method: Get whitelist from database history
+   * Used when contract query fails
+   */
+  private async getWhitelistFromDatabase(page: number = 1, limit: number = 50, search?: string) {
     const skip = (page - 1) * limit;
     const where: any = {};
     
@@ -35,7 +105,6 @@ export class WhitelistService {
     ]);
 
     // Verify each address against contract (filter out removed addresses)
-    // Return entries with metadata (address, addedAt, addedBy)
     const verifiedEntries = [];
     for (const record of historyRecords) {
       const isWhitelisted = await this.contractService.isWhitelisted(record.address);
@@ -48,7 +117,6 @@ export class WhitelistService {
       }
     }
 
-    // Calculate total pages
     const totalCount = verifiedEntries.length;
     const totalPages = Math.ceil(totalCount / limit);
 

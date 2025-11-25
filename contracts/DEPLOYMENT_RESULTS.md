@@ -13,7 +13,7 @@
 | Network | Status | Last Updated | Chain ID |
 |---------|--------|--------------|----------|
 | **BSC Mainnet** | ✅ Deployed | 2025-11-14 | 56 |
-| **BSC Testnet** | See below | 2025-11-14 | 97 |
+| **BSC Testnet** | ✅ Full Redeploy | 2025-11-25 | 97 |
 
 ---
 
@@ -215,9 +215,9 @@ npx hardhat verify --network bscMainnet 0xa5020E751277BbC90b7c8CdeAb4434b47F543d
 
 ## 🌐 BSC Testnet Deployment
 
-**Last Updated:** 2025-11-14  
+**Last Updated:** 2025-11-25  
 **Network:** BSC Testnet (Chain ID: 97)  
-**Status:** ✅ **Deployed**
+**Status:** ✅ **Deployed (Full Redeploy)**
 
 > **Note:** All contracts are deployed on **BSC Testnet** for development and testing purposes.
 
@@ -228,11 +228,10 @@ npx hardhat verify --network bscMainnet 0xa5020E751277BbC90b7c8CdeAb4434b47F543d
 | Contract | Status | Address | Network |
 |----------|--------|---------|---------|
 | **TestUSDT** | ✅ Deployed | `0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34` | **BSC Testnet** ⚠️ |
-| **EnclaveToken ($E)** | ✅ Deployed | `0xCd0Ff5Fd00BD622563011A23091af30De24E7262` | **BSC Testnet** ⚠️ |
-| **NodeNFT** | ✅ Deployed | `0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0` | **BSC Testnet** ⚠️ |
-| **NFTManager (Proxy)** | ✅ Deployed | `0x31C052e02281Cb04445d309bCA9eaB25dC031141` | **BSC Testnet** ⚠️ |
-| **NFTManager (Implementation)** | ✅ Deployed | `0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554` | **BSC Testnet** ⚠️ |
-| **TokenVesting** | ❌ Not Deployed | - | - |
+| **EnclaveToken ($E)** | ✅ Deployed | `0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F` | **BSC Testnet** ⚠️ |
+| **NodeNFT** | ✅ Deployed | `0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe` | **BSC Testnet** ⚠️ |
+| **NFTManager (Diamond)** | ✅ Deployed | `0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67` | **BSC Testnet** ⚠️ |
+| **TokenVesting** | ✅ Deployed | `0x0b6a47631294D4DB753f7BEF56d615c268c87F78` | **BSC Testnet** ⚠️ |
 
 > ⚠️ **All contracts are on BSC Testnet (Chain ID: 97) - NOT mainnet!**
 
@@ -259,57 +258,58 @@ npx hardhat verify --network bscMainnet 0xa5020E751277BbC90b7c8CdeAb4434b47F543d
 
 #### 2. EnclaveToken ($E)
 
-**Address:** `0xCd0Ff5Fd00BD622563011A23091af30De24E7262`  
+**Address:** `0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F`  
 **Network:** BSC Testnet  
 **Type:** ERC20 Token  
 **Symbol:** $E  
 **Decimals:** 18  
-**Initial Supply:** 70,000,000 $E  
+**Initial Supply:** 0 $E (minted by oracle as needed)  
 **Max Supply:** 100,000,000 $E  
 
-**BSCScan:** https://testnet.bscscan.com/address/0xCd0Ff5Fd00BD622563011A23091af30De24E7262
+**BSCScan:** https://testnet.bscscan.com/address/0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F
 
 **Features:**
 - Mining mechanism (first 6 years: 5M/year, after: min(burned, 2M)/year)
 - Burn mechanism with history tracking
 - Oracle-controlled mining and burning
+- TGE time management (single source of truth)
 
 **Deployment Notes:**
-- Initial supply minted to treasury address
-- Oracle address set (can be updated by owner)
+- No initial minting - tokens will be minted by oracle as needed
+- Oracle address: `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
+- TGE time not set yet
 
 ---
 
 #### 3. NodeNFT (ERC721)
 
-**Address:** `0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0`  
+**Address:** `0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe`  
 **Network:** BSC Testnet  
 **Type:** ERC721 NFT  
 **Name:** Enclave Node NFT  
 **Symbol:** ENFT  
 
-**BSCScan:** https://testnet.bscscan.com/address/0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0
+**BSCScan:** https://testnet.bscscan.com/address/0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe
 
 **Features:**
 - Non-transferable by default (transfers disabled)
 - Only NFTManager can mint/burn
 - Metadata URI support
-- **Auto-sync feature:** Automatically calls `NFTManager.onNFTTransfer` on direct transfers to sync `userNFTList`
+- **Auto-sync feature:** Automatically calls `NFTManager.onNFTTransfer` on direct transfers
 
 **Deployment Notes:**
-- NFTManager address configured: `0x31C052e02281Cb04445d309bCA9eaB25dC031141`
-- Base URI set (can be updated)
+- NFTManager address configured: `0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67`
+- Base URI: https://api.enclave.com/nft/metadata/
 
 ---
 
-#### 4. NFTManager (Proxy)
+#### 4. NFTManager (Diamond Pattern)
 
-**Address:** `0x31C052e02281Cb04445d309bCA9eaB25dC031141`  
+**Address:** `0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67`  
 **Network:** BSC Testnet  
-**Type:** UUPS Upgradeable Proxy  
-**Implementation:** See below  
+**Type:** Diamond Pattern (EIP-2535)
 
-**BSCScan:** https://testnet.bscscan.com/address/0x31C052e02281Cb04445d309bCA9eaB25dC031141
+**BSCScan:** https://testnet.bscscan.com/address/0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67
 
 **Features:**
 - Whitelist-based minting (max 5000 NFTs)
@@ -317,84 +317,94 @@ npx hardhat verify --network bscMainnet 0xa5020E751277BbC90b7c8CdeAb4434b47F543d
 - Two-step termination process
 - O(1) global index reward distribution
 - Dual reward system ($E production + multi-token rewards)
-- 25-month linear unlock schedule
+- 25-month linear unlock schedule (after 365-day lock)
 - Marketplace functionality (listing, canceling, buying)
-- **Auto-sync support:** `onNFTTransfer` function for automatic `userNFTList` synchronization
+- **Config Registry:** Serves as config source for TokenVesting
 - **Multisig rewards:** 20% of rewards distributed to multisig node, 80% to NFTs
 
 **Configuration:**
-- NodeNFT: `0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0`
-- EnclaveToken: `0xCd0Ff5Fd00BD622563011A23091af30De24E7262`
+- NodeNFT: `0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe`
+- EnclaveToken: `0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F`
 - USDT Token: `0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34`
-- Oracle: Set during deployment (can be updated)
-- Treasury: Set during deployment (can be updated)
-- Multisig Node: Can be set by owner (for 20% reward distribution)
+- Oracle: `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
+- Treasury: `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
 
 **Owner Information:**
 - **Owner Address:** `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
-- **Owner Role:** Contract owner (set via `__Ownable_init(msg.sender)` during `initialize`)
 - **Owner Permissions:**
   - Add/remove whitelist addresses
   - Create and activate batches
   - Enable/disable transfers
   - Set market fee rate
   - Add/remove reward tokens
-  - Upgrade contract (UUPS)
-  - Set oracle address
-  - Set treasury address
-  - Set USDT token address
-  - Set multisig node address
+  - Set oracle/treasury address
+  - Set ECLV token address (before TGE)
+  - Upgrade facets via Diamond Cut
 
-**Implementation Address:** `0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554`  
-**BSCScan:** https://testnet.bscscan.com/address/0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554
-
-**Deployment Details:**
-- Deployed using `upgrades.deployProxy()` with UUPS pattern
-- `initialize` function called during deployment with deployer address as `msg.sender`
-- Owner is set to the address that called `initialize` (deployer address at deployment time)
-- Oracle and treasury were set to deployer address during initialization
-- **Latest deployment:** 2025-11-06 (fresh deployment with auto-sync support)
-- **Key Functions:**
-  - `onNFTTransfer(address from, address to, uint256 nftId)`: Called by NodeNFT to sync userNFTList
-  - `setNodeNFT(address nodeNFT_)`: Update NodeNFT address (only owner)
-  - `getRewardWithdrawn(uint256 nftId, address token)`: Get withdrawn reward amount
-  - `getAccRewardPerNFT(address token)`: Get accumulated reward per NFT
-  - `getMultisigRewardInfo(address token)`: Get multisig reward information
-  - `claimMultisigReward(address token)`: Claim multisig rewards
+**Facets:**
+- NFTManagerCutFacet: `0x8cfF1c653e0b1cfEaC1dA380e631f8120c0183c8`
+- NFTManagerLoupeFacet: `0x891956161a54Ea0D56c16D2A3E37233D625dE88F`
+- NFTManagerFacet: `0x2D9EDB0103433A03417AAb9576A2FD82381B8E7C`
+- MarketplaceFacet: `0x3a58be944547A119DAA557d8aED6CD7F0ABB1335`
+- RewardFacet: `0xc1Eea382f3E2Bb91008ce69A098C37a891Dfd691`
+- AdminFacet: `0x2C130580fcd362Cd217D501BB3889e721b8f0899`
 
 ---
 
 #### 5. TokenVesting
 
-**Status:** ❌ Not Deployed  
-**Reason:** TokenVesting.sol was excluded from compilation (now included)
+**Address:** `0x0b6a47631294D4DB753f7BEF56d615c268c87F78`  
+**Network:** BSC Testnet  
+**Type:** Token Vesting Contract
 
-**Note:** TokenVesting is not required for NFTManager functionality. It's a separate contract for team token vesting schedules.
+**BSCScan:** https://testnet.bscscan.com/address/0x0b6a47631294D4DB753f7BEF56d615c268c87F78
+
+**Features:**
+- Multiple vesting schedules per beneficiary
+- Linear release mechanism
+- TGE time-based scheduling (reads from NFTManager → EnclaveToken)
+- Reads ECLV token address from NFTManager (configSource)
+
+**Configuration:**
+- ConfigSource (NFTManager): `0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67`
+- Owner: `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
+
+**Deployment Notes:**
+- Automatically reads eclvToken and tgeTime from NFTManager
+- Owner can create and revoke vesting schedules
 
 ---
 
 ### 📝 Environment Variables
 
-#### contracts/.env
+#### contracts/.env (env.testnet)
 
 ```bash
 # Network
 NETWORK=bscTestnet
+CHAIN_ID=97
 
 # Contract Addresses
+ECLV_ADDRESS=0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F
+NODE_NFT_ADDRESS=0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe
+NFT_ADDRESS=0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe
+NFT_MANAGER_ADDRESS=0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67
+MANAGER_ADDRESS=0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67
+VESTING_ADDRESS=0x0b6a47631294D4DB753f7BEF56d615c268c87F78
 USDT_ADDRESS=0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34
-ECLV_ADDRESS=0xCd0Ff5Fd00BD622563011A23091af30De24E7262
-NODE_NFT_ADDRESS=0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0
-NFT_MANAGER_ADDRESS=0x31C052e02281Cb04445d309bCA9eaB25dC031141
-MANAGER_ADDRESS=0x31C052e02281Cb04445d309bCA9eaB25dC031141
+
+# Roles
+ORACLE_ADDRESS=0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E
+TREASURY_ADDRESS=0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E
 ```
 
 #### frontend/.env.local
 
 ```bash
-NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS=0xCd0Ff5Fd00BD622563011A23091af30De24E7262
-NEXT_PUBLIC_NODE_NFT_ADDRESS=0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0
-NEXT_PUBLIC_NFT_MANAGER_ADDRESS=0x31C052e02281Cb04445d309bCA9eaB25dC031141
+NEXT_PUBLIC_ENCLAVE_TOKEN_ADDRESS=0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F
+NEXT_PUBLIC_NODE_NFT_ADDRESS=0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe
+NEXT_PUBLIC_NFT_MANAGER_ADDRESS=0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67
+NEXT_PUBLIC_VESTING_ADDRESS=0x0b6a47631294D4DB753f7BEF56d615c268c87F78
 NEXT_PUBLIC_USDT_ADDRESS=0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34
 NEXT_PUBLIC_CHAIN_ID=97
 NEXT_PUBLIC_RPC_URL=https://data-seed-prebsc-1-s1.binance.org:8545
@@ -403,17 +413,15 @@ NEXT_PUBLIC_RPC_URL=https://data-seed-prebsc-1-s1.binance.org:8545
 #### backend/.env
 
 ```bash
-NFT_MANAGER_ADDRESS=0x31C052e02281Cb04445d309bCA9eaB25dC031141
-NODE_NFT_ADDRESS=0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0
+NFT_MANAGER_ADDRESS=0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67
+NODE_NFT_ADDRESS=0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe
+ECLV_ADDRESS=0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F
+VESTING_ADDRESS=0x0b6a47631294D4DB753f7BEF56d615c268c87F78
 RPC_URL=https://data-seed-prebsc-1-s1.binance.org:8545
 
 # IMPORTANT: ADMIN_PRIVATE_KEY must be the contract owner's private key
 # Contract Owner: 0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E
-# This is the same address that deployed the contracts and called initialize
 ADMIN_PRIVATE_KEY=your_contract_owner_private_key_here
-
-# Optional: DEPLOYER_PRIVATE_KEY for funding operations (if different from owner)
-DEPLOYER_PRIVATE_KEY=your_deployer_private_key_here
 ```
 
 ---
@@ -423,37 +431,33 @@ DEPLOYER_PRIVATE_KEY=your_deployer_private_key_here
 | Contract | Verified | BSCScan Link |
 |----------|----------|--------------|
 | TestUSDT | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34) |
-| EnclaveToken | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0xCd0Ff5Fd00BD622563011A23091af30De24E7262) |
-| NodeNFT | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0) |
-| NFTManager (Proxy) | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x31C052e02281Cb04445d309bCA9eaB25dC031141) |
-| NFTManager (Implementation) | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554) |
+| EnclaveToken | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F) |
+| NodeNFT | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe) |
+| NFTManager (Diamond) | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67) |
+| TokenVesting | ⚠️ Pending | [View on BSCScan](https://testnet.bscscan.com/address/0x0b6a47631294D4DB753f7BEF56d615c268c87F78) |
 
 **Verification Commands:**
 
 ```bash
-# Verify TestUSDT
-npx hardhat verify --network bscTestnet 0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34
-
 # Verify EnclaveToken
-npx hardhat verify --network bscTestnet 0xCd0Ff5Fd00BD622563011A23091af30De24E7262
+npx hardhat verify --network bscTestnet 0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F
 
 # Verify NodeNFT
-npx hardhat verify --network bscTestnet 0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0 "Enclave Node NFT" "ENFT"
+npx hardhat verify --network bscTestnet 0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe "Enclave Node NFT" "ENFT"
 
-# Verify NFTManager Implementation
-npx hardhat verify --network bscTestnet 0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554
+# Verify TokenVesting (configSource, owner)
+npx hardhat verify --network bscTestnet 0x0b6a47631294D4DB753f7BEF56d615c268c87F78 0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67 0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E
 ```
 
 ---
 
 ### 📊 Deployment Statistics
 
-- **Total Contracts Deployed:** 4 (TestUSDT, EnclaveToken, NodeNFT, NFTManager)
-- **Total Gas Used:** (To be calculated)
-- **Latest Deployment Date:** 2025-11-06
+- **Total Contracts Deployed:** 5 (EnclaveToken, NodeNFT, NFTManager Diamond + 6 Facets, TokenVesting)
+- **Latest Deployment Date:** 2025-11-25
 - **Deployer Address:** `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
-- **Contract Owner:** `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E` (same as deployer)
-- **Deployment Type:** Fresh deployment with auto-sync functionality
+- **Contract Owner:** `0x900E9a2EC90DfB7f0F90f11A5B475f56B98d272E`
+- **Deployment Type:** Full redeploy with Diamond Pattern (EIP-2535)
 
 ---
 
@@ -465,15 +469,18 @@ npx hardhat verify --network bscTestnet 0x4cd85f828de20d1caA015D583Ca5ad2FF5B345
    - Transactions are on testnet for development/testing only
    - For production, deploy to BSC Mainnet (Chain ID: 56) using mainnet deployment scripts
 
-2. **Proxy Upgrade:** NFTManager uses UUPS proxy pattern - implementation can be upgraded
+2. **Diamond Pattern:** NFTManager uses Diamond Pattern (EIP-2535) - facets can be upgraded
 
-3. **TokenVesting:** Not deployed on testnet - not required for NFTManager functionality
+3. **Config Registry:** NFTManager serves as config source for TokenVesting
+   - TokenVesting reads eclvToken and tgeTime from NFTManager → EnclaveToken
 
-4. **Verification:** All contracts should be verified on BSCScan for transparency
+4. **ECLV Token Update:** Can only change ECLV token address before TGE is set
 
-5. **Security:** Never share private keys or commit them to git
+5. **Verification:** All contracts should be verified on BSCScan for transparency
 
-6. **Testnet vs Mainnet:**
+6. **Security:** Never share private keys or commit them to git
+
+7. **Testnet vs Mainnet:**
    - **Testnet RPC:** `https://data-seed-prebsc-1-s1.binance.org:8545`
    - **Mainnet RPC:** `https://bsc-dataseed1.binance.org/`
    - **Testnet BSCScan:** `https://testnet.bscscan.com`
@@ -481,20 +488,24 @@ npx hardhat verify --network bscTestnet 0x4cd85f828de20d1caA015D583Ca5ad2FF5B345
 
 ---
 
-**Last Updated:** 2025-11-14  
+**Last Updated:** 2025-11-25  
 **Maintained By:** Development Team
 
 ---
 
 ## 🔄 Recent Changes
 
-### Latest Testnet Deployment (2025-11-06)
-- **NodeNFT:** `0x215a35f6585923CB07Ead883b380D07Dbd7dC6d0` (with auto-sync feature)
-- **NFTManager Proxy:** `0x31C052e02281Cb04445d309bCA9eaB25dC031141` (fresh deployment)
-- **NFTManager Implementation:** `0x4cd85f828de20d1caA015D583Ca5ad2FF5B34554`
+### Latest Testnet Deployment (2025-11-25)
+- **EnclaveToken:** `0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F` (TGE single source of truth)
+- **NodeNFT:** `0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe` (with auto-sync feature)
+- **NFTManager (Diamond):** `0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67` (6 facets)
+- **TokenVesting:** `0x0b6a47631294D4DB753f7BEF56d615c268c87F78` (reads config from NFTManager)
 
-### Key Features Added
-1. **Auto-sync functionality:** NodeNFT automatically calls `NFTManager.onNFTTransfer` on direct transfers
-2. **Removed deprecated functions:** `fixUserNFTList` and `fixUserNFTListBatch` removed (no longer needed)
-3. **Multisig rewards:** 20% of rewards distributed to multisig node, 80% to NFTs
-4. **Reward tracking:** Changed from "debt" mechanism to "withdrawn" (accumulated) mechanism
+### Key Features
+1. **Diamond Pattern (EIP-2535):** Modular, upgradeable architecture
+2. **Config Registry Pattern:** NFTManager as central config source
+3. **TGE in EnclaveToken:** Single source of truth for TGE time
+4. **Unified Configuration:** All contracts properly configured and interconnected
+5. **Auto-sync functionality:** NodeNFT automatically syncs userNFTList
+6. **Multisig rewards:** 20% of rewards to multisig, 80% to NFT holders
+7. **25-month unlock schedule:** 365-day lock + 25 months linear (4%/month)

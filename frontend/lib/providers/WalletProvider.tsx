@@ -81,6 +81,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     checkWalletAvailability();
     
+    // Clear incompatible wallet storage before initializing
+    // This app only supports BSC (EVM), so clear any Tron wallet data
+    const clearIncompatibleWalletStorage = () => {
+      if (typeof window === 'undefined') return;
+      
+      try {
+        const storageKey = 'enclave_wallet_data';
+        const stored = localStorage.getItem(storageKey);
+        if (stored) {
+          const data = JSON.parse(stored);
+          // Check if saved wallet type is TRONLINK (incompatible with BSC)
+          if (data.primaryWalletType === 'TRONLINK' || data.primaryWalletType === 'tronlink') {
+            console.log('⚠️ Found incompatible TronLink wallet data, clearing for BSC...');
+            localStorage.removeItem(storageKey);
+            console.log('✅ Cleared incompatible wallet storage');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Error checking wallet storage:', error);
+      }
+    };
+    
+    clearIncompatibleWalletStorage();
+    
     // Initialize wallet manager
     console.log('🔧 Initializing WalletManager...');
     try {

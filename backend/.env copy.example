@@ -1,0 +1,19 @@
+# Database Configuration
+DATABASE_URL="you postgresql url"
+
+# JWT Configuration
+JWT_SECRET="jwt secret"
+JWT_EXPIRES_IN="24h"
+
+# Contract Configuration
+#RPC_URL="https://bsc-dataseed1.binance.org"
+NFT_MANAGER_ADDRESS="0xF87F9296955439C323ac79769959bEe087f6D06E"
+USDT_ADDRESS="0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34"
+RPC_URL="https://data-seed-prebsc-1-s1.binance.org:8545"
+DEPLOYER_PRIVATE_KEY="29c30c751477e428dde0bfb591ee184b9eb962a08274f60ac1469772901456ce"
+
+ADMIN_PRIVATE_KEY="privatekey"
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development

@@ -11,7 +11,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@enclave-hq/wallet-sdk": "^1.1.4",
+    "@enclave-hq/wallet-sdk": "file:../../wallet-sdk",
     "@tanstack/react-query": "^5.90.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -57,3 +57,18 @@ export async function activateBatch(batchId: string): Promise<Batch> {
   return apiPatch<Batch>(`/admin/batches/${batchId}/activate`);
 }
 
+/**
+ * Sync batches from blockchain to database (admin)
+ */
+export interface SyncBatchesResponse {
+  success: boolean;
+  message: string;
+  synced: number;
+  chainBatches: number;
+  dbBatches: number;
+}
+
+export async function syncBatches(): Promise<SyncBatchesResponse> {
+  return apiPost<SyncBatchesResponse>('/admin/batches/sync', {});
+}
+

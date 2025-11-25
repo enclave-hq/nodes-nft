@@ -1,5 +1,37 @@
 # Admin Backend Service
 
+## 🔷 Diamond Pattern Support
+
+**重要更新**：NFTManager 已迁移到 Diamond Pattern (EIP-2535)，所有功能整合在一个合约中。
+
+### 快速开始
+
+1. **更新 ABI 文件**（已自动生成）：
+   ```bash
+   npm run generate-abi
+   ```
+
+2. **更新环境变量**：
+   ```bash
+   # 使用部署脚本生成的环境文件
+   cp ../contracts/env.testnet .env
+   # 或
+   cp ../contracts/env.mainnet .env
+   ```
+
+3. **验证连接**：
+   ```bash
+   npm run verify-diamond
+   ```
+
+### 详细文档
+
+请参阅 [DIAMOND_PATTERN_GUIDE.md](./DIAMOND_PATTERN_GUIDE.md) 了解完整的使用指南。
+
+**好消息**：后端代码无需修改！所有函数调用方式保持不变。
+
+---
+
 ## Overview
 
 Backend service for the admin panel, providing RESTful APIs for management interface. Uses independent backend architecture to support complex hierarchical queries, statistics, and data analysis.

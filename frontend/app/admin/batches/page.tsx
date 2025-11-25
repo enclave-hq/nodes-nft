@@ -7,6 +7,7 @@ import {
   getBatches,
   createBatch,
   activateBatch,
+  syncBatches,
   type Batch
 } from '@/lib/api';
 import { formatTokenAmount, parseTokenAmount } from '@/lib/utils';
@@ -16,6 +17,7 @@ export default function AdminBatchesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [maxMintable, setMaxMintable] = useState('');
   const [mintPrice, setMintPrice] = useState('');
   const [referralReward, setReferralReward] = useState('');
@@ -121,6 +123,21 @@ export default function AdminBatchesPage() {
     }
   };
 
+  const handleSyncFromChain = async () => {
+    setIsSyncing(true);
+    try {
+      const result = await syncBatches();
+      toast.success(result.message);
+      // 同步完成后重新获取批次列表
+      await fetchBatches();
+    } catch (error: any) {
+      console.error('Failed to sync batches:', error);
+      toast.error(error.message || '同步批次失败');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const activeBatches = batches.filter(b => b.active);
   const inactiveBatches = batches.filter(b => !b.active);
 
@@ -204,11 +221,19 @@ export default function AdminBatchesPage() {
             </button>
           </div>
 
-          {/* 刷新按钮 */}
-          <div className="mb-4 flex justify-end">
+          {/* 操作按钮 */}
+          <div className="mb-4 flex justify-end gap-3">
+            <button
+              onClick={handleSyncFromChain}
+              disabled={isSyncing || isLoading}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="从区块链同步批次数据到数据库"
+            >
+              {isSyncing ? '同步中...' : '🔄 从链上同步'}
+            </button>
             <button
               onClick={fetchBatches}
-              disabled={isLoading}
+              disabled={isLoading || isSyncing}
               className="px-4 py-2 bg-[#E5F240] text-black rounded-lg hover:bg-[#D4E238] disabled:opacity-50"
             >
               {isLoading ? '加载中...' : '刷新'}

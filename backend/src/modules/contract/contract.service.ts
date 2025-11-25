@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { MetricsService } from '../metrics/metrics.service';
 
 /**
  * Contract Service
@@ -17,7 +18,10 @@ export class ContractService implements OnModuleInit {
   private nftManagerAddress: string;
   private nftManagerABI: any[];
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private metricsService?: MetricsService,
+  ) {}
 
   async onModuleInit() {
     const rpcUrl = this.configService.get<string>('RPC_URL');
@@ -96,9 +100,13 @@ export class ContractService implements OnModuleInit {
         const abiFile = readFileSync(abiPath, 'utf-8');
         const abiData = JSON.parse(abiFile);
         // Handle both { abi: [...] } and direct array formats
+        // Diamond Pattern ABI is stored as { abi: [...], metadata: {...} }
         this.nftManagerABI = abiData.abi || abiData;
         abiLoaded = true;
         console.log(`✅ Loaded ABI from: ${abiPath}`);
+        if (abiData.metadata) {
+          console.log(`   📦 Diamond Pattern ABI (${abiData.metadata.totalItems || this.nftManagerABI.length} items)`);
+        }
         break;
       } catch (error) {
         // Continue to next path
@@ -123,8 +131,62 @@ export class ContractService implements OnModuleInit {
       console.log('✅ Contract service initialized');
       console.log(`   NFT Manager: ${this.nftManagerAddress}`);
       console.log(`   Signer: ${this.signer.address}`);
+      
+      // 启动余额监控
+      this.startBalanceMonitoring();
     } else {
       console.warn('⚠️ Contract instance not created (ABI not loaded)');
+    }
+  }
+
+  /**
+   * 启动余额监控（定期更新操作地址余额）
+   */
+  private startBalanceMonitoring() {
+    if (!this.metricsService) {
+      return; // Metrics service not available
+    }
+
+    const balanceCheckInterval = 60 * 1000; // 60秒检查一次
+    
+    // 立即执行一次
+    this.updateOperatorBalance().catch(err => {
+      console.error('❌ Initial balance update failed:', err.message);
+    });
+
+    // 定期更新
+    setInterval(async () => {
+      try {
+        await this.updateOperatorBalance();
+      } catch (error: any) {
+        console.error('❌ Balance monitoring error:', error.message);
+      }
+    }, balanceCheckInterval);
+  }
+
+  /**
+   * 更新操作地址余额
+   */
+  private async updateOperatorBalance() {
+    if (!this.metricsService || !this.signer) {
+      return;
+    }
+
+    try {
+      const operatorAddress = await this.signer.getAddress();
+      const balance = await this.provider.getBalance(operatorAddress);
+      const balanceEth = parseFloat(ethers.formatEther(balance));
+      
+      // 获取链 ID
+      const network = await this.provider.getNetwork();
+      const chainId = network.chainId.toString();
+      
+      this.metricsService.operatorBalance.set(
+        { address: operatorAddress, chain: chainId },
+        balanceEth
+      );
+    } catch (error: any) {
+      console.error('❌ Failed to update operator balance:', error.message);
     }
   }
 
@@ -202,6 +264,21 @@ export class ContractService implements OnModuleInit {
    */
   async waitForTransaction(txHash: string, confirmations: number = 1) {
     return await this.provider.waitForTransaction(txHash, confirmations);
+  }
+
+  /**
+   * Check if transfers are enabled
+   */
+  async transfersEnabled(): Promise<boolean> {
+    return await this.readContract<boolean>('transfersEnabled', []);
+  }
+
+  /**
+   * Set transfers enabled/disabled (only master can call)
+   */
+  async setTransfersEnabled(enabled: boolean): Promise<string> {
+    console.log(`📝 Setting transfers enabled to: ${enabled}`);
+    return await this.writeContract('setTransfersEnabled', [enabled]);
   }
 
   /**
@@ -335,13 +412,30 @@ export class ContractService implements OnModuleInit {
   }> {
     try {
       const batch = await this.readContract('batches', [batchId]);
+      
+      // ethers.js v6 returns a Result object with both array indices and named properties
+      // The ABI names are: batchId_, maxMintable, currentMinted, mintPrice, active, createdAt
+      // Access by index for reliability: [0]=batchId_, [1]=maxMintable, etc.
+      const batchIdResult = batch[0] ?? batch.batchId_ ?? BigInt(0);
+      const maxMintable = batch[1] ?? batch.maxMintable ?? BigInt(0);
+      const currentMinted = batch[2] ?? batch.currentMinted ?? BigInt(0);
+      const mintPrice = batch[3] ?? batch.mintPrice ?? BigInt(0);
+      const active = batch[4] ?? batch.active ?? false;
+      const createdAt = batch[5] ?? batch.createdAt ?? BigInt(0);
+      
+      // Validate batch data - if batchId is 0, batch doesn't exist
+      // (because valid batch IDs start from 1)
+      if (batchIdResult === 0n || batchIdResult === BigInt(0)) {
+        throw new Error(`Batch ${batchId} does not exist or has invalid data`);
+      }
+
       return {
-        batchId: batch.batchId,
-        maxMintable: batch.maxMintable,
-        currentMinted: batch.currentMinted,
-        mintPrice: batch.mintPrice,
-        active: batch.active,
-        createdAt: batch.createdAt,
+        batchId: batchIdResult,
+        maxMintable,
+        currentMinted,
+        mintPrice,
+        active,
+        createdAt,
       };
     } catch (error) {
       console.error(`Error getting batch ${batchId}:`, error);
@@ -402,13 +496,17 @@ export class ContractService implements OnModuleInit {
   }
 
   /**
-   * Get all whitelisted addresses (requires iterating - may be expensive)
-   * Note: This is a fallback method. In practice, you should maintain a list off-chain
+   * Get all whitelisted addresses from contract
+   * @returns Array of all whitelisted addresses
    */
   async getAllWhitelistedAddresses(): Promise<string[]> {
-    // This is not efficient - contract doesn't have a way to enumerate whitelist
-    // We should rely on events or maintain a list in the backend
-    throw new Error('Contract does not support enumerating whitelist. Use events or maintain list in backend.');
+    try {
+      const addresses = await this.readContract<string[]>('getAllWhitelistedAddresses');
+      return addresses.map(addr => addr.toLowerCase());
+    } catch (error) {
+      console.error('Error getting all whitelisted addresses:', error);
+      throw error;
+    }
   }
 
   /**
@@ -484,6 +582,21 @@ export class ContractService implements OnModuleInit {
       // This allows the callback to proceed with the provided minterAddress
       console.warn(`⚠️ Unexpected error getting minter for NFT ${nftId}, returning null:`, error.message);
       return null;
+    }
+  }
+
+  /**
+   * Get all NFT IDs owned by a user (from chain)
+   * @param userAddress User address
+   * @returns Array of NFT IDs owned by the user
+   */
+  async getUserNFTs(userAddress: string): Promise<number[]> {
+    try {
+      const nftIds = await this.readContract<bigint[]>('getUserNFTs', [userAddress]);
+      return nftIds.map(id => Number(id));
+    } catch (error: any) {
+      console.error(`Error reading contract getUserNFTs for ${userAddress}:`, error);
+      throw error;
     }
   }
 

@@ -13,7 +13,7 @@ const navItems = [
   { path: '/admin/users', label: '用户管理', icon: '👥' },
   { path: '/admin/batches', label: '批次管理', icon: '📦' },
   { path: '/admin/whitelist', label: '白名单管理', icon: '✅' },
-  { path: '/admin/nfts', label: 'NFT追溯', icon: '🔍' },
+  { path: '/admin/nfts', label: 'NFT管理', icon: '🔍' },
   { path: '/admin/invite-codes', label: '邀请码管理', icon: '🎫' },
   { path: '/admin/revenue', label: '收入管理', icon: '💰' },
   { path: '/admin/totp-settings', label: 'TOTP设置', icon: '🔐' },

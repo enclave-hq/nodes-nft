@@ -685,7 +685,7 @@ export function usePendingReward(nftId: number, tokenAddress: string) {
 }
 
 /**
- * Hook to get reward debt (withdrawn amount) for a specific NFT and token
+ * Hook to get reward withdrawn amount for a specific NFT and token
  * @param nftId NFT ID
  * @param tokenAddress Token address (e.g., USDT)
  */
@@ -703,13 +703,13 @@ export function useRewardDebt(nftId: number, tokenAddress: string) {
         walletManager,
         CONTRACT_ADDRESSES.nftManager,
         NFT_MANAGER_ABI as unknown[],
-        'getRewardDebt',
+        'getRewardWithdrawn',
         [nftId, tokenAddress],
-        `getRewardDebt(${nftId}, ${tokenAddress})`
+        `getRewardWithdrawn(${nftId}, ${tokenAddress})`
       );
       setRewardDebt(debt ? String(debt) : "0");
     } catch (error) {
-      console.warn('⚠️ Error fetching reward debt:', error);
+      console.warn('⚠️ Error fetching reward withdrawn:', error);
       setRewardDebt("0");
     } finally {
       setLoading(false);

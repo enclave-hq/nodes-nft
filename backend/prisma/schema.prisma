@@ -121,7 +121,7 @@ model WhitelistHistory {
 // Batch record table
 model Batch {
   id            Int      @id @default(autoincrement())
-  batchId       BigInt   // Batch ID in contract
+  batchId       BigInt   @unique // Batch ID in contract (unique)
   maxMintable   BigInt   // Max mintable quantity for this batch
   mintPrice     String   @db.VarChar(50) // Stored as string (wei)
   referralReward String? @db.VarChar(50) // Referral reward per NFT in USDT (only in database, not on-chain)

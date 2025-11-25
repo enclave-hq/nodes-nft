@@ -189,7 +189,8 @@ contract EnclaveToken is ERC20, Ownable {
      */
     function calculateMiningAfter6Years(uint256 currentYear) internal view returns (uint256) {
         // From year 7 (currentYear >= 6), use previous year's burned amount
-        uint256 previousYear = currentYear > 0 ? currentYear - 1 : 0;
+        require(currentYear >= 6, "Must be after 6 years");
+        uint256 previousYear = currentYear - 1; // previousYear >= 5
         uint256 previousYearBurned = yearlyBurned[previousYear];
         
         // Mining amount = Min(previous year's burned amount, 2M)

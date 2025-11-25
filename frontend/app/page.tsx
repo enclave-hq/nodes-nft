@@ -85,31 +85,26 @@ export default function Home() {
 
       setLoadingOrders(true);
       try {
-        // Get user's orders using getOrdersBySeller
-        // Returns: [orders: SellOrder[], total: uint256]
-        const result = await callContractWithFallback(
+        // Get all active orders, then filter by seller address
+        // Note: getOrdersBySeller doesn't exist in Diamond Pattern, using getAllActiveOrders instead
+        const allOrders = await callContractWithFallback(
           walletManager,
           CONTRACT_ADDRESSES.nftManager,
           NFT_MANAGER_ABI as unknown[],
-          'getOrdersBySeller',
-          [address, 0, 100], // offset: 0, limit: 100
-          `getOrdersBySeller(${address})`
+          'getAllActiveOrders',
+          [],
+          `getAllActiveOrders()`
         );
 
         // Handle different return formats
         let ordersArray: any[] = [];
-        let total: bigint = BigInt(0);
-
-        if (Array.isArray(result) && result.length >= 2) {
-          // Standard format: [orders, total]
-          ordersArray = result[0] || [];
-          total = BigInt(result[1]?.toString() || '0');
-        } else if (result && typeof result === 'object' && 'orders' in result && 'total' in result) {
-          // Object format: { orders: [...], total: ... }
-          ordersArray = (result as any).orders || [];
-          total = BigInt((result as any).total?.toString() || '0');
+        
+        if (Array.isArray(allOrders)) {
+          ordersArray = allOrders;
+        } else if (allOrders && typeof allOrders === 'object' && 'orders' in allOrders) {
+          ordersArray = (allOrders as any).orders || [];
         } else {
-          console.warn('⚠️ Unexpected getOrdersBySeller return format:', result);
+          console.warn('⚠️ Unexpected getAllActiveOrders return format:', allOrders);
           setActiveOrders(0);
           return;
         }
@@ -119,12 +114,23 @@ export default function Home() {
           return;
         }
 
+        // Filter orders by seller address (case-insensitive)
+        const userOrders = ordersArray.filter((order: any) => {
+          const seller = order.seller || order[2]; // Support both object and array formats
+          return seller && seller.toLowerCase() === address.toLowerCase();
+        });
+
+        if (userOrders.length === 0) {
+          setActiveOrders(0);
+          return;
+        }
+
         // Count active orders only
         // OrderStatus: 0 = Active, 1 = Cancelled, 2 = Filled
         // SellOrder structure: [orderId, nftId, seller, price, createdAt, status] or { orderId, nftId, seller, price, createdAt, status }
         let activeCount = 0;
 
-        ordersArray.forEach((order: any) => {
+        userOrders.forEach((order: any) => {
           // Handle both array and object formats
           let status: number;
           if (Array.isArray(order)) {
@@ -476,6 +482,7 @@ export default function Home() {
         <div className="mx-auto mt-4 max-w-6xl">
           {/* Buttons - Vertical layout with title and description */}
           <div className="flex flex-col gap-3 sm:gap-4">
+            {/* First level - Step 1 */}
             <button
               onClick={() => setActiveFeatureTab('step1')}
               className={cn(
@@ -496,66 +503,55 @@ export default function Home() {
                 {t('howItWorks.step1.description')}
               </div>
             </button>
-            <button
-              onClick={() => setActiveFeatureTab('step2')}
-              className={cn(
-                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
-                activeFeatureTab === 'step2'
-                  ? "bg-[#CEF248] text-black"
-                  : "text-black hover:bg-gray-100"
-              )}
-              style={activeFeatureTab !== 'step2' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' } : { borderColor: 'rgba(0, 0, 0, 0.1)' }}
-            >
-              <div className="text-sm sm:text-base font-medium">
-                {t('howItWorks.step2.title')}
+            
+            {/* Second level - Steps 2, 3, 4 with indentation */}
+            <div className="flex flex-col gap-3 sm:gap-4 ml-4 sm:ml-6 md:ml-8">
+              <div
+                className="w-full px-4 py-3 rounded-[20px] text-left border relative bg-white"
+                style={{ borderColor: 'rgba(0, 0, 0, 0.1)' }}
+              >
+                {/* Left color accent - unified yellow-green color, shorter height */}
+                <div className="absolute left-0 w-1 rounded-l-[20px] top-[8px] bottom-[8px] bg-[#CEF248]" />
+                <div className="pl-2">
+                  <div className="text-sm sm:text-base font-medium text-black">
+                    {t('howItWorks.step2.title')}
+                  </div>
+                  <div className="text-xs sm:text-sm mt-1 text-gray-600">
+                    {t('howItWorks.step2.description')}
+                  </div>
+                </div>
               </div>
-              <div className={cn(
-                "text-xs sm:text-sm mt-1",
-                activeFeatureTab === 'step2' ? "text-gray-700" : "text-gray-600"
-              )}>
-                {t('howItWorks.step2.description')}
+              <div
+                className="w-full px-4 py-3 rounded-[20px] text-left border relative bg-white"
+                style={{ borderColor: 'rgba(0, 0, 0, 0.1)' }}
+              >
+                {/* Left color accent - unified yellow-green color, shorter height */}
+                <div className="absolute left-0 w-1 rounded-l-[20px] top-[8px] bottom-[8px] bg-[#CEF248]" />
+                <div className="pl-2">
+                  <div className="text-sm sm:text-base font-medium text-black">
+                    {t('howItWorks.step3.title')}
+                  </div>
+                  <div className="text-xs sm:text-sm mt-1 text-gray-600">
+                    {t('howItWorks.step3.description')}
+                  </div>
+                </div>
               </div>
-            </button>
-            <button
-              onClick={() => setActiveFeatureTab('step3')}
-              className={cn(
-                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
-                activeFeatureTab === 'step3'
-                  ? "bg-[#CEF248] text-black"
-                  : "text-black hover:bg-gray-100"
-              )}
-              style={activeFeatureTab !== 'step3' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' } : { borderColor: 'rgba(0, 0, 0, 0.1)' }}
-            >
-              <div className="text-sm sm:text-base font-medium">
-                {t('howItWorks.step3.title')}
+              <div
+                className="w-full px-4 py-3 rounded-[20px] text-left border relative bg-white"
+                style={{ borderColor: 'rgba(0, 0, 0, 0.1)' }}
+              >
+                {/* Left color accent - unified yellow-green color, shorter height */}
+                <div className="absolute left-0 w-1 rounded-l-[20px] top-[8px] bottom-[8px] bg-[#CEF248]" />
+                <div className="pl-2">
+                  <div className="text-sm sm:text-base font-medium text-black">
+                    {t('howItWorks.step4.title')}
+                  </div>
+                  <div className="text-xs sm:text-sm mt-1 text-gray-600">
+                    {t('howItWorks.step4.description')}
+                  </div>
+                </div>
               </div>
-              <div className={cn(
-                "text-xs sm:text-sm mt-1",
-                activeFeatureTab === 'step3' ? "text-gray-700" : "text-gray-600"
-              )}>
-                {t('howItWorks.step3.description')}
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveFeatureTab('step4')}
-              className={cn(
-                "w-full px-4 py-3 rounded-[20px] text-left transition-colors border",
-                activeFeatureTab === 'step4'
-                  ? "bg-[#CEF248] text-black"
-                  : "text-black hover:bg-gray-100"
-              )}
-              style={activeFeatureTab !== 'step4' ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(0, 0, 0, 0.1)' } : { borderColor: 'rgba(0, 0, 0, 0.1)' }}
-            >
-              <div className="text-sm sm:text-base font-medium">
-                {t('howItWorks.step4.title')}
-              </div>
-              <div className={cn(
-                "text-xs sm:text-sm mt-1",
-                activeFeatureTab === 'step4' ? "text-gray-700" : "text-gray-600"
-              )}>
-                {t('howItWorks.step4.description')}
-              </div>
-            </button>
+            </div>
           </div>
         </div>
       </div>
