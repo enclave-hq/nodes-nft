@@ -14,7 +14,23 @@
 import { getNetworkConfig, getCurrentNetworkType, type NetworkConfig } from './networkConfig';
 
 // Get the active network configuration
+// Note: This is evaluated at module load time, so environment variables
+// must be available at build/start time
 const activeNetworkConfig: NetworkConfig = getNetworkConfig();
+
+// Debug: Log the active configuration
+if (typeof window === 'undefined' || process.env.NODE_ENV === 'development') {
+  console.log('📋 Active Network Config:', {
+    name: activeNetworkConfig.name,
+    chainId: activeNetworkConfig.chainId,
+    rpcUrl: activeNetworkConfig.rpcUrl,
+    blockExplorer: activeNetworkConfig.blockExplorer,
+    isTestnet: activeNetworkConfig.isTestnet,
+    'NEXT_PUBLIC_NETWORK': process.env.NEXT_PUBLIC_NETWORK,
+    'NEXT_PUBLIC_CHAIN_ID': process.env.NEXT_PUBLIC_CHAIN_ID,
+    'NEXT_PUBLIC_RPC_URL': process.env.NEXT_PUBLIC_RPC_URL,
+  });
+}
 
 /**
  * Contract addresses configuration
@@ -40,6 +56,10 @@ export const CONTRACT_ADDRESSES = {
   tokenVesting: (
     process.env.NEXT_PUBLIC_VESTING_ADDRESS || 
     activeNetworkConfig.contracts.tokenVesting
+  ) as `0x${string}`,
+  rewardVault: (
+    process.env.NEXT_PUBLIC_REWARD_VAULT_ADDRESS ||
+    activeNetworkConfig.contracts.rewardVault
   ) as `0x${string}`,
 } as const;
 
@@ -136,4 +156,4 @@ export const TOKEN_DECIMALS = {
  * Gas configuration
  * Automatically configured based on NEXT_PUBLIC_NETWORK
  */
-export const GAS_CONFIG = activeNetworkConfig.gasConfig as const;
+export const GAS_CONFIG = activeNetworkConfig.gasConfig;

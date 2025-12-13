@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { BottomNav } from '@/components/BottomNav';
+import { Navbar } from '@/components/Navbar';
 
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,6 +17,9 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   // 普通路由：显示 Sidebar 和 BottomNav
   return (
     <div className="lg:pl-64">
+      {/* Top Navbar */}
+      <Navbar />
+
       {/* Desktop Sidebar */}
       <Sidebar />
       

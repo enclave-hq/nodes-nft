@@ -1,6 +1,5 @@
 "use client";
 
-import { Navbar } from "@/components/Navbar";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { useWeb3Data } from "@/lib/stores/web3Store";
 import { useNFTPool, useCreateSellOrder } from "@/lib/hooks/useNFTManager";
@@ -14,6 +13,7 @@ import { RefreshButton } from "@/components/RefreshButton";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
 import { ListIcon } from "@/components/icons/ListIcon";
+import { useErrorHandler } from "@/lib/hooks/useErrorHandler";
 
 // NFT SVG illustrations array - 8 different designs
 const NFT_SVG_ILLUSTRATIONS = [
@@ -346,10 +346,12 @@ function SellOrderCard({
 }) {
   const t = useTranslations('marketplace.orderCard');
   const tTypes = useTranslations('nftTypes');
+  const tMyNFTs = useTranslations('marketplace.myNFTs');
   const { account } = useWallet();
   const { data: pool } = useNFTPool(order.nftId);
   const buyNFT = useBuyNFT();
   const cancelOrder = useCancelSellOrder();
+  const { simplifyError } = useErrorHandler();
 
   if (!pool) return null;
 
@@ -366,14 +368,19 @@ function SellOrderCard({
       onBuy(order.orderId);
     } catch (error) {
       console.error("Failed to buy NFT:", error);
+      const errorMessage = simplifyError(error, tMyNFTs('revokeOrderFailed'));
+      toast.error(errorMessage);
     }
   };
 
   const handleCancel = async () => {
     try {
       await cancelOrder.mutateAsync({ orderId: order.orderId });
+      toast.success(tMyNFTs('orderRevoked'));
     } catch (error) {
       console.error("Failed to cancel order:", error);
+      const errorMessage = simplifyError(error, tMyNFTs('revokeOrderFailed'));
+      toast.error(errorMessage);
     }
   };
 
@@ -759,8 +766,6 @@ export default function MarketplacePage() {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
-      <Navbar />
-
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8" style={{ paddingTop: 'calc(65px + 1rem)' }}>
         {/* Header */}
         <div className="mb-4 sm:mb-8">
@@ -943,6 +948,7 @@ function MyNFTsSection({
   onOrderCreated?: () => void;
 }) {
   const tMyNFTs = useTranslations('marketplace.myNFTs');
+  const { simplifyError } = useErrorHandler();
   const allOrders = useAllSellOrders();
   
   // Separate NFTs into two groups: with orders and without orders
@@ -1071,6 +1077,7 @@ function NFTListItem({
   const t = useTranslations('marketplace.orderCard');
   const tMyNFTs = useTranslations('marketplace.myNFTs');
   const tTypes = useTranslations('nftTypes');
+  const { simplifyError } = useErrorHandler();
   const { data: pool } = useNFTPool(nftId);
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useNFTSellOrders(nftId);
   const cancelOrder = useCancelSellOrder();
@@ -1102,7 +1109,7 @@ function NFTListItem({
       }
     } catch (error: unknown) {
       console.error("Failed to cancel order:", error);
-      const errorMessage = error instanceof Error ? error.message : tMyNFTs('revokeOrderFailed');
+      const errorMessage = simplifyError(error, tMyNFTs('revokeOrderFailed'));
       toast.error(errorMessage);
     }
   };
@@ -1279,6 +1286,7 @@ function NFTListItemSimple({
 
 function OrdersForNFT({ nftId, onBuy }: { nftId: number; onBuy: (orderId: number) => void }) {
   const tMyNFTs = useTranslations('marketplace.myNFTs');
+  const { simplifyError } = useErrorHandler();
   const { data: orders, isLoading, error, refetch } = useNFTSellOrders(nftId);
 
   if (isLoading) {

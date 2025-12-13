@@ -1,9 +1,9 @@
 "use client";
 
-import { Navbar } from "@/components/Navbar";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { useWeb3Data, callContractWithFallback } from "@/lib/stores/web3Store";
-import { formatTokenAmount, formatUSD, cn, simplifyErrorMessage } from "@/lib/utils";
+import { formatTokenAmount, formatUSD, cn } from "@/lib/utils";
+import { useErrorHandler } from "@/lib/hooks/useErrorHandler";
 import { NFT_UNIFIED_CONFIG, CONTRACT_ADDRESSES } from "@/lib/contracts/config";
 import { ArrowRight, Coins, TrendingUp, Shield, Lock, Loader2, AlertCircle, PlusCircle, DollarSign, Zap, ArrowLeftRight, Github, Twitter, Package, RefreshCw } from "lucide-react";
 import { MintStatusBanner } from "@/components/MintStatusBanner";
@@ -13,7 +13,7 @@ import { useTranslations } from "@/lib/i18n/provider";
 import { TokenBalance, NFTCount } from "@/lib/components/FormattedNumber";
 import { useMemo, useEffect, useState } from "react";
 import { NFT_MANAGER_ABI } from "@/lib/contracts/abis";
-import { useMintNFT } from "@/lib/hooks/useNFTManager";
+import { useMintNFT, useBatchMintNFT } from "@/lib/hooks/useNFTManager";
 import { useActiveBatch } from "@/lib/hooks/useBatches";
 import { useRouter } from "next/navigation";
 import toast from 'react-hot-toast';
@@ -23,10 +23,12 @@ export default function Home() {
   const tBatch = useTranslations('batch');
   const tMint = useTranslations('mint');
   const tWhitelist = useTranslations('whitelist');
+  const { simplifyError } = useErrorHandler();
   const tCommon = useTranslations('common');
   const { isConnected, address, walletManager, connect, isConnecting } = useWallet();
   const web3Data = useWeb3Data();
   const { mintNFT, minting } = useMintNFT();
+  const { batchMintNFT, minting: batchMinting } = useBatchMintNFT();
   const router = useRouter();
   const { batch: activeBatch, loading: batchLoading, refetch: refetchBatch } = useActiveBatch();
   const isWhitelisted = web3Data.whitelist.isWhitelisted;
@@ -36,6 +38,16 @@ export default function Home() {
   const [activeOrders, setActiveOrders] = useState<number>(0);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Keep as string so clearing the input doesn't immediately coerce to "1"
+  const [batchQuantity, setBatchQuantity] = useState<string>("1");
+
+  const normalizedBatchQuantity = useMemo(() => {
+    const raw = batchQuantity.trim();
+    const parsed = parseInt(raw, 10);
+    const val = Number.isFinite(parsed) ? parsed : 1;
+    return Math.max(1, Math.min(50, val));
+  }, [batchQuantity]);
+  
 
 
   // Calculate total locked amount
@@ -207,15 +219,13 @@ export default function Home() {
       router.push("/my-nfts");
     } catch (err: unknown) {
       console.error("Failed to mint NFT:", err);
-      const errorMessage = simplifyErrorMessage(err, "Failed to mint NFT");
+      const errorMessage = simplifyError(err, tMint('mintFailed') || "Failed to mint NFT");
       toast.error(errorMessage);
     }
   };
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
-      <Navbar />
-
       {/* Hero Section */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8" style={{ paddingTop: 'calc(65px + 1.5rem)' }}>
         <div className="text-center">
@@ -370,7 +380,7 @@ export default function Home() {
                 </div>
                 
                 {/* Row 3: $E锁仓中 */}
-                <div className="flex items-center justify-between" style={{ height: '40px' }}>
+                <div className="flex items-center justify-between border-b border-gray-700" style={{ height: '40px' }}>
                   <span className="text-sm sm:text-base font-medium text-[#FFFFFF]">
                     {t('stats.eclvLocked')}
                   </span>
@@ -445,6 +455,91 @@ export default function Home() {
                       {web3Data.balances?.usdt ? parseFloat(web3Data.balances.usdt).toFixed(2) : "0.00"} USDT
                     </span>
                   </div>
+                  
+                  {/* 批量购买输入 */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={batchQuantity}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        // Allow empty while user is editing (avoid auto-prepending "1")
+                        if (raw === "") {
+                          setBatchQuantity("");
+                          return;
+                        }
+                        const parsed = parseInt(raw, 10);
+                        if (!Number.isFinite(parsed)) return;
+                        setBatchQuantity(String(Math.max(1, Math.min(50, parsed))));
+                      }}
+                      onBlur={() => {
+                        if (batchQuantity.trim() === "") setBatchQuantity("1");
+                      }}
+                      className="flex-1 rounded-[20px] border border-gray-300 px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#CEF248]"
+                      placeholder="数量"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!isConnected || !address) {
+                          toast.error(tCommon('connectWallet') || 'Please connect your wallet');
+                          return;
+                        }
+
+                        if (!isWhitelisted) {
+                          toast.error(tMint('whitelistRequired'));
+                          router.push('/simple-mint');
+                          return;
+                        }
+
+                        if (!activeBatch) {
+                          toast.error(tBatch('noActiveBatchMint'));
+                          return;
+                        }
+
+                        const quantity = normalizedBatchQuantity;
+                        const mintPriceWei = BigInt(activeBatch.mintPrice);
+                        const totalPrice = Number(mintPriceWei) * quantity / 1e18;
+                        const usdtBalance = web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0;
+                        
+                        if (usdtBalance < totalPrice) {
+                          toast.error(tMint('insufficientUsdt').replace('{amount}', formatUSD(totalPrice)));
+                          return;
+                        }
+
+                        try {
+                          const result = await batchMintNFT(quantity);
+                          console.log("Batch NFT minted successfully:", result);
+                          toast.success(`${quantity} ${tMint('mintSuccess')}`);
+                          await refetchBatch();
+                          router.push("/my-nfts");
+                        } catch (err: unknown) {
+                          console.error("Failed to batch mint NFT:", err);
+                          const errorMessage = simplifyError(err, tMint('mintFailed') || "Failed to mint NFT");
+                          toast.error(errorMessage);
+                        }
+                      }}
+                      disabled={batchMinting || !activeBatch || (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) < Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18}
+                      className={cn(
+                        "rounded-[20px] px-4 py-2 text-sm font-medium transition-all",
+                        (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) >= Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18 && !batchMinting && activeBatch
+                          ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      )}
+                    >
+                      {batchMinting ? (
+                        <span className="flex items-center justify-center">
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {tMint('minting')}
+                        </span>
+                      ) : (
+                        `批量购买 (${normalizedBatchQuantity})`
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* 单个购买按钮 */}
                   <button
                     onClick={handleMint}
                     disabled={minting || !activeBatch || (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) < Number(activeBatch.mintPrice) / 1e18}

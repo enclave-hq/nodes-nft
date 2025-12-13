@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { ContractModule } from './modules/contract/contract.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -19,6 +20,9 @@ import { MetricsModule } from './modules/metrics/metrics.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    
+    // Schedule module (for cron jobs)
+    ScheduleModule.forRoot(),
     
     // Database module
     PrismaModule,

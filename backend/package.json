@@ -30,7 +30,8 @@
     "reset-database": "ts-node scripts/reset-database.ts",
     "generate-abi": "ts-node scripts/generate-combined-abi.ts",
     "verify-diamond": "ts-node scripts/verify-diamond-connection.ts",
-    "diagnose-batches": "ts-node scripts/diagnose-batches-error.ts"
+    "diagnose-batches": "ts-node scripts/diagnose-batches-error.ts",
+    "test:subgraph-sync": "ts-node scripts/test-subgraph-sync.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.0",
@@ -39,6 +40,7 @@
     "@nestjs/jwt": "^10.2.0",
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.4.0",
+    "@nestjs/schedule": "^6.1.0",
     "@prisma/client": "^5.19.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",

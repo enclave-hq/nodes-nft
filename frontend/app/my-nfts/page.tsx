@@ -1,10 +1,9 @@
 "use client";
 
-import { Navbar } from "@/components/Navbar";
 import { useWallet } from "@/lib/providers/WalletProvider";
 import { useWeb3Data } from "@/lib/stores/web3Store";
 import { useNFTPool, useGlobalState, usePendingProduced, usePendingReward, useAccRewardPerNFT, useRewardDebt, useClaimProduced, useClaimReward, useInitiateTermination, useConfirmTermination, useCancelTermination, useWithdrawUnlocked } from "@/lib/hooks/useNFTManager";
-import { formatTokenAmount, formatDate, cn } from "@/lib/utils";
+import { formatTokenAmount, formatDate, formatUSD, cn } from "@/lib/utils";
 import { NFTStatus, NFT_UNIFIED_CONFIG, UNLOCK_CONFIG, TERMINATION_CONFIG, CONTRACT_ADDRESSES } from "@/lib/contracts/config";
 import { Shield, Loader2, Plus, AlertTriangle, Lock, Gift, Check, X, ChevronDown, ChevronUp } from "lucide-react";
 import { RefreshButton } from "@/components/RefreshButton";
@@ -13,7 +12,8 @@ import { useState, useEffect, useMemo } from "react";
 import toast from 'react-hot-toast';
 import { useTranslations } from "@/lib/i18n/provider";
 import { useActiveBatch } from "@/lib/hooks/useBatches";
-import { useMintNFT } from "@/lib/hooks/useNFTManager";
+import { useMintNFT, useBatchMintNFT } from "@/lib/hooks/useNFTManager";
+import { useErrorHandler } from "@/lib/hooks/useErrorHandler";
 
 function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: boolean; onToggle: () => void }) {
   const t = useTranslations('myNfts.nftCard');
@@ -21,6 +21,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
   const tTime = useTranslations('myNfts.time');
   const tTypes = useTranslations('nftTypes');
   const tCommon = useTranslations('common');
+  const { simplifyError } = useErrorHandler();
   
   // ALL HOOKS MUST BE CALLED AT THE TOP - BEFORE ANY CONDITIONAL RETURNS
   // Use real contract hooks
@@ -113,8 +114,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
       setShowTerminateDialog(false);
     } catch (error: unknown) {
       console.error("Failed to initiate termination:", error);
-      const { simplifyErrorMessage } = await import("@/lib/utils");
-      toast.error(simplifyErrorMessage(error, tTermination('initiateFailed')));
+      toast.error(simplifyError(error, tTermination('initiateFailed')));
     }
   };
 
@@ -124,8 +124,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
       toast.success(tTermination('confirmed'));
     } catch (error: unknown) {
       console.error("Failed to confirm termination:", error);
-      const { simplifyErrorMessage } = await import("@/lib/utils");
-      toast.error(simplifyErrorMessage(error, tTermination('confirmFailed')));
+      toast.error(simplifyError(error, tTermination('confirmFailed')));
     }
   };
 
@@ -135,8 +134,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
       toast.success(tTermination('cancelled'));
     } catch (error: unknown) {
       console.error("Failed to cancel termination:", error);
-      const { simplifyErrorMessage } = await import("@/lib/utils");
-      toast.error(simplifyErrorMessage(error, tTermination('cancelFailed')));
+      toast.error(simplifyError(error, tTermination('cancelFailed')));
     }
   };
 
@@ -146,8 +144,7 @@ function NFTCard({ nftId, isExpanded, onToggle }: { nftId: number; isExpanded: b
       toast.success(tTermination('withdrawn'));
     } catch (error: unknown) {
       console.error("Failed to withdraw unlocked:", error);
-      const { simplifyErrorMessage } = await import("@/lib/utils");
-      toast.error(simplifyErrorMessage(error, tTermination('withdrawFailed')));
+      toast.error(simplifyError(error, tTermination('withdrawFailed')));
     }
   };
 
@@ -581,10 +578,14 @@ export default function MyNFTsPage() {
   const tCommon = useTranslations('common');
   const { isConnected, address } = useWallet();
   const web3Data = useWeb3Data();
-  const { batch: activeBatch, loading: batchLoading } = useActiveBatch();
+  const { batch: activeBatch, loading: batchLoading, refetch: refetchBatch } = useActiveBatch();
   const { mintNFT, minting } = useMintNFT();
+  const { batchMintNFT, minting: batchMinting } = useBatchMintNFT();
   const isWhitelisted = web3Data.whitelist.isWhitelisted;
   const whitelistLoading = web3Data.loading.whitelist;
+  // Keep as string so clearing the input doesn't immediately coerce to "1"
+  const [batchQuantity, setBatchQuantity] = useState<string>("1");
+  const { simplifyError } = useErrorHandler();
 
 
   const handleMint = async () => {
@@ -615,9 +616,10 @@ export default function MyNFTsPage() {
       await web3Data.fetchWhitelist();
       // Refresh NFT list
       window.location.reload();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Mint error:', error);
-      toast.error(error.message || tMyNFTs('mintFailed'));
+      const errorMessage = error instanceof Error ? error.message : tMyNFTs('mintFailed');
+      toast.error(errorMessage);
     }
   };
 
@@ -626,6 +628,14 @@ export default function MyNFTsPage() {
     ? Number(activeBatch.maxMintable) - Number(activeBatch.currentMinted)
     : 0;
   const canMint = remainingMintCount > 0 && activeBatch?.active === true;
+
+  const normalizedBatchQuantity = useMemo(() => {
+    const maxAllowed = Math.max(1, Math.min(50, remainingMintCount));
+    const raw = batchQuantity.trim();
+    const parsed = parseInt(raw, 10);
+    const val = Number.isFinite(parsed) ? parsed : 1;
+    return Math.max(1, Math.min(maxAllowed, val));
+  }, [batchQuantity, remainingMintCount]);
 
   const handleQuickMint = () => {
     if (!isConnected || !address) {
@@ -658,8 +668,6 @@ export default function MyNFTsPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
-      <Navbar />
-
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-8" style={{ paddingTop: 'calc(65px + 1rem)' }}>
         {/* Header */}
         <div className="mb-4 sm:mb-8">
@@ -674,17 +682,160 @@ export default function MyNFTsPage() {
             
             {/* Mint Status Banner and Action Buttons - Same row */}
             {isConnected && (
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <MintStatusBanner />
                 
-                {/* Action Buttons */}
+                {/* Minting Controls Card */}
+                {isWhitelisted && activeBatch && (
+                  <div className="flex-1 w-full sm:w-auto">
+                    <div className="bg-white rounded-[20px] border border-[#000000]/10 p-4 shadow-sm">
+                      {/* Batch Info */}
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-gray-600">{tBatch('availableToMint')}</span>
+                          <span className="text-sm font-bold text-[#000000]">{remainingMintCount}</span>
+                        </div>
+                        {activeBatch && (
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>{tMyNFTs('mintPrice') || '铸造价格'}</span>
+                            <span className="font-medium">{(Number(activeBatch.mintPrice) / 1e18).toFixed(2)} USDT</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Mint Controls */}
+                      {canMint && (
+                        <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  {/* Mint Button */}
+                            <div className="flex-1 relative">
+                              <input
+                                type="number"
+                                min="1"
+                                max={Math.min(50, remainingMintCount)}
+                                value={batchQuantity}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  if (raw === "") {
+                                    setBatchQuantity("");
+                                    return;
+                                  }
+                                  const parsed = parseInt(raw, 10);
+                                  if (!Number.isFinite(parsed)) return;
+                                  setBatchQuantity(String(Math.max(1, Math.min(50, Math.min(parsed, remainingMintCount)))));
+                                }}
+                                onBlur={() => {
+                                  if (batchQuantity.trim() === "") setBatchQuantity("1");
+                                }}
+                                className="w-full rounded-[20px] border border-gray-300 px-4 py-2.5 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-[#CEF248] focus:border-[#CEF248] transition-all"
+                                placeholder="输入数量"
+                              />
+                              {activeBatch && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                                  最大 {Math.min(50, remainingMintCount)}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={async () => {
+                                if (!isConnected || !address) {
+                                  toast.error(tCommon('connectWallet') || 'Please connect your wallet');
+                                  return;
+                                }
+
+                                if (!isWhitelisted) {
+                                  toast.error(tMint('whitelistRequired'));
+                                  return;
+                                }
+
+                                if (!activeBatch) {
+                                  toast.error(tBatch('noActiveBatchMint'));
+                                  return;
+                                }
+
+                                if (!canMint) {
+                                  toast.error(tBatch('batchSoldOutMint'));
+                                  return;
+                                }
+
+                                const quantity = normalizedBatchQuantity;
+                                const mintPriceWei = BigInt(activeBatch.mintPrice);
+                                const totalPrice = Number(mintPriceWei) * quantity / 1e18;
+                                const usdtBalance = web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0;
+                                
+                                if (usdtBalance < totalPrice) {
+                                  toast.error(tMint('insufficientUsdt')?.replace('{amount}', formatUSD(totalPrice)) || `Insufficient USDT. Need ${formatUSD(totalPrice)}`);
+                                  return;
+                                }
+
+                                try {
+                                  // 统一使用批量铸造，数量为1时也使用批量接口
+                                  if (quantity === 1) {
+                                    await mintNFT();
+                                    toast.success(tMint('mintSuccess'));
+                                  } else {
+                                    await batchMintNFT(quantity);
+                                    toast.success(`${quantity} ${tMint('mintSuccess')}`);
+                                  }
+                                  await refetchBatch();
+                                  await web3Data.fetchWhitelist();
+                                  window.location.reload();
+                                } catch (err: unknown) {
+                                  console.error("Failed to mint NFT:", err);
+                                  const errorMessage = simplifyError(err, tMint('mintFailed') || "Failed to mint NFT");
+                                  toast.error(errorMessage);
+                                }
+                              }}
+                              disabled={(batchMinting || minting) || !activeBatch || !canMint || (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) < Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18}
+                              className={cn(
+                                "rounded-[20px] px-6 py-2.5 text-sm font-medium transition-all whitespace-nowrap min-w-[120px]",
+                                (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) >= Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18 && !batchMinting && !minting && activeBatch && canMint
+                                  ? "bg-[#000000] text-white hover:bg-gray-800"
+                                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                              )}
+                            >
+                              {(batchMinting || minting) ? (
+                                <span className="flex items-center justify-center">
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  {tMint('minting')}
+                                </span>
+                              ) : (
+                                <span className="flex items-center justify-center">
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  {tMint('mintQuantity', { quantity: normalizedBatchQuantity })}
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                          
+                          {/* Price Info */}
+                          {activeBatch && (
+                            <div className="flex items-center justify-between text-xs pt-1">
+                              <span className="text-gray-500">总价</span>
+                              <span className="font-semibold text-[#000000]">
+                                {formatUSD((Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18))}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {!canMint && (
+                        <div className="text-center py-2">
+                          <span className="text-sm text-gray-500">{tBatch('batchSoldOutMint') || '批次已售罄'}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Refresh Button - Only show when no minting controls */}
+                {(!isWhitelisted || !activeBatch || !canMint) && (
+                  <div className="flex items-center gap-2">
+                    {isWhitelisted && activeBatch && !canMint && (
                   <button
                     onClick={handleQuickMint}
                     disabled={!isConnected || !isWhitelisted || !activeBatch || !canMint || minting}
                     className="inline-flex items-center justify-center rounded-[20px] px-4 py-2 bg-[#CEF248] text-black hover:bg-[#B8D93F] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-medium"
-                    title={!isConnected ? tMyNFTs('connectWalletFirst') : !isWhitelisted ? tMyNFTs('joinWhitelistFirst') : !activeBatch ? tBatch('noActiveBatch') : !canMint ? tMyNFTs('batchSoldOut') : tMyNFTs('quickMint')}
                   >
                     {minting ? (
                       <>
@@ -695,10 +846,10 @@ export default function MyNFTsPage() {
                       <span>{tCommon('mint')}</span>
                     )}
                   </button>
-                  
-                  {/* Refresh Button */}
+                    )}
                   <RefreshButton size="sm" />
                 </div>
+                )}
               </div>
             )}
           </div>
@@ -813,7 +964,95 @@ export default function MyNFTsPage() {
                         </p>
                       </div>
 
-                      {/* Mint Button */}
+                      {/* Batch Mint Section */}
+                      <div className="mb-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            max={Math.min(50, remainingMintCount)}
+                            value={batchQuantity}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                setBatchQuantity("");
+                                return;
+                              }
+                              const parsed = parseInt(raw, 10);
+                              if (!Number.isFinite(parsed)) return;
+                              setBatchQuantity(String(Math.max(1, Math.min(50, Math.min(parsed, remainingMintCount)))));
+                            }}
+                            onBlur={() => {
+                              if (batchQuantity.trim() === "") setBatchQuantity("1");
+                            }}
+                            className="flex-1 rounded-[20px] border border-gray-300 px-3 py-2 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-[#CEF248]"
+                            placeholder="数量"
+                          />
+                          <button
+                            onClick={async () => {
+                              if (!isConnected || !address) {
+                                toast.error(tCommon('connectWallet') || 'Please connect your wallet');
+                                return;
+                              }
+
+                              if (!isWhitelisted) {
+                                toast.error(tMint('whitelistRequired'));
+                                return;
+                              }
+
+                              if (!activeBatch) {
+                                toast.error(tBatch('noActiveBatchMint'));
+                                return;
+                              }
+
+                              if (!canMint) {
+                                toast.error(tBatch('batchSoldOutMint'));
+                                return;
+                              }
+
+                              const quantity = normalizedBatchQuantity;
+                              const mintPriceWei = BigInt(activeBatch.mintPrice);
+                              const totalPrice = Number(mintPriceWei) * quantity / 1e18;
+                              const usdtBalance = web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0;
+                              
+                              if (usdtBalance < totalPrice) {
+                                toast.error(tMint('insufficientUsdt')?.replace('{amount}', formatUSD(totalPrice)) || `Insufficient USDT. Need ${formatUSD(totalPrice)}`);
+                                return;
+                              }
+
+                              try {
+                                await batchMintNFT(quantity);
+                                toast.success(`${quantity} ${tMint('mintSuccess')}`);
+                                await refetchBatch();
+                                await web3Data.fetchWhitelist();
+                                window.location.reload();
+                              } catch (err: unknown) {
+                                console.error("Failed to batch mint NFT:", err);
+                                const errorMessage = simplifyError(err, tMint('mintFailed') || "Failed to mint NFT");
+                                toast.error(errorMessage);
+                              }
+                            }}
+                            disabled={batchMinting || !activeBatch || !canMint || (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) < Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18}
+                            className={cn(
+                              "rounded-[20px] px-4 py-2 text-sm font-medium transition-all whitespace-nowrap",
+                              (web3Data.balances ? parseFloat(web3Data.balances.usdt) : 0) >= Number(activeBatch.mintPrice) * normalizedBatchQuantity / 1e18 && !batchMinting && activeBatch && canMint
+                                ? "bg-[#CEF248] text-black hover:bg-[#B8D93F]"
+                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            )}
+                          >
+                            {batchMinting ? (
+                              <span className="flex items-center justify-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {tMint('minting')}
+                              </span>
+                            ) : (
+                              `批量购买 (${normalizedBatchQuantity})`
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Single Mint Button */}
                       <button
                         onClick={handleMint}
                         disabled={minting || !activeBatch || !canMint}

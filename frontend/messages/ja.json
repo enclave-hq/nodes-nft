@@ -32,7 +32,8 @@
     "home": "ホーム",
     "mint": "ミント",
     "myNfts": "マイ NFT",
-    "marketplace": "マーケット"
+    "marketplace": "マーケット",
+    "myRewards": "マイ返佣"
   },
   "home": {
     "hero": {
@@ -58,7 +59,7 @@
       "subtitle": "シンプル、透明、収益性あり。Enclaveの分散型プライバシーネットワークの一部になる。",
       "step1": {
         "title": "NFT をミント",
-        "description": "USDT を支払ってノード NFT をミントし、同時に $E を追加獲得"
+        "description": "NFTをミントしてゼロ知識証明ネットワークに参加し、マイニング$E産出と手数料報酬を獲得"
       },
       "step2": {
         "title": "手数料分配",
@@ -126,14 +127,16 @@
       "connectWalletFirst": "まずウォレットを接続してください",
       "noActiveBatchMint": "現在アクティブなバッチがありません。NFTをミントできません",
       "batchSoldOutMint": "現在のバッチは完売しました。NFTをミントできません",
-      "waitForNextBatch": "次のバッチがミント開始されるまでお待ちください"
+      "waitForNextBatch": "次のバッチがミント開始されるまでお待ちください",
+      "availableToMint": "このバッチでミント可能な数量"
     },
     "mint": {
       "whitelistRequired": "NFTをミントするには、まずホワイトリストに参加する必要があります",
       "insufficientUsdt": "USDT残高が不足しています。{amount}が必要です",
       "mintSuccess": "NFTのミントが成功しました！",
       "minting": "ミント中...",
-      "mintNFT": "NFTをミント"
+      "mintNFT": "NFTをミント",
+      "mintQuantity": "{quantity} 個をミント"
     }
   },
   "mint": {
@@ -381,7 +384,8 @@
     "insufficientBalance": "残高不足",
     "transactionFailed": "トランザクション失敗",
     "tryAgain": "もう一度お試しください",
-    "wrongNetwork": "ネットワークエラー"
+    "wrongNetwork": "ネットワークエラー",
+    "userRejected": "ユーザーがリクエストを拒否しました"
   },
   "whitelist": {
     "title": "ホワイトリスト管理",
@@ -410,7 +414,11 @@
     "registerFailed": "登録に失敗しました",
     "applicationSubmitted": "招待コードの申請が提出されました。審査をお待ちください",
     "applicationFailed": "申請に失敗しました",
-    "copyInviteCode": "招待コードをコピー"
+    "copyInviteCode": "招待コードをコピー",
+    "requestAlreadyExists": "このアドレスには既に申請記録が存在します",
+    "userAlreadyHasInviteCode": "このアドレスは既に招待コードを持っています",
+    "referrerInviteCodeNotFound": "推薦人の招待コードが見つかりません",
+    "referrerInviteCodeNotActive": "推薦人の招待コードが有効化されていません"
   },
   "mintStatus": {
     "applyWhitelistFirst": "まず",

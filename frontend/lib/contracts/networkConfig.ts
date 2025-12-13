@@ -20,6 +20,7 @@ export interface NetworkConfig {
     nftManager: `0x${string}`;
     usdt: `0x${string}`;
     tokenVesting: `0x${string}`;
+    rewardVault: `0x${string}`; // Referral RewardVault (users claim referral rewards)
   };
   fallbackRpcUrls: string[];
   gasConfig: {
@@ -50,6 +51,7 @@ export const TESTNET_CONFIG: NetworkConfig = {
     nftManager: '0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67', // Diamond Pattern
     usdt: '0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34', // TestUSDT on BSC Testnet
     tokenVesting: '0x0b6a47631294D4DB753f7BEF56d615c268c87F78',
+    rewardVault: '0x0000000000000000000000000000000000000000', // Set via NEXT_PUBLIC_REWARD_VAULT_ADDRESS
   },
   fallbackRpcUrls: [
     'https://data-seed-prebsc-2-s1.binance.org:8545',
@@ -78,15 +80,17 @@ export const TESTNET_CONFIG: NetworkConfig = {
 export const MAINNET_CONFIG: NetworkConfig = {
   name: 'BSC Mainnet',
   chainId: 56,
-  rpcUrl: 'https://bsc-dataseed1.binance.org',
+  rpcUrl: 'https://bsc-rpc.publicnode.com',
   blockExplorer: 'https://bscscan.com',
   isTestnet: false,
   contracts: {
-    enclaveToken: '0x3b8Aa22B8A07074101a47EbD16d213f11Eb32fbc',
-    nodeNFT: '0xcDaBC60cEBa3371DF2000a9176bAD8ea19C45860',
-    nftManager: '0xa5020E751277BbC90b7c8CdeAb4434b47F543d91',
+    // Contract addresses from docker-compose.yaml (production)
+    enclaveToken: '0xDA8cB40036ACA4994B95c0Ae7D41f8944f0B5011',
+    nodeNFT: '0x6F0f5fE4B9FA05CA5C2690d4106F46Bf5e06629b',
+    nftManager: '0xD9eA9F4B8F24872262568fB2C6133117EC02C774',
     usdt: '0x55d398326f99059fF775485246999027B3197955',
-    tokenVesting: '0x50FA7D13725302954Ad41Cb25C2F52198c7521b2',
+    tokenVesting: '0x67B8927F0835e79632f4622F017915Cb0B9a6c72',
+    rewardVault: '0x0000000000000000000000000000000000000000', // Set via NEXT_PUBLIC_REWARD_VAULT_ADDRESS
   },
   fallbackRpcUrls: [
     'https://bsc-dataseed1.binance.org',
@@ -94,6 +98,7 @@ export const MAINNET_CONFIG: NetworkConfig = {
     'https://bsc-dataseed3.binance.org',
     'https://bsc-dataseed4.binance.org',
     'https://bsc-dataseed.binance.org',
+    'https://bsc-rpc.publicnode.com',
   ],
   gasConfig: {
     gasPrice: '3000000000', // 3 Gwei (mainnet typically needs higher gas)
@@ -115,9 +120,24 @@ export const MAINNET_CONFIG: NetworkConfig = {
  * Defaults to 'testnet' if not set or invalid value
  */
 export function getNetworkConfig(): NetworkConfig {
-  const networkEnv = (process.env.NEXT_PUBLIC_NETWORK || 'testnet').toLowerCase();
+  // Debug: Log environment variable reading
+  const networkEnvRaw = process.env.NEXT_PUBLIC_NETWORK;
+  const networkEnv = (networkEnvRaw || 'testnet').toLowerCase();
   
-  if (networkEnv === 'mainnet') {
+  // Support both 'mainnet' and 'bscmainnet' as mainnet aliases
+  const isMainnet = networkEnv === 'mainnet' || networkEnv === 'bscmainnet';
+  
+  // Log for debugging (only in development)
+  if (typeof window === 'undefined' || process.env.NODE_ENV === 'development') {
+    console.log('🔍 Reading network config:', {
+      'NEXT_PUBLIC_NETWORK (raw)': networkEnvRaw,
+      'NEXT_PUBLIC_NETWORK (normalized)': networkEnv,
+      'Is mainnet': isMainnet,
+      'Selected config': isMainnet ? 'MAINNET' : 'TESTNET',
+    });
+  }
+  
+  if (isMainnet) {
     return MAINNET_CONFIG;
   }
   
@@ -130,7 +150,9 @@ export function getNetworkConfig(): NetworkConfig {
  */
 export function getCurrentNetworkType(): NetworkType {
   const networkEnv = (process.env.NEXT_PUBLIC_NETWORK || 'testnet').toLowerCase();
-  return networkEnv === 'mainnet' ? 'mainnet' : 'testnet';
+  // Support both 'mainnet' and 'bscmainnet' as mainnet aliases
+  const isMainnet = networkEnv === 'mainnet' || networkEnv === 'bscmainnet';
+  return isMainnet ? 'mainnet' : 'testnet';
 }
 
 

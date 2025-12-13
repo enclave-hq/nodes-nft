@@ -394,6 +394,23 @@ export class RevenueController {
   }
 
   /**
+   * Idempotent sync: Recalculate referral rewards from chain data and local invite code info
+   * This ensures that re-reading NFTs from chain and invite codes from database
+   * produces the same referral reward data (幂等性)
+   * 
+   * @param fullSync If true, recalculate all NFTs. If false, only process missing/incorrect records
+   */
+  @Post('sync-referral-rewards-from-chain')
+  async syncReferralRewardsFromChain(@Body() body: { fullSync?: boolean }) {
+    const result = await this.revenueService.syncReferralRewardsFromChain(body.fullSync || false);
+    return {
+      success: true,
+      message: 'Referral rewards synced from chain',
+      ...result,
+    };
+  }
+
+  /**
    * Get distributable referral rewards by root address
    */
   @Get('distributable-referral-rewards')

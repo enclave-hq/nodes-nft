@@ -1,0 +1,25 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: NFTManager
+    network: bsc
+    source:
+      address: "0xD9eA9F4B8F24872262568fB2C6133117EC02C774" # NFT_MANAGER_ADDRESS
+      abi: NFTManager
+      startBlock: 69515099 # 从合约部署的区块开始
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - NFTMint
+      abis:
+        - name: NFTManager
+          file: ./abis/NFTManager.json
+      eventHandlers:
+        - event: NFTMinted(indexed uint256,indexed address,indexed uint256,uint256,uint256)
+          handler: handleNFTMinted
+      file: ./src/mapping.ts
+

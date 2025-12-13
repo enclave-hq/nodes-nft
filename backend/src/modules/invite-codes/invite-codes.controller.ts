@@ -48,6 +48,11 @@ export class InviteCodesController {
     );
   }
 
+  @Get('relations/tree')
+  async getInviteRelationsTree() {
+    return this.inviteCodesService.getInviteRelationsTree();
+  }
+
   @Get(':id/descendants')
   async getDescendants(@Param('id', ParseIntPipe) id: number) {
     return this.inviteCodesService.getDescendants(id);
@@ -77,6 +82,7 @@ export class InviteCodesController {
 }
 
 @Controller('invite-codes')
+@UseGuards(JwtAuthGuard)
 export class PublicInviteCodesController {
   constructor(private readonly inviteCodesService: InviteCodesService) {}
 

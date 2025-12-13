@@ -81,6 +81,67 @@ contract NFTManagerFacet is ReentrancyGuard {
         return nftId;
     }
 
+    /**
+     * @notice Batch mint multiple NFTs in a single transaction
+     * @param quantity Number of NFTs to mint (must be > 0)
+     * @return Array of minted NFT IDs
+     */
+    function batchMintNFT(uint256 quantity) external nonReentrant returns (uint256[] memory) {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        
+        require(s.whitelist[msg.sender], "Not whitelisted");
+        require(quantity > 0, "Quantity must be > 0");
+        require(quantity <= 50, "Max batch size is 50"); // Prevent gas limit issues
+        
+        uint256 activeBatchId = 0;
+        for (uint256 i = 1; i < s.currentBatchId; i++) {
+            if (s.batches[i].active) {
+                activeBatchId = i;
+                break;
+            }
+        }
+        require(activeBatchId > 0, "No active batch");
+        
+        LibNFTManagerStorage.Batch storage batch = s.batches[activeBatchId];
+        require(batch.currentMinted + quantity <= batch.maxMintable, "Batch sold out");
+        require(s.totalMinted + quantity <= s.MAX_SUPPLY, "Max supply reached");
+        
+        // Calculate total price
+        uint256 totalPrice = batch.mintPrice * quantity;
+        
+        // Transfer payment tokens
+        IERC20(address(s.paymentToken)).safeTransferFrom(msg.sender, s.treasury, totalPrice);
+        
+        // Mint NFTs
+        uint256[] memory nftIds = new uint256[](quantity);
+        for (uint256 i = 0; i < quantity; i++) {
+            uint256 nftId = s.nodeNFT.mint(msg.sender);
+            nftIds[i] = nftId;
+            
+            LibNFTManagerStorage.NFTPool storage pool = s.nftPools[nftId];
+            pool.nftId = nftId;
+            pool.status = LibNFTManagerStorage.NFTStatus.Active;
+            pool.createdAt = block.timestamp;
+            pool.unlockedWithdrawn = 0;
+            pool.producedWithdrawn = s.globalState.accProducedPerNFT;
+            pool.minter = msg.sender;
+            
+            for (uint256 j = 0; j < s.rewardTokens.length; j++) {
+                address token = s.rewardTokens[j];
+                pool.rewardWithdrawn[token] = s.globalState.accRewardPerNFT[token];
+            }
+            
+            s.userNFTList[msg.sender].push(nftId);
+            batch.currentMinted++;
+            s.totalMinted++;
+            s.globalState.totalActiveNFTs++;
+            
+            emit NFTMinted(nftId, msg.sender, activeBatchId, batch.mintPrice, block.timestamp);
+        }
+        
+        return nftIds;
+    }
+
     /* ========== SYNC FUNCTIONS (for existing NFTs) ========== */
     
     /**

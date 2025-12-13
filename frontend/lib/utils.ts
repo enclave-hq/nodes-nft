@@ -125,6 +125,9 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Simplify error messages for user-facing display
  * Removes technical details and shows friendly messages for common errors
+ * 
+ * @deprecated Use useErrorHandler hook instead for i18n support
+ * This function is kept for backward compatibility but doesn't support translations
  */
 export function simplifyErrorMessage(error: unknown, defaultMessage: string = "Operation failed"): string {
   if (!(error instanceof Error)) {

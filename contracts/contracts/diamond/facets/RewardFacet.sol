@@ -117,69 +117,77 @@ contract RewardFacet is ReentrancyGuard {
 
     /* ========== DISTRIBUTION FUNCTIONS ========== */
     
-    function distributeProduced(uint256 totalAmount) external onlyOracle nonReentrant {
+    /**
+     * @notice Distribute produced tokens (optimized version - only for active NFTs)
+     * @param rewardPerNFT Reward per NFT (calculated based on MAX_SUPPLY for fairness)
+     * @dev Oracle only needs to mine tokens for active NFTs, not all 5000
+     */
+    function distributeProduced(uint256 rewardPerNFT) external onlyOracle nonReentrant {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
-        require(totalAmount > 0, "Amount must be positive");
+        require(rewardPerNFT > 0, "Reward per NFT must be positive");
         require(s.multisigNode != address(0), "Multisig node not set");
         
         uint256 totalActiveNFTs = s.globalState.totalActiveNFTs;
         require(totalActiveNFTs > 0, "No active NFTs");
         
-        (uint256 nftAmount, uint256 multisigAmount) = RewardCalculator.calculateDistributionSplit(totalAmount);
-        require(nftAmount >= s.MAX_SUPPLY, "Amount too small for distribution");
-        uint256 rewardPerNFT = RewardCalculator.calculateRewardPerNFT(nftAmount, s.MAX_SUPPLY);
+        // ✅ 使用可配置的多签比例（默认 20% = 2000 BPS）
+        uint256 multisigBps = s.multisigRewardBps > 0 ? s.multisigRewardBps : 2000;
         
-        uint256 distributedToNFTs = rewardPerNFT * totalActiveNFTs;
-        uint256 vaultAmount = nftAmount - distributedToNFTs;
+        // ✅ 计算需要挖矿的实际金额（只计算 Active NFT）
+        (uint256 requiredAmount, uint256 nftAmount, uint256 multisigAmount) = 
+            RewardCalculator.calculateRequiredOracleAmount(rewardPerNFT, totalActiveNFTs, multisigBps);
         
+        // ✅ 只挖矿 Active NFT 对应的金额
         if (nftAmount > 0) {
             s.eclvToken.mineTokens(address(this), nftAmount);
-            if (vaultAmount > 0) {
-                s.vaultRewards[address(s.eclvToken)] += vaultAmount;
-                emit VaultUpdated(address(s.eclvToken), s.vaultRewards[address(s.eclvToken)]);
-            }
         }
         
+        // ✅ 多签部分直接挖矿到 multisigNode
         if (multisigAmount > 0) {
             s.eclvToken.mineTokens(s.multisigNode, multisigAmount);
         }
         
+        // ✅ 更新全局索引（仍然按 MAX_SUPPLY 计算，保证公平）
         s.globalState.accProducedPerNFT += rewardPerNFT;
         s.globalState.lastUpdateTime = block.timestamp;
         
-        emit MiningDistributed(totalAmount, nftAmount, multisigAmount);
+        emit MiningDistributed(requiredAmount, nftAmount, multisigAmount);
         emit ProducedDistributed(nftAmount, s.globalState.accProducedPerNFT, block.timestamp);
     }
     
-    function distributeReward(address token, uint256 amount) external onlyOracle nonReentrant {
+    /**
+     * @notice Distribute reward tokens (optimized version - only for active NFTs)
+     * @param token Token address
+     * @param rewardPerNFT Reward per NFT (calculated based on MAX_SUPPLY for fairness)
+     * @dev Oracle only needs to deposit funds for active NFTs, not all 5000
+     */
+    function distributeReward(address token, uint256 rewardPerNFT) external onlyOracle nonReentrant {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
-        require(amount > 0, "Amount must be positive");
+        require(rewardPerNFT > 0, "Reward per NFT must be positive");
         require(s.isRewardToken[token], "Token not supported");
         require(s.multisigNode != address(0), "Multisig node not set");
         
         uint256 totalActiveNFTs = s.globalState.totalActiveNFTs;
         require(totalActiveNFTs > 0, "No active NFTs");
         
-        (uint256 nftAmount, uint256 multisigAmount) = RewardCalculator.calculateDistributionSplit(amount);
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        // ✅ 使用可配置的多签比例（默认 20% = 2000 BPS）
+        uint256 multisigBps = s.multisigRewardBps > 0 ? s.multisigRewardBps : 2000;
         
+        // ✅ 计算 Oracle 需要打入的实际金额（只计算 Active NFT）
+        (uint256 requiredAmount, uint256 nftAmount, uint256 multisigAmount) = 
+            RewardCalculator.calculateRequiredOracleAmount(rewardPerNFT, totalActiveNFTs, multisigBps);
+        
+        // ✅ Oracle 只需要打入 requiredAmount（Active NFT 资金 + 多签资金）
+        IERC20(token).safeTransferFrom(msg.sender, address(this), requiredAmount);
+        
+        // 累积多签奖励
         s.multisigRewardDistributed[token] += multisigAmount;
         
-        require(nftAmount >= s.MAX_SUPPLY, "Amount too small for distribution");
-        uint256 rewardPerNFT = RewardCalculator.calculateRewardPerNFT(nftAmount, s.MAX_SUPPLY);
-        
-        uint256 distributedToNFTs = rewardPerNFT * totalActiveNFTs;
-        uint256 vaultAmount = nftAmount - distributedToNFTs;
-        
-        if (vaultAmount > 0) {
-            s.vaultRewards[token] += vaultAmount;
-            emit VaultUpdated(token, s.vaultRewards[token]);
-        }
-        
+        // ✅ 更新全局索引（仍然按 MAX_SUPPLY 计算，保证公平）
         s.globalState.accRewardPerNFT[token] += rewardPerNFT;
         s.globalState.lastUpdateTime = block.timestamp;
         
-        emit RewardDistributed(token, amount, nftAmount, multisigAmount, s.globalState.accRewardPerNFT[token], block.timestamp);
+        emit RewardDistributed(token, requiredAmount, nftAmount, multisigAmount, s.globalState.accRewardPerNFT[token], block.timestamp);
     }
 
     /* ========== CONFIG FUNCTIONS ========== */
@@ -235,6 +243,51 @@ contract RewardFacet is ReentrancyGuard {
     function getRewardTokens() external view returns (address[] memory) {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
         return s.rewardTokens;
+    }
+    
+    /**
+     * @notice Set multisig reward ratio in basis points
+     * @param bps Basis points (10000 = 100%), e.g., 2000 = 20%
+     */
+    function setMultisigRewardBps(uint256 bps) external onlyMaster {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        require(bps <= 10000, "BPS must be <= 10000");
+        s.multisigRewardBps = bps;
+        emit MultisigRewardBpsSet(bps);
+    }
+    
+    /**
+     * @notice Get multisig reward ratio in basis points
+     * @return bps Basis points (default 2000 = 20%)
+     */
+    function getMultisigRewardBps() external view returns (uint256) {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        return s.multisigRewardBps > 0 ? s.multisigRewardBps : 2000; // Default 20%
+    }
+    
+    /**
+     * @notice Calculate required amount for Oracle to deposit based on rewardPerNFT
+     * @param token Token address
+     * @param rewardPerNFT Reward per NFT (calculated based on MAX_SUPPLY)
+     * @return requiredAmount Total amount Oracle needs to deposit
+     * @return nftAmount Amount for active NFTs
+     * @return multisigAmount Amount for multisig
+     */
+    function calculateRequiredAmountForDistribution(
+        address token,
+        uint256 rewardPerNFT
+    ) external view returns (uint256 requiredAmount, uint256 nftAmount, uint256 multisigAmount) {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        require(s.isRewardToken[token], "Token not supported");
+        
+        uint256 totalActiveNFTs = s.globalState.totalActiveNFTs;
+        if (totalActiveNFTs == 0) {
+            return (0, 0, 0);
+        }
+        
+        uint256 multisigBps = s.multisigRewardBps > 0 ? s.multisigRewardBps : 2000;
+        (requiredAmount, nftAmount, multisigAmount) = 
+            RewardCalculator.calculateRequiredOracleAmount(rewardPerNFT, totalActiveNFTs, multisigBps);
     }
 
     /* ========== MULTISIG REWARD FUNCTIONS ========== */
@@ -376,5 +429,6 @@ contract RewardFacet is ReentrancyGuard {
     event RewardTokenRemoved(address indexed token);
     event MultisigRewardClaimed(address indexed token, uint256 amount, uint256 timestamp);
     event TokensBurnedFromSwap(uint256 amount, string reason);
+    event MultisigRewardBpsSet(uint256 bps);
 }
 

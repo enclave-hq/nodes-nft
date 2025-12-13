@@ -119,6 +119,8 @@ export interface Web3Data {
       maxUses?: number;
       usageCount: number;
       createdAt: string;
+      parentInviteCodeId?: number | null;
+      parentInviteCode?: { id: number; code: string } | null;
     }>;
     pendingInviteCodes?: Array<{
       id: number;
@@ -127,6 +129,8 @@ export interface Web3Data {
       maxUses?: number;
       usageCount: number;
       createdAt: string;
+      parentInviteCodeId?: number | null;
+      parentInviteCode?: { id: number; code: string } | null;
     }>;
     usedInviteCode?: {
       id: number;
@@ -696,14 +700,17 @@ export const useWeb3Store = create<Web3Store>()(
       });
       
       // Check if chain ID matches
+      // Note: Chain switching is handled by WalletProvider on startup and connection
+      // This check only validates and reports errors
       const currentChainId = walletManager.getPrimaryAccount()?.chainId;
       if (currentChainId !== config.network.chainId) {
         console.error('❌ Chain ID mismatch!', {
           expected: config.network.chainId,
           current: currentChainId,
         });
+        console.log('💡 Chain switching should be handled automatically by WalletProvider');
         set(state => ({
-          errors: { ...state.errors, allowances: `Wrong chain. Expected ${config.network.chainId}, got ${currentChainId}` }
+          errors: { ...state.errors, allowances: `Wrong chain. Expected ${config.network.chainId}, got ${currentChainId}. Please wait for automatic chain switch or reconnect wallet.` }
         }));
         return;
       }

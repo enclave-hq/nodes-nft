@@ -20,6 +20,8 @@
     "viewDetails": "View Details",
     "collapse": "Collapse",
     "refreshData": "Refresh Data",
+    "dataRefreshed": "Data refreshed",
+    "refreshFailed": "Refresh failed, please try again later",
     "selectLanguage": "Select language",
     "tabs": "Tabs"
   },
@@ -27,7 +29,8 @@
     "home": "Home",
     "mint": "Mint",
     "myNfts": "My NFTs",
-    "marketplace": "Marketplace"
+    "marketplace": "Marketplace",
+    "myRewards": "My Rewards"
   },
   "home": {
     "hero": {
@@ -53,7 +56,7 @@
       "subtitle": "Simple, transparent, and profitable. Become part of Enclave's decentralized privacy network.",
       "step1": {
         "title": "Mint NFT",
-        "description": "Pay USDT to mint a Node NFT and receive additional $E"
+        "description": "Mint NFT to participate in zero-knowledge proof network, earn mining $E production and fee rewards"
       },
       "step2": {
         "title": "Fee Sharing",
@@ -120,7 +123,16 @@
       "progress": "Progress",
       "connectWalletFirst": "Please connect your wallet first",
       "noActiveBatchMint": "There is no active batch currently. Cannot mint NFT",
-      "waitForNextBatch": "Please wait patiently for the next batch to open for minting"
+      "waitForNextBatch": "Please wait patiently for the next batch to open for minting",
+      "availableToMint": "Available to Mint"
+    },
+    "mint": {
+      "whitelistRequired": "You need to join the whitelist first to mint NFT",
+      "insufficientUsdt": "Insufficient USDT balance. Need {amount}",
+      "mintSuccess": "NFT minted successfully!",
+      "minting": "Minting...",
+      "mintNFT": "Mint NFT",
+      "mintQuantity": "Mint {quantity}"
     }
   },
   "mint": {
@@ -370,7 +382,8 @@
     "insufficientBalance": "Insufficient balance",
     "transactionFailed": "Transaction failed",
     "tryAgain": "Please try again",
-    "wrongNetwork": "Wrong Network"
+    "wrongNetwork": "Wrong Network",
+    "userRejected": "User rejected the request"
   },
   "whitelist": {
     "title": "Whitelist Management",
@@ -399,7 +412,11 @@
     "registerFailed": "Registration failed",
     "applicationSubmitted": "Invite code application submitted, please wait for review",
     "applicationFailed": "Application failed",
-    "copyInviteCode": "Copy Invite Code"
+    "copyInviteCode": "Copy Invite Code",
+    "requestAlreadyExists": "Request already exists for this address",
+    "userAlreadyHasInviteCode": "User already has an invite code",
+    "referrerInviteCodeNotFound": "Referrer invite code not found",
+    "referrerInviteCodeNotActive": "Referrer invite code is not active"
   },
   "mintStatus": {
     "applyWhitelistFirst": "Please",

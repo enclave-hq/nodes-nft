@@ -121,6 +121,19 @@ library LibNFTManagerStorage {
         uint256 nextOrderId;
         uint256[] activeOrderIds;
         uint256 marketFeeRate;
+        
+        // ========== NEW STORAGE (Added for UUPS upgrade compatibility) ==========
+        // ⚠️ IMPORTANT: New storage variables must be added at the END to maintain UUPS upgrade safety
+        // ✅ DO NOT modify existing storage layout above
+        // ✅ DO NOT change order of existing variables
+        // ✅ DO NOT remove existing variables
+        
+        /**
+         * @notice Multisig reward ratio in basis points (10000 = 100%)
+         * @dev Default: 2000 (20%). Can be configured by master via setMultisigRewardBps()
+         * @dev 0 means use default (2000)
+         */
+        uint256 multisigRewardBps;
     }
 
     function getStorage() internal pure returns (NFTManagerStorage storage ds) {

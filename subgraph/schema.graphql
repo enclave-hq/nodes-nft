@@ -1,0 +1,16 @@
+type NFTMint @entity {
+  id: ID! # nftId
+  nftId: BigInt!
+  minter: Bytes! # address
+  batchId: BigInt!
+  mintPrice: BigInt!
+  timestamp: BigInt!
+  txHash: Bytes!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+
+
+
+

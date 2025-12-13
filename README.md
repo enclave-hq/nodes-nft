@@ -64,6 +64,16 @@ npm install
 npm run dev
 ```
 
+## Integration with ZKPay
+
+If integrating with ZKPay for fee discounts via NFT invitation codes, ensure the ZKPay Backend is configured to allow requests from authorized services.
+
+### ZKPay Backend Configuration
+
+Set the following environment variable in ZKPay Backend (`enclave/backend`):
+
+- `ASSOCIATE_CODE_IP_WHITELIST`: Comma-separated list of IPs allowed to associate addresses with invitation codes (e.g., the IP of the service calling the association API).
+
 ## Documentation
 
 For detailed design documentation, please refer to the `../docs/node-nft/` directory:
@@ -76,4 +86,3 @@ For detailed design documentation, please refer to the `../docs/node-nft/` direc
 ## License
 
 MIT
-

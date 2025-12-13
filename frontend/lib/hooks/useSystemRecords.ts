@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useWallet } from '../providers/WalletProvider';
 import { CONTRACT_ADDRESSES, NETWORK_CONFIG } from '../contracts/config';
 import { NFT_MANAGER_ABI, ERC20_ABI } from '../contracts/abis';
-import { Interface } from 'ethers';
+import { Interface, JsonRpcProvider } from 'ethers';
 
 /**
  * ZKPayVault ABI (simplified for balance queries)
@@ -82,19 +82,19 @@ export function useVaultBalances(vaultAddress: string, tokenKey: string = 'USDT'
       const [platformFee, buybackFee, nodeMultisigFee] = await Promise.all([
         walletManager.readContract(
           vaultAddress as `0x${string}`,
-          ZKPAY_VAULT_ABI as unknown[],
+          ZKPAY_VAULT_ABI as unknown as unknown[],
           'platformFeeBalances',
           [tokenKey]
         ) as Promise<bigint>,
         walletManager.readContract(
           vaultAddress as `0x${string}`,
-          ZKPAY_VAULT_ABI as unknown[],
+          ZKPAY_VAULT_ABI as unknown as unknown[],
           'buybackFeeBalances',
           [tokenKey]
         ) as Promise<bigint>,
         walletManager.readContract(
           vaultAddress as `0x${string}`,
-          ZKPAY_VAULT_ABI as unknown[],
+          ZKPAY_VAULT_ABI as unknown as unknown[],
           'nodeMultisigFeeBalances',
           [tokenKey]
         ) as Promise<bigint>,
@@ -148,8 +148,11 @@ export function useRewardDistributionRecords(limit: number = 50) {
     setError(null);
 
     try {
+      // Create provider for reading blockchain data
+      const ethersProvider = new JsonRpcProvider(NETWORK_CONFIG.rpcUrl);
+      
       // Get current block number
-      const currentBlock = await walletManager.getBlockNumber();
+      const currentBlock = await ethersProvider.getBlockNumber();
       
       // Query events from last 10000 blocks (approximately last few days on BSC)
       const fromBlock = Math.max(0, currentBlock - 10000);
@@ -158,7 +161,7 @@ export function useRewardDistributionRecords(limit: number = 50) {
       console.log(`🔍 Querying RewardDistributed events from block ${fromBlock} to ${currentBlock}`);
 
       // Get event logs
-      const logs = await walletManager.getLogs({
+      const logs = await ethersProvider.getLogs({
         address: CONTRACT_ADDRESSES.nftManager,
         fromBlock,
         toBlock,
@@ -245,8 +248,11 @@ export function useUnlockRecords(limit: number = 50) {
     setError(null);
 
     try {
+      // Create provider for reading blockchain data
+      const ethersProvider = new JsonRpcProvider(NETWORK_CONFIG.rpcUrl);
+      
       // Get current block number
-      const currentBlock = await walletManager.getBlockNumber();
+      const currentBlock = await ethersProvider.getBlockNumber();
       
       // Query events from last 10000 blocks
       const fromBlock = Math.max(0, currentBlock - 10000);
@@ -255,7 +261,7 @@ export function useUnlockRecords(limit: number = 50) {
       console.log(`🔍 Querying UnlockedWithdrawn events from block ${fromBlock} to ${currentBlock}`);
 
       // Get event logs
-      const logs = await walletManager.getLogs({
+      const logs = await ethersProvider.getLogs({
         address: CONTRACT_ADDRESSES.nftManager,
         fromBlock,
         toBlock,

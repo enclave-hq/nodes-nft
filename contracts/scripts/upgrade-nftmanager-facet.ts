@@ -19,12 +19,51 @@ async function main() {
 
   console.log(`🚀 Upgrading NFTManagerFacet on ${networkName.toUpperCase()}...\n`);
 
-  const NFT_MANAGER_ADDRESS = process.env.NFT_MANAGER_ADDRESS;
-  if (!NFT_MANAGER_ADDRESS) {
-    throw new Error("❌ Please set NFT_MANAGER_ADDRESS in .env file");
+  // Determine which env file to use based on network for NFT_MANAGER_ADDRESS
+  let envFileNameForAddress: string;
+  if (networkName === "bscMainnet" || network.chainId === BigInt(56)) {
+    envFileNameForAddress = "env.mainnet";
+  } else if (networkName === "bscTestnet" || network.chainId === BigInt(97)) {
+    envFileNameForAddress = "env.testnet";
+  } else {
+    envFileNameForAddress = "env.localnode";
   }
 
-  const [deployer] = await ethers.getSigners();
+  // Try to read NFT_MANAGER_ADDRESS from appropriate env file first
+  let NFT_MANAGER_ADDRESS: string | null = null;
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const envFilePath = path.join(__dirname, "..", envFileNameForAddress);
+    if (fs.existsSync(envFilePath)) {
+      const envContent = fs.readFileSync(envFilePath, "utf-8");
+      const match = envContent.match(/NFT_MANAGER_ADDRESS=(0x[a-fA-F0-9]+)/);
+      if (match) {
+        NFT_MANAGER_ADDRESS = match[1];
+        console.log(`   Using NFT_MANAGER_ADDRESS from ${envFileNameForAddress}: ${NFT_MANAGER_ADDRESS}`);
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
+
+  // Fallback to environment variable
+  if (!NFT_MANAGER_ADDRESS) {
+    NFT_MANAGER_ADDRESS = process.env.NFT_MANAGER_ADDRESS || null;
+    if (NFT_MANAGER_ADDRESS) {
+      console.log(`   Using NFT_MANAGER_ADDRESS from .env: ${NFT_MANAGER_ADDRESS}`);
+    }
+  }
+
+  if (!NFT_MANAGER_ADDRESS) {
+    throw new Error(`❌ Please set NFT_MANAGER_ADDRESS in ${envFileNameForAddress} or .env file`);
+  }
+
+  const signers = await ethers.getSigners();
+  if (signers.length === 0) {
+    throw new Error("❌ No signers found. Please configure PRIVATE_KEY in .env file");
+  }
+  const deployer = signers[0];
   console.log("Deployer:", deployer.address);
   const balance = await ethers.provider.getBalance(deployer.address);
   console.log("Balance:", ethers.formatEther(balance), networkName === "localhost" ? "ETH" : "BNB");
@@ -44,7 +83,7 @@ async function main() {
   const iface = NFTManagerFacetFactory.interface;
   const selectors: string[] = [];
   
-  const functions = iface.fragments.filter(f => f.type === "function");
+  const functions = iface.fragments.filter((f: any) => f.type === "function");
   for (const fragment of functions) {
     if (fragment.type === "function" && fragment.name !== "supportsInterface") {
       try {
@@ -57,25 +96,37 @@ async function main() {
   }
   
   console.log(`✅ Found ${selectors.length} function selectors`);
-  console.log(`   New functions: importExistingNFT, batchImportExistingNFTs`);
+  console.log(`   New functions: batchMintNFT, importExistingNFT, batchImportExistingNFTs`);
 
   // Step 3: Get current Facet address
   console.log("\n3️⃣  Getting current Facet address...");
   
-  // Use env.testnet or .env file
+  // Determine which env file to use based on network
+  let envFileName: string;
+  if (networkName === "bscMainnet" || network.chainId === BigInt(56)) {
+    envFileName = "env.mainnet";
+  } else if (networkName === "bscTestnet" || network.chainId === BigInt(97)) {
+    envFileName = "env.testnet";
+  } else {
+    envFileName = "env.localnode";
+  }
+  
+  console.log(`   Using ${envFileName} for network: ${networkName} (chainId: ${network.chainId})`);
+  
+  // Use appropriate env file or .env file
   let currentFacetAddress: string | null = null;
   
-  // Try to read from env.testnet file first
+  // Try to read from appropriate env file first
   try {
     const fs = require("fs");
     const path = require("path");
-    const envTestnetPath = path.join(__dirname, "..", "env.testnet");
-    if (fs.existsSync(envTestnetPath)) {
-      const envContent = fs.readFileSync(envTestnetPath, "utf-8");
+    const envFilePath = path.join(__dirname, "..", envFileName);
+    if (fs.existsSync(envFilePath)) {
+      const envContent = fs.readFileSync(envFilePath, "utf-8");
       const match = envContent.match(/NFT_MANAGER_FACET=(0x[a-fA-F0-9]+)/);
       if (match) {
         currentFacetAddress = match[1];
-        console.log(`   Found NFT_MANAGER_FACET from env.testnet: ${currentFacetAddress}`);
+        console.log(`   Found NFT_MANAGER_FACET from ${envFileName}: ${currentFacetAddress}`);
       }
     }
   } catch (e) {
@@ -91,7 +142,7 @@ async function main() {
   }
   
   if (!currentFacetAddress) {
-    throw new Error("Could not determine current Facet address. Please set NFT_MANAGER_FACET in env.testnet or .env");
+    throw new Error(`Could not determine current Facet address. Please set NFT_MANAGER_FACET in ${envFileName} or .env`);
   }
   
   console.log(`✅ Current NFTManagerFacet address: ${currentFacetAddress}`);
@@ -101,21 +152,68 @@ async function main() {
     return;
   }
 
-  // Step 4: Prepare FacetCut (Replace action)
-  console.log("\n4️⃣  Preparing FacetCut...");
+  // Step 4: Query current Facet's function selectors from Diamond
+  console.log("\n4️⃣  Querying current Facet's function selectors from Diamond...");
+  const nftManagerLoupeForQuery = await ethers.getContractAt("NFTManagerLoupeFacet", NFT_MANAGER_ADDRESS);
+  
+  let currentSelectors: string[] = [];
+  try {
+    const currentSelectorsArray = await nftManagerLoupeForQuery.facetFunctionSelectors(currentFacetAddress);
+    currentSelectors = currentSelectorsArray.map((s: string) => s.toLowerCase());
+    console.log(`✅ Found ${currentSelectors.length} function selectors in current Facet`);
+  } catch (error: any) {
+    console.log(`⚠️  Could not query current selectors: ${error.message}`);
+    console.log(`   Will attempt to replace all selectors from new Facet`);
+  }
+
+  // Step 5: Prepare FacetCut (Replace existing + Add new)
+  console.log("\n5️⃣  Preparing FacetCut...");
   const nftManagerCut = await ethers.getContractAt("INFTManagerCut", NFT_MANAGER_ADDRESS) as INFTManagerCut;
   
-  const cuts: INFTManagerCut.FacetCutStruct[] = [{
-    facetAddress: newFacetAddress,
-    action: 1, // Replace (FacetCutAction.Replace)
-    functionSelectors: selectors,
-  }];
+  // Normalize selectors for comparison
+  const newSelectorsNormalized = selectors.map((s: string) => s.toLowerCase());
+  
+  // Separate selectors into: existing (Replace) and new (Add)
+  const existingSelectors: string[] = [];
+  const newSelectors: string[] = [];
+  
+  for (const selector of newSelectorsNormalized) {
+    if (currentSelectors.length > 0 && currentSelectors.includes(selector)) {
+      existingSelectors.push(selector);
+    } else {
+      newSelectors.push(selector);
+    }
+  }
 
-  console.log(`✅ Prepared FacetCut to replace ${selectors.length} functions`);
-  console.log(`   ⚠️  This will replace the entire NFTManagerFacet`);
+  const cuts: INFTManagerCut.FacetCutStruct[] = [];
 
-  // Step 5: Execute upgrade
-  console.log("\n5️⃣  Executing upgrade...");
+  // Replace existing functions
+  if (existingSelectors.length > 0) {
+    cuts.push({
+      facetAddress: newFacetAddress,
+      action: 1, // Replace (FacetCutAction.Replace)
+      functionSelectors: existingSelectors,
+    });
+    console.log(`✅ Prepared to replace ${existingSelectors.length} existing functions`);
+  }
+
+  // Add new functions
+  if (newSelectors.length > 0) {
+    cuts.push({
+      facetAddress: newFacetAddress,
+      action: 0, // Add (FacetCutAction.Add)
+      functionSelectors: newSelectors,
+    });
+    console.log(`✅ Prepared to add ${newSelectors.length} new functions`);
+    console.log(`   New functions: batchMintNFT, importExistingNFT, batchImportExistingNFTs`);
+  }
+
+  if (cuts.length === 0) {
+    throw new Error("No functions to upgrade. All selectors are already installed.");
+  }
+
+  // Step 6: Execute upgrade
+  console.log("\n6️⃣  Executing upgrade...");
   console.log("   ⚠️  Make sure you have verified the new implementation!");
   
   const tx = await nftManagerCut.nftManagerCut(cuts, ethers.ZeroAddress, "0x");
@@ -124,26 +222,37 @@ async function main() {
   console.log("✅ Facet upgrade completed");
   console.log(`   Gas used: ${receipt?.gasUsed.toString()}`);
 
-  // Step 6: Verify upgrade
-  console.log("\n6️⃣  Verifying upgrade...");
-  const newFacetAddressAfter = await nftManagerLoupe.facetAddress(selectors[0]);
-  if (newFacetAddressAfter.toLowerCase() === newFacetAddress.toLowerCase()) {
-    console.log("✅ Upgrade verified: Facet address updated");
-  } else {
-    console.log("⚠️  Warning: Facet address mismatch");
-    console.log("   Expected:", newFacetAddress);
-    console.log("   Got:", newFacetAddressAfter);
+  // Step 7: Verify upgrade
+  console.log("\n7️⃣  Verifying upgrade...");
+  try {
+    const nftManagerLoupe = await ethers.getContractAt("NFTManagerLoupeFacet", NFT_MANAGER_ADDRESS);
+    // Try to verify using a known function selector (mintNFT is always present)
+    const mintNFTSelector = iface.getFunction("mintNFT").selector;
+    const newFacetAddressAfter = await nftManagerLoupe.facetAddress(mintNFTSelector);
+    if (newFacetAddressAfter.toLowerCase() === newFacetAddress.toLowerCase()) {
+      console.log("✅ Upgrade verified: Facet address updated");
+    } else {
+      console.log("⚠️  Warning: Facet address mismatch");
+      console.log("   Expected:", newFacetAddress);
+      console.log("   Got:", newFacetAddressAfter);
+    }
+  } catch (error: any) {
+    console.log("⚠️  Could not verify upgrade automatically:", error.message);
+    console.log("   Please verify manually on BSCScan:");
+    console.log(`   https://${networkName === "bscMainnet" ? "bscscan.com" : "testnet.bscscan.com"}/address/${NFT_MANAGER_ADDRESS}`);
   }
 
-  // Step 7: Test new functions
-  console.log("\n7️⃣  Testing new functions...");
+  // Step 8: Test new functions
+  console.log("\n8️⃣  Testing new functions...");
   try {
     const nftManagerFacet = await ethers.getContractAt("NFTManagerFacet", NFT_MANAGER_ADDRESS);
     
-    // Check if importExistingNFT exists (by checking if we can encode it)
+    // Check if new functions exist (by checking if we can encode them)
+    const batchMintSelector = iface.getFunction("batchMintNFT").selector;
     const importSelector = iface.getFunction("importExistingNFT").selector;
     const batchImportSelector = iface.getFunction("batchImportExistingNFTs").selector;
     
+    console.log("   ✅ batchMintNFT selector:", batchMintSelector);
     console.log("   ✅ importExistingNFT selector:", importSelector);
     console.log("   ✅ batchImportExistingNFTs selector:", batchImportSelector);
     console.log("   ✅ New functions are available");
@@ -151,8 +260,8 @@ async function main() {
     console.log("   ⚠️  Could not verify new functions:", error.message);
   }
 
-  // Step 8: Save upgrade info
-  console.log("\n8️⃣  Saving upgrade info...");
+  // Step 9: Save upgrade info
+  console.log("\n9️⃣  Saving upgrade info...");
   
   const upgradeInfo = {
     network: networkName,
@@ -166,6 +275,7 @@ async function main() {
     gasUsed: receipt?.gasUsed.toString(),
     functionSelectors: selectors,
     newFunctions: [
+      "batchMintNFT",
       "importExistingNFT",
       "batchImportExistingNFTs",
       "getAllWhitelistedAddresses"
@@ -178,10 +288,15 @@ async function main() {
   console.log(`✅ Upgrade info saved to: ${outputFileName}`);
 
   // Update env file
-  console.log("\n9️⃣  Updating environment file...");
-  const envFile = networkName === "bscTestnet" ? "env.testnet" : 
-                  networkName === "bscMainnet" ? "env.mainnet" : 
-                  "env.localnode";
+  console.log("\n🔟  Updating environment file...");
+  let envFile: string;
+  if (networkName === "bscMainnet" || network.chainId === BigInt(56)) {
+    envFile = "env.mainnet";
+  } else if (networkName === "bscTestnet" || network.chainId === BigInt(97)) {
+    envFile = "env.testnet";
+  } else {
+    envFile = "env.localnode";
+  }
   const envPath = path.join(__dirname, "..", envFile);
   
   if (fs.existsSync(envPath)) {
@@ -202,6 +317,7 @@ async function main() {
   console.log(`Transaction: ${tx.hash}`);
   console.log(`Block: ${receipt?.blockNumber}`);
   console.log("\n📝 New functions available:");
+  console.log("   - batchMintNFT(uint256 quantity)");
   console.log("   - importExistingNFT()");
   console.log("   - batchImportExistingNFTs()");
   console.log("   - getAllWhitelistedAddresses()");

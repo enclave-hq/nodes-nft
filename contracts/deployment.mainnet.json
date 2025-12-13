@@ -1,0 +1,36 @@
+{
+  "network": "bscMainnet",
+  "chainId": "56",
+  "deployer": "0xa80eb088b2844914000Bec0D2894A9EDf43F0cb6",
+  "timestamp": "2025-11-26T06:15:15.920Z",
+  "lastUpgrade": {
+    "timestamp": "2025-12-03T13:28:42.744Z",
+    "facet": "NFTManagerFacet",
+    "oldAddress": "0x3a1534cbE9F00a660d7bFA68C4755A37C4A1eb78",
+    "newAddress": "0x499411186D71256956043855F89BDa007B9887C0",
+    "transactionHash": "0x11d9281b852f010b3738d42cc478d5bcfd490e609a9290ca450c9e86137b7bb6",
+    "blockNumber": 70355990,
+    "gasUsed": "550377"
+  },
+  "contracts": {
+    "enclaveToken": "0xDA8cB40036ACA4994B95c0Ae7D41f8944f0B5011",
+    "nodeNFT": "0x6F0f5fE4B9FA05CA5C2690d4106F46Bf5e06629b",
+    "nftManager": "0xD9eA9F4B8F24872262568fB2C6133117EC02C774",
+    "tokenVesting": "0x67B8927F0835e79632f4622F017915Cb0B9a6c72",
+    "usdt": "0x55d398326f99059fF775485246999027B3197955",
+    "reward": "0xC4175D65836B6fB39f9aa6a20101FA63C897B741",
+    "facets": {
+      "nftManagerCutFacet": "0xA9BFe1a83F481BC97257bDf8e2E6014Ce38FB2D9",
+      "nftManagerLoupeFacet": "0x90c7520a4652F6B1E585a92dC1829d269624183a",
+      "nftManagerInit": "0x2F02E6a4105a447f5fe3C93834d82AAaB2271919",
+      "NFTManagerFacet": "0x499411186D71256956043855F89BDa007B9887C0",
+      "MarketplaceFacet": "0x0Ad73B10cA0B5cF3bfa3D5718497b764F78e85B2",
+      "RewardFacet": "0xEB6aFa9855D2c717e7667599568c22c991Bbe19c",
+      "AdminFacet": "0x838fCA63D99d8580a7BF415dF4a91D3269DdE12A"
+    }
+  },
+  "configuration": {
+    "oracle": "0xa80eb088b2844914000Bec0D2894A9EDf43F0cb6",
+    "treasury": "0xa80eb088b2844914000Bec0D2894A9EDf43F0cb6"
+  }
+}

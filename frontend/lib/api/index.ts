@@ -14,4 +14,5 @@ export * from './users';
 export * from './nfts';
 export * from './stats';
 export * from './contract';
+export * from './rewards';
 

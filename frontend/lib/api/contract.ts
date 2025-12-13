@@ -30,3 +30,24 @@ export async function setTransfersEnabled(enabled: boolean): Promise<SetTransfer
   return apiPost<SetTransfersEnabledResponse>('/admin/contract/transfers-enabled', { enabled });
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

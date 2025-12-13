@@ -90,9 +90,18 @@ async function apiRequest<T>(
       headers,
     });
 
-    // Handle unauthorized - clear token
+    // Handle unauthorized - clear token and redirect to login
     if (response.status === 401) {
       removeAuthToken();
+      
+      // Redirect to admin page (which will show login) if in browser and not already a login request
+      if (typeof window !== 'undefined' && !endpoint.includes('/auth/login')) {
+        // Use setTimeout to avoid blocking the error throw
+        setTimeout(() => {
+          window.location.href = '/admin';
+        }, 0);
+      }
+      
       throw new ApiError('Unauthorized - please login again', 401, 'UNAUTHORIZED');
     }
 

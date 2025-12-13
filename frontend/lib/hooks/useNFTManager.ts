@@ -239,15 +239,17 @@ export function useMintNFT() {
         }
       );
       
+      const { NETWORK_CONFIG } = await import('@/lib/contracts/config');
+      
       console.log('✅ NFT minting transaction hash:', mintTxHash);
-      console.log('🔗 Transaction link: https://testnet.bscscan.com/tx/' + mintTxHash);
+      console.log('🔗 Transaction link: ' + NETWORK_CONFIG.blockExplorer + '/tx/' + mintTxHash);
       
       // Wait for mint transaction
       console.log('⏳ Waiting for NFT minting confirmation...');
       console.log('📋 Waiting for transaction details:');
       console.log('- Transaction Hash:', mintTxHash);
-      console.log('- Network: BSC Testnet');
-      console.log('- Block Explorer: https://testnet.bscscan.com');
+      console.log('- Network:', NETWORK_CONFIG.name);
+      console.log('- Block Explorer:', NETWORK_CONFIG.blockExplorer);
       
       const receipt = await walletManager.waitForTransaction(mintTxHash);
       
@@ -406,6 +408,220 @@ export function useMintNFT() {
 
   return {
     mintNFT,
+    minting,
+    error,
+  };
+}
+
+export function useBatchMintNFT() {
+  const { address, isConnected, walletManager } = useWallet();
+  const web3Store = useWeb3Store();
+  const [minting, setMinting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const batchMintNFT = async (quantity: number) => {
+    if (!isConnected || !address || !walletManager) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (quantity <= 0 || quantity > 50) {
+      throw new Error('Quantity must be between 1 and 50');
+    }
+
+    setMinting(true);
+    setError(null);
+
+    try {
+      console.log(`🚀 Starting batch NFT mint process for ${quantity} NFTs...`);
+      
+      // 1. Check if there's an active batch
+      console.log('🔍 Step 1: Checking for active batch...');
+      let activeBatchId: bigint;
+      try {
+        activeBatchId = await walletManager.readContract(
+          CONTRACT_ADDRESSES.nftManager,
+          NFT_MANAGER_ABI as unknown[],
+          'getActiveBatch',
+          []
+        ) as bigint;
+      } catch (contractError: unknown) {
+        const errorMessage = contractError instanceof Error ? contractError.message : String(contractError);
+        const isContractRevert = errorMessage.includes('reverted') ||
+                                 errorMessage.includes('execution reverted') ||
+                                 errorMessage.includes('ContractFunctionExecutionError');
+
+        if (isContractRevert) {
+          console.log('⚠️ Contract reverted for getActiveBatch, treating as no active batch');
+          throw new Error('No active batch found, cannot mint NFT');
+        }
+        throw contractError;
+      }
+      
+      if (activeBatchId === BigInt(0)) {
+        throw new Error('No active batch found, cannot mint NFT');
+      }
+      
+      console.log('✅ Active batch found:', activeBatchId.toString());
+      
+      // 2. Get batch details to get mint price
+      console.log('🔍 Step 2: Getting batch details...');
+      const batchData = await walletManager.readContract(
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as unknown[],
+        'batches',
+        [activeBatchId]
+      ) as [bigint, bigint, bigint, bigint, boolean, bigint];
+      
+      const [, , , mintPriceWei, , ] = batchData;
+      const totalPriceWei = mintPriceWei * BigInt(quantity);
+      
+      console.log('✅ Batch details retrieved:');
+      console.log('- Batch ID:', activeBatchId.toString());
+      console.log('- Mint Price per NFT (wei):', mintPriceWei.toString());
+      console.log('- Total Price (wei):', totalPriceWei.toString());
+      console.log('- Total Price (USDT):', (Number(totalPriceWei) / 1e18).toFixed(2));
+      
+      // 3. Check current allowance
+      console.log('🔍 Step 3: Checking current USDT allowance...');
+      const currentAllowance = await walletManager.readContract(
+        CONTRACT_ADDRESSES.usdt,
+        ERC20_ABI as unknown[],
+        'allowance',
+        [address, CONTRACT_ADDRESSES.nftManager]
+      );
+      
+      const allowanceBigInt = BigInt(currentAllowance.toString());
+      const requiredBigInt = totalPriceWei;
+      
+      console.log('✅ Current Allowance:', allowanceBigInt.toString());
+      console.log('✅ Required Allowance:', requiredBigInt.toString());
+      console.log('🔍 Allowance Comparison:', allowanceBigInt >= requiredBigInt ? '✅ Sufficient' : '❌ Insufficient');
+
+      // 4. Approve if needed
+      if (allowanceBigInt < requiredBigInt) {
+        console.log('📝 Step 4: Approving USDT spending...');
+        const approveTxHash = await walletManager.writeContract(
+          CONTRACT_ADDRESSES.usdt,
+          ERC20_ABI as unknown[],
+          'approve',
+          [CONTRACT_ADDRESSES.nftManager, totalPriceWei.toString()],
+          {
+            gas: GAS_CONFIG.gasLimits.erc20Approve,
+            gasPrice: 'auto',
+          }
+        );
+        
+        console.log('✅ USDT approval transaction hash:', approveTxHash);
+        console.log('⏳ Waiting for USDT approval confirmation...');
+        const approveReceipt = await walletManager.waitForTransaction(approveTxHash);
+        console.log('✅ USDT approval confirmed');
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const newAllowance = await walletManager.readContract(
+          CONTRACT_ADDRESSES.usdt,
+          ERC20_ABI as unknown[],
+          'allowance',
+          [address, CONTRACT_ADDRESSES.nftManager]
+        );
+        
+        const newAllowanceBigInt = BigInt(newAllowance.toString());
+        if (newAllowanceBigInt < requiredBigInt) {
+          throw new Error(`USDT allowance insufficient: current ${newAllowanceBigInt.toString()}, required ${requiredBigInt.toString()}`);
+        }
+        
+        console.log('✅ USDT allowance verification passed');
+      } else {
+        console.log('✅ Current allowance is sufficient, skipping approval step');
+      }
+
+      // 5. Batch mint NFTs
+      console.log(`🎨 Step 5: Batch minting ${quantity} NFTs...`);
+      const mintTxHash = await walletManager.writeContract(
+        CONTRACT_ADDRESSES.nftManager,
+        NFT_MANAGER_ABI as unknown[],
+        'batchMintNFT',
+        [quantity],
+        {
+          gas: GAS_CONFIG.gasLimits.mintNFT * quantity, // Scale gas for batch
+          gasPrice: 'auto',
+        }
+      );
+      
+      console.log('✅ Batch NFT minting transaction hash:', mintTxHash);
+      
+      const receipt = await walletManager.waitForTransaction(mintTxHash);
+      
+      if (receipt.status === 'success' || (receipt as { status: string }).status === '0x1') {
+        console.log('🎉 Batch NFT minting successful!');
+      } else {
+        throw new Error(`Batch NFT minting failed: transaction status ${receipt.status}`);
+      }
+      
+      // Extract NFT IDs from events
+      const nftIds: number[] = [];
+      if (receipt.logs && receipt.logs.length > 0) {
+        const nftManagerInterface = new Interface(NFT_MANAGER_ABI);
+        
+        for (const log of receipt.logs) {
+          if (log.address?.toLowerCase() !== CONTRACT_ADDRESSES.nftManager.toLowerCase()) {
+            continue;
+          }
+          
+          try {
+            const parsedLog = nftManagerInterface.parseLog({
+              topics: log.topics || [],
+              data: log.data || '0x',
+              address: log.address,
+            } as any);
+            
+            if (parsedLog && parsedLog.name === 'NFTMinted') {
+              const args = parsedLog.args as any[];
+              nftIds.push(Number(args[0]));
+            }
+          } catch (error) {
+            continue;
+          }
+        }
+      }
+      
+      // Call backend for each minted NFT
+      for (const nftId of nftIds) {
+        try {
+          await handleNftMintCallback({
+            nftId,
+            minterAddress: address,
+            mintTxHash,
+            batchId: activeBatchId.toString(),
+          });
+        } catch (error: any) {
+          console.error(`⚠️ Backend callback failed for NFT ${nftId} (non-critical):`, error.message);
+        }
+      }
+      
+      // Update web3Store data
+      console.log('🔄 Updating Web3 data...');
+      await web3Store.refreshData();
+      console.log('✅ Web3 data update completed');
+      
+      return {
+        success: true,
+        transactionHash: mintTxHash,
+        nftIds,
+        quantity: nftIds.length,
+      };
+    } catch (err) {
+      console.error('❌ Error occurred during batch NFT minting:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Batch minting failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setMinting(false);
+    }
+  };
+
+  return {
+    batchMintNFT,
     minting,
     error,
   };

@@ -160,8 +160,10 @@ export default function NFTMintDebugger() {
         }
       );
 
+      const { NETWORK_CONFIG } = await import('@/lib/contracts/config');
+      
       addLog(`✅ NFT铸造交易哈希: ${mintTxHash}`);
-      addLog(`🔗 交易链接: https://testnet.bscscan.com/tx/${mintTxHash}`);
+      addLog(`🔗 交易链接: ${NETWORK_CONFIG.blockExplorer}/tx/${mintTxHash}`);
 
       // 等待确认
       addLog("⏳ 等待NFT铸造确认...");

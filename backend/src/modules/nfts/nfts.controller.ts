@@ -1,11 +1,15 @@
 import { Controller, Get, Post, Body, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { NftsService } from './nfts.service';
+import { NftsSchedulerService } from './nfts-scheduler.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('admin/nfts')
 @UseGuards(JwtAuthGuard)
 export class NftsController {
-  constructor(private readonly nftsService: NftsService) {}
+  constructor(
+    private readonly nftsService: NftsService,
+    private readonly nftsSchedulerService: NftsSchedulerService,
+  ) {}
 
   // More specific routes must come before generic routes
   @Get('root/:rootInviteCodeId')
@@ -52,6 +56,31 @@ export class NftsController {
     },
   ) {
     return this.nftsService.batchMigrateNFTs(body.migrations);
+  }
+
+  /**
+   * Get sync status (last sync time and next sync countdown)
+   */
+  @Get('sync/status')
+  async getSyncStatus() {
+    return this.nftsSchedulerService.getSyncStatus();
+  }
+
+  /**
+   * Sync NFTs from The Graph subgraph to database (recommended)
+   */
+  @Post('sync')
+  async syncNFTsFromSubgraph() {
+    return this.nftsService.syncNFTsFromSubgraph();
+  }
+
+  /**
+   * Sync NFTs from chain to database (legacy method, deprecated)
+   * @deprecated Use POST /sync instead (uses subgraph)
+   */
+  @Post('sync/chain')
+  async syncNFTsFromChain() {
+    return this.nftsService.syncNFTsFromChain();
   }
 }
 

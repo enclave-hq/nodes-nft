@@ -1,17 +1,26 @@
 # Frontend Dockerfile for Next.js
+# Build context should be the enclave/ directory to access both node-nft/ and wallet-sdk/
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+# Copy frontend package files
+COPY node-nft/frontend/package.json ./
+# Copy wallet-sdk to make it available for local file dependency
+COPY wallet-sdk ../wallet-sdk/
+# Install dependencies and regenerate package-lock.json if needed
+# This ensures compatibility across different npm versions and architectures
+RUN npm install --no-audit
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+# Copy frontend source code
+COPY node-nft/frontend/ .
+# Copy wallet-sdk again for build time
+COPY wallet-sdk ../wallet-sdk/
 
 # Build arguments for Next.js public environment variables
 # These are embedded into the build at build time

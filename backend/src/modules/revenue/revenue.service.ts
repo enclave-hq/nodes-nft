@@ -44,6 +44,107 @@ export class RevenueService {
   }
 
   /**
+   * Get referral reward records for a direct referrer (直接邀请者) address.
+   * Note: in current schema, ReferralRewardRecord.rootReferrerAddress stores direct referrer address.
+   *
+   * @param directReferrerAddress Lowercased 0x address
+   * @param page Page number (1-based)
+   * @param limit Page size
+   * @param includeSelf Whether to include self-referral records (minterAddress === rootReferrerAddress)
+   */
+  async getReferralRecordsForDirectReferrer(
+    directReferrerAddress: string,
+    page: number = 1,
+    limit: number = 20,
+    includeSelf: boolean = false,
+  ): Promise<{
+    records: Array<{
+      id: number;
+      nftId: number;
+      batchId: string;
+      minterAddress: string;
+      referralReward: string;
+      referralRewardWei: string;
+      mintTxHash: string | null;
+      createdAt: string;
+    }>;
+    totals: {
+      totalRewards: string;
+      totalRewardsWei: string;
+      recordCount: number;
+    };
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      rootReferrerAddress: directReferrerAddress.toLowerCase(),
+    };
+    if (!includeSelf) {
+      where.NOT = { minterAddress: directReferrerAddress.toLowerCase() };
+    }
+
+    const [total, rows] = await Promise.all([
+      this.prisma.referralRewardRecord.count({ where }),
+      this.prisma.referralRewardRecord.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          nftId: true,
+          batchId: true,
+          minterAddress: true,
+          referralReward: true,
+          referralRewardWei: true,
+          mintTxHash: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    // totals (for this address only)
+    const allWei = await this.prisma.referralRewardRecord.findMany({
+      where,
+      select: { referralRewardWei: true },
+    });
+    let totalWei = BigInt(0);
+    for (const r of allWei) {
+      totalWei += BigInt(r.referralRewardWei);
+    }
+
+    return {
+      records: rows.map((r) => ({
+        id: r.id,
+        nftId: r.nftId,
+        batchId: r.batchId.toString(),
+        minterAddress: r.minterAddress,
+        referralReward: r.referralReward,
+        referralRewardWei: r.referralRewardWei,
+        mintTxHash: r.mintTxHash,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      totals: {
+        totalRewards: (Number(totalWei) / 1e18).toFixed(2),
+        totalRewardsWei: totalWei.toString(),
+        recordCount: total,
+      },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
    * Get revenue details (paginated)
    */
   async getRevenueDetails(page: number = 1, limit: number = 20) {
@@ -81,7 +182,8 @@ export class RevenueService {
   }
 
   /**
-   * Get total referral rewards
+   * Get total referral rewards (排除自返佣)
+   * 根据"直接邀请"的概念：只统计有效的返佣（排除自返佣）
    */
   async getTotalReferralRewards(): Promise<{
     totalRewards: string; // USDT (human-readable)
@@ -90,12 +192,22 @@ export class RevenueService {
   }> {
     const records = await this.prisma.referralRewardRecord.findMany({
       select: {
+        minterAddress: true,
+        rootReferrerAddress: true, // 实际是直接邀请者地址
         referralRewardWei: true,
       },
     });
 
+    // 排除自返佣：minterAddress === rootReferrerAddress
+    const validRecords = records.filter(record => {
+      const minter = record.minterAddress.toLowerCase();
+      const referrer = record.rootReferrerAddress?.toLowerCase();
+      // 排除自返佣
+      return referrer && minter !== referrer;
+    });
+
     let totalWei = BigInt(0);
-    records.forEach(record => {
+    validRecords.forEach(record => {
       totalWei += BigInt(record.referralRewardWei);
     });
 
@@ -105,7 +217,7 @@ export class RevenueService {
     return {
       totalRewards: totalUSDT.toFixed(2),
       totalRewardsWei: totalWei.toString(),
-      recordCount: records.length,
+      recordCount: validRecords.length, // 返回有效记录数（排除自返佣）
     };
   }
 
@@ -228,18 +340,68 @@ export class RevenueService {
   }
 
   /**
+   * Get direct referrer (直接邀请人) for a user
+   * This is the person whose invite code was used by the user
+   * @param userAddress User address
+   * @returns Direct referrer information
+   */
+  async getDirectReferrer(userAddress: string): Promise<{
+    directReferrerAddress: string | null;
+    directInviteCodeId: number | null;
+    directInviteCode: string | null;
+  }> {
+    // Find invite code usage for this address (most recent usage)
+    const usage = await this.prisma.inviteCodeUsage.findFirst({
+      where: {
+        userAddress: userAddress.toLowerCase(),
+      },
+      include: {
+        inviteCode: true,
+      },
+      orderBy: {
+        createdAt: 'desc', // Get the most recent usage
+      },
+    });
+
+    if (!usage || !usage.inviteCode) {
+      return {
+        directReferrerAddress: null,
+        directInviteCodeId: null,
+        directInviteCode: null,
+      };
+    }
+
+    // Direct referrer is the applicant of the invite code used by the user
+    return {
+      directReferrerAddress: usage.inviteCode.applicantAddress?.toLowerCase() || null,
+      directInviteCodeId: usage.inviteCode.id,
+      directInviteCode: usage.inviteCode.code || null,
+    };
+  }
+
+  /**
    * Calculate and create referral reward record for an NFT
    * This should be called when an NFT is minted
+   * Uses direct referrer (直接邀请人) instead of root referrer
+   * 
+   * 注意：虽然数据库字段名是 rootReferrerAddress，但实际存储的是"直接邀请者"地址
+   * - 直接邀请者：用户使用的邀请码的申请人地址
+   * - 不是根邀请者：不是邀请链的顶层邀请者
+   * 
    * @param nftId NFT ID
    * @param minterAddress Address that minted the NFT
    * @param batchId Batch ID
    * @param mintTxHash Mint transaction hash
+   * @param directInviteCodeId Optional: Direct invite code ID used by minter (if provided, skips query)
+   * @param mintedAt Optional: Mint timestamp (used to find correct invite code usage at mint time)
    */
   async calculateAndCreateReferralReward(
     nftId: number,
     minterAddress: string,
     batchId: bigint,
     mintTxHash?: string,
+    directInviteCodeId?: number | null,
+    mintedAt?: Date,
   ): Promise<void> {
     // Check if record already exists
     const existing = await this.prisma.referralRewardRecord.findUnique({
@@ -251,8 +413,45 @@ export class RevenueService {
       return;
     }
 
-    // Trace root referrer
-    const rootReferrer = await this.traceRootReferrer(minterAddress);
+    // Get direct referrer (直接邀请人)
+    // If directInviteCodeId is provided, use it directly; otherwise query
+    let directReferrer: {
+      directReferrerAddress: string | null;
+      directInviteCodeId: number | null;
+      directInviteCode: string | null;
+    };
+
+    if (directInviteCodeId !== undefined && directInviteCodeId !== null) {
+      // Use provided invite code ID
+      const inviteCode = await this.prisma.inviteCode.findUnique({
+        where: { id: directInviteCodeId },
+      });
+      directReferrer = {
+        directReferrerAddress: inviteCode?.applicantAddress?.toLowerCase() || null,
+        directInviteCodeId: directInviteCodeId,
+        directInviteCode: inviteCode?.code || null,
+      };
+    } else if (mintedAt) {
+      // Find invite code used at mint time (most accurate)
+      const usage = await this.prisma.inviteCodeUsage.findFirst({
+        where: {
+          userAddress: minterAddress.toLowerCase(),
+          createdAt: { lte: mintedAt }, // Before or at mint time
+        },
+        include: { inviteCode: true },
+        orderBy: { createdAt: 'asc' }, // Get first usage (earliest)
+      });
+      directReferrer = usage && usage.inviteCode
+        ? {
+            directReferrerAddress: usage.inviteCode.applicantAddress?.toLowerCase() || null,
+            directInviteCodeId: usage.inviteCode.id,
+            directInviteCode: usage.inviteCode.code || null,
+          }
+        : await this.getDirectReferrer(minterAddress);
+    } else {
+      // Fallback: use most recent invite code usage
+      directReferrer = await this.getDirectReferrer(minterAddress);
+    }
 
     // Get batch referral reward from database
     const batch = await this.prisma.batch.findFirst({
@@ -270,22 +469,26 @@ export class RevenueService {
     const referralRewardUSDT = parseFloat(batch.referralReward);
     const referralRewardWei = ethers.parseUnits(referralRewardUSDT.toFixed(18), 18).toString();
 
-    // If no root referrer, reward goes to the minter (self-reward)
-    const finalRootReferrerAddress = rootReferrer.rootReferrerAddress 
-      ? rootReferrer.rootReferrerAddress.toLowerCase()
+    // If no direct referrer, reward goes to the minter (self-reward)
+    // 注意：rootReferrerAddress 字段名虽然叫"root"，但实际存储的是"直接邀请者"地址（direct referrer）
+    // 这是历史遗留命名问题，为了向后兼容暂时保留字段名
+    const finalReferrerAddress = directReferrer.directReferrerAddress 
+      ? directReferrer.directReferrerAddress.toLowerCase()
       : minterAddress.toLowerCase();
-    const finalRootInviteCodeId = rootReferrer.rootReferrerAddress 
-      ? rootReferrer.rootInviteCodeId 
+    const finalInviteCodeId = directReferrer.directReferrerAddress 
+      ? directReferrer.directInviteCodeId 
       : null;
 
     // Create referral reward record
+    // 注意：rootReferrerAddress 存储的是直接邀请者地址，不是根邀请者
+    // rootInviteCodeId 存储的是直接邀请码ID，不是根邀请码ID
     await this.prisma.referralRewardRecord.create({
       data: {
         nftId,
         batchId,
         minterAddress: minterAddress.toLowerCase(),
-        rootReferrerAddress: finalRootReferrerAddress,
-        rootInviteCodeId: finalRootInviteCodeId,
+        rootReferrerAddress: finalReferrerAddress, // 实际是直接邀请者地址
+        rootInviteCodeId: finalInviteCodeId, // 实际是直接邀请码ID
         referralReward: batch.referralReward,
         referralRewardWei,
         mintTxHash,
@@ -742,11 +945,273 @@ export class RevenueService {
   }
 
   /**
-   * Get distributable referral rewards by root address
-   * @returns List of root addresses with their total rewards and distributed amounts
+   * Idempotent sync: Recalculate referral rewards from chain data and local invite code info
+   * This ensures that re-reading NFTs from chain and invite codes from database
+   * produces the same referral reward data (幂等性)
+   * 
+   * Process:
+   * 1. Read all NFTs from chain (via totalMinted)
+   * 2. For each NFT, get minter address from chain
+   * 3. Get invite code usage from database for the minter
+   * 4. Calculate direct referrer
+   * 5. Get batch info from RevenueRecord or infer from chain
+   * 6. Calculate expected referral reward record
+   * 7. Compare with existing record, fix if incorrect
+   * 
+   * @param fullSync If true, recalculate all NFTs. If false, only process missing/incorrect records
+   * @returns Statistics about the sync operation
+   */
+  async syncReferralRewardsFromChain(fullSync: boolean = false): Promise<{
+    totalNfts: number;
+    processed: number;
+    created: number;
+    updated: number;
+    correct: number;
+    skipped: number;
+    errors: number;
+  }> {
+    try {
+      console.log('🔄 Starting idempotent referral reward sync from chain...\n');
+
+      // 1. Get total minted NFTs from chain
+      const totalMinted = await this.contractService.getTotalMinted();
+      const totalNfts = Number(totalMinted);
+      console.log(`📊 Total NFTs on chain: ${totalNfts}\n`);
+
+      let processed = 0;
+      let created = 0;
+      let updated = 0;
+      let correct = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      // 2. Pre-fetch batch data to avoid repeated queries
+      const allBatches = await this.prisma.batch.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
+      const batchMap = new Map<string, { batchId: bigint; referralReward: string }>();
+      allBatches.forEach(batch => {
+        if (batch.referralReward) {
+          batchMap.set(batch.batchId.toString(), {
+            batchId: batch.batchId,
+            referralReward: batch.referralReward,
+          });
+        }
+      });
+      const defaultBatch = allBatches.length > 0 ? allBatches[0] : null;
+
+      // 3. Pre-fetch all revenue records
+      const allRevenueRecords = await this.prisma.revenueRecord.findMany();
+      const revenueRecordMap = new Map<number, typeof allRevenueRecords[0]>();
+      allRevenueRecords.forEach(record => {
+        revenueRecordMap.set(record.nftId, record);
+      });
+
+      // 4. Pre-fetch all existing referral reward records
+      const allReferralRewardRecords = await this.prisma.referralRewardRecord.findMany();
+      const referralRewardRecordMap = new Map<number, typeof allReferralRewardRecords[0]>();
+      allReferralRewardRecords.forEach(record => {
+        referralRewardRecordMap.set(record.nftId, record);
+      });
+
+      // 5. Process NFTs in concurrent batches
+      const batchSize = 20; // Increased batch size for better concurrency
+      const rpcBatchSize = 5; // Smaller batch for RPC calls to avoid rate limits
+      
+      for (let i = 1; i <= totalNfts; i += batchSize) {
+        const nftIds = Array.from({ length: Math.min(batchSize, totalNfts - i + 1) }, (_, idx) => i + idx);
+        
+        // Process RPC calls in smaller batches to avoid rate limits
+        const minterPromises: Promise<{ nftId: number; minter: string | null }>[] = [];
+        for (let j = 0; j < nftIds.length; j += rpcBatchSize) {
+          const rpcBatch = nftIds.slice(j, j + rpcBatchSize);
+          const batchPromises = rpcBatch.map(async (nftId) => {
+            try {
+              const minter = await this.contractService.getMinter(nftId);
+              return { nftId, minter };
+            } catch (error: any) {
+              console.error(`❌ NFT #${nftId}: Error getting minter - ${error.message}`);
+              return { nftId, minter: null };
+            }
+          });
+          minterPromises.push(...batchPromises);
+          
+          // Small delay between RPC batches
+          if (j + rpcBatchSize < nftIds.length) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+        }
+
+        const minterResults = await Promise.all(minterPromises);
+        const minterMap = new Map<number, string>();
+        minterResults.forEach(({ nftId, minter }) => {
+          if (minter) {
+            minterMap.set(nftId, minter.toLowerCase());
+          }
+        });
+
+        // Batch fetch direct referrers for all unique minter addresses
+        const uniqueMinters = Array.from(new Set(minterMap.values()));
+        const directReferrerPromises = uniqueMinters.map(async (minterAddress) => {
+          const referrer = await this.getDirectReferrer(minterAddress);
+          return { minterAddress, referrer };
+        });
+        const directReferrerResults = await Promise.all(directReferrerPromises);
+        const directReferrerMap = new Map<string, typeof directReferrerResults[0]['referrer']>();
+        directReferrerResults.forEach(({ minterAddress, referrer }) => {
+          directReferrerMap.set(minterAddress, referrer);
+        });
+
+        // Process all NFTs in this batch concurrently
+        const processPromises = nftIds.map(async (nftId) => {
+          try {
+            const minterAddress = minterMap.get(nftId);
+            if (!minterAddress) {
+              skipped++;
+              return;
+            }
+
+            const directReferrer = directReferrerMap.get(minterAddress);
+            const expectedReferrerAddress = directReferrer?.directReferrerAddress 
+              ? directReferrer.directReferrerAddress.toLowerCase()
+              : minterAddress.toLowerCase();
+            const expectedInviteCodeId = directReferrer?.directReferrerAddress 
+              ? directReferrer.directInviteCodeId 
+              : null;
+
+            // Get batch info from pre-fetched data
+            let batchId: bigint | null = null;
+            let referralReward: string | null = null;
+            let referralRewardWei: string | null = null;
+
+            const revenueRecord = revenueRecordMap.get(nftId);
+            if (revenueRecord) {
+              batchId = revenueRecord.batchId;
+              const batchData = batchMap.get(batchId.toString());
+              if (batchData?.referralReward) {
+                referralReward = batchData.referralReward;
+                referralRewardWei = ethers.parseUnits(
+                  parseFloat(referralReward).toFixed(18),
+                  18
+                ).toString();
+              }
+            } else if (defaultBatch?.referralReward) {
+              batchId = defaultBatch.batchId;
+              referralReward = defaultBatch.referralReward;
+              referralRewardWei = ethers.parseUnits(
+                parseFloat(referralReward).toFixed(18),
+                18
+              ).toString();
+            }
+
+            if (!batchId || !referralReward) {
+              skipped++;
+              return;
+            }
+
+            const existingRecord = referralRewardRecordMap.get(nftId);
+            if (existingRecord) {
+              const isCorrect = 
+                existingRecord.rootReferrerAddress.toLowerCase() === expectedReferrerAddress &&
+                existingRecord.rootInviteCodeId === expectedInviteCodeId &&
+                existingRecord.batchId === batchId &&
+                existingRecord.referralReward === referralReward &&
+                existingRecord.referralRewardWei === referralRewardWei;
+
+              if (isCorrect) {
+                correct++;
+              } else {
+                console.log(`🔧 NFT #${nftId}: Fixing incorrect record`);
+                console.log(`   Current: referrer=${existingRecord.rootReferrerAddress}, inviteCodeId=${existingRecord.rootInviteCodeId}`);
+                console.log(`   Expected: referrer=${expectedReferrerAddress}, inviteCodeId=${expectedInviteCodeId}`);
+
+                await this.prisma.referralRewardRecord.update({
+                  where: { nftId },
+                  data: {
+                    minterAddress: minterAddress.toLowerCase(),
+                    rootReferrerAddress: expectedReferrerAddress,
+                    rootInviteCodeId: expectedInviteCodeId,
+                    batchId,
+                    referralReward,
+                    referralRewardWei,
+                  },
+                });
+                updated++;
+              }
+            } else {
+              console.log(`➕ NFT #${nftId}: Creating new record (referrer=${expectedReferrerAddress})`);
+
+              await this.prisma.referralRewardRecord.create({
+                data: {
+                  nftId,
+                  batchId,
+                  minterAddress: minterAddress.toLowerCase(),
+                  rootReferrerAddress: expectedReferrerAddress,
+                  rootInviteCodeId: expectedInviteCodeId,
+                  referralReward,
+                  referralRewardWei,
+                },
+              });
+              created++;
+            }
+
+            processed++;
+          } catch (error: any) {
+            console.error(`❌ NFT #${nftId}: Error - ${error.message}`);
+            errors++;
+          }
+        });
+
+        await Promise.all(processPromises);
+
+        // Log progress
+        if (processed % 100 === 0 || i + batchSize > totalNfts) {
+          console.log(`📊 Progress: ${processed}/${totalNfts} NFTs processed`);
+        }
+
+        // Small delay between batches to avoid overwhelming database
+        if (i + batchSize <= totalNfts) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+        }
+      }
+
+      console.log('\n📊 Sync completed:');
+      console.log(`   ✅ Processed: ${processed} NFTs`);
+      console.log(`   ➕ Created: ${created} records`);
+      console.log(`   🔧 Updated: ${updated} records`);
+      console.log(`   ✓ Correct: ${correct} records`);
+      console.log(`   ⏭️  Skipped: ${skipped} NFTs`);
+      console.log(`   ❌ Errors: ${errors} NFTs\n`);
+
+      return {
+        totalNfts,
+        processed,
+        created,
+        updated,
+        correct,
+        skipped,
+        errors,
+      };
+
+    } catch (error: any) {
+      console.error('❌ Sync failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get distributable referral rewards by direct referrer address (直接邀请者)
+   * 根据"直接邀请"的概念重新设计：
+   * 1. 排除自返佣（minterAddress === rootReferrerAddress）
+   * 2. 只统计直接邀请者的返佣（rootReferrerAddress 存储的是直接邀请人地址）
+   * 3. 确保总数正确
+   * 
+   * 注意：虽然字段名是 rootReferrerAddress，但实际存储的是"直接邀请者"地址，不是根邀请者
+   * 
+   * @returns List of direct referrer addresses with their total rewards and distributed amounts
    */
   async getDistributableReferralRewards(): Promise<{
-    rootAddress: string;
+    rootAddress: string; // 注意：虽然字段名是 rootAddress，但实际是直接邀请者地址
     totalRewards: string;
     totalRewardsWei: string;
     distributedRewards: string;
@@ -755,30 +1220,42 @@ export class RevenueService {
     distributableRewardsWei: string;
     recordCount: number;
   }[]> {
-    // Get all referral reward records grouped by rootReferrerAddress
+    // Get all referral reward records
+    // 注意：rootReferrerAddress 字段名虽然叫"root"，但实际存储的是"直接邀请者"地址（direct referrer）
     const records = await this.prisma.referralRewardRecord.findMany({
       select: {
-        rootReferrerAddress: true,
+        nftId: true,
+        minterAddress: true,
+        rootReferrerAddress: true, // 实际是直接邀请者地址
         referralRewardWei: true,
       },
     });
 
-    // Group by root address and calculate totals
+    // Group by direct referrer address (排除自返佣)
+    // 自返佣：minterAddress === rootReferrerAddress（自己给自己返佣，不应该统计）
     const rewardsByAddress = new Map<string, {
       totalWei: bigint;
       recordCount: number;
     }>();
 
     for (const record of records) {
-      const address = record.rootReferrerAddress.toLowerCase();
+      const minter = record.minterAddress.toLowerCase();
+      const directReferrer = record.rootReferrerAddress?.toLowerCase(); // 实际是直接邀请者地址
+      
+      // 排除自返佣：如果 minterAddress === rootReferrerAddress，跳过
+      if (!directReferrer || minter === directReferrer) {
+        // 自返佣，不统计
+        continue;
+      }
+      
       const rewardWei = BigInt(record.referralRewardWei);
       
-      const existing = rewardsByAddress.get(address);
+      const existing = rewardsByAddress.get(directReferrer);
       if (existing) {
         existing.totalWei += rewardWei;
         existing.recordCount++;
       } else {
-        rewardsByAddress.set(address, {
+        rewardsByAddress.set(directReferrer, {
           totalWei: rewardWei,
           recordCount: 1,
         });
@@ -847,19 +1324,18 @@ export class RevenueService {
   ): Promise<{
     success: boolean;
     nftRecordCreated: boolean;
-    revenueRecordCreated: boolean;
     referralRewardCreated: boolean;
     inviteCodeActivated: boolean;
   }> {
     const normalizedMinterAddress = minterAddress.toLowerCase();
     let nftRecordCreated = false;
-    let revenueRecordCreated = false;
     let referralRewardCreated = false;
     let inviteCodeActivated = false;
 
     const startTime = Date.now();
     try {
-      // 1. Read contract Manager information and create/update NftRecord and RevenueRecord
+      // 1. Read contract Manager information and create/update NftRecord
+      // Note: RevenueRecord is no longer used - revenue is calculated from NftRecord and Batch
       console.log(`🔄 Processing NFT mint callback for NFT ${nftId}...`);
 
       // Get minter address from chain (verify)
@@ -931,11 +1407,12 @@ export class RevenueService {
         // Trace invite code chain
         const rootReferrer = await this.traceRootReferrer(normalizedMinterAddress);
         
-        // Find invite code used by minter
+        // Find invite code used by minter (at mint time)
+        // Note: We use the most recent usage before mint, but ideally should use mint timestamp
         const inviteCodeUsage = await this.prisma.inviteCodeUsage.findFirst({
           where: { userAddress: normalizedMinterAddress },
           include: { inviteCode: true },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'asc' }, // Get first usage (earliest)
         });
 
         await this.prisma.nftRecord.create({
@@ -945,8 +1422,8 @@ export class RevenueService {
             minterAddress: normalizedMinterAddress,
             mintTxHash,
             inviteCodeId: inviteCodeUsage?.inviteCodeId || null,
-            rootInviteCodeId: rootReferrer.rootInviteCodeId || null,
-            rootApplicantAddress: rootReferrer.rootReferrerAddress || null,
+            // Removed rootInviteCodeId and rootApplicantAddress - can be calculated recursively from inviteCodeId
+            // This avoids data redundancy and inconsistency issues
           },
         });
         nftRecordCreated = true;
@@ -961,48 +1438,24 @@ export class RevenueService {
         }
       }
 
-      // Create or update RevenueRecord
-      const existingRevenueRecord = await this.prisma.revenueRecord.findUnique({
-        where: { nftId },
-      });
-
-      if (!existingRevenueRecord) {
-        await this.prisma.revenueRecord.create({
-          data: {
-            nftId,
-            batchId: finalBatchId,
-            minterAddress: normalizedMinterAddress,
-            mintPrice,
-            mintPriceUSDT,
-            mintTxHash,
-          },
-        });
-        revenueRecordCreated = true;
-        console.log(`✅ Created RevenueRecord for NFT ${nftId}`);
-      } else {
-        // Update if batchId or mintTxHash is missing
-        const updates: any = {};
-        if (existingRevenueRecord.batchId !== finalBatchId) {
-          updates.batchId = finalBatchId;
-        }
-        if (!existingRevenueRecord.mintTxHash && mintTxHash) {
-          updates.mintTxHash = mintTxHash;
-        }
-        if (Object.keys(updates).length > 0) {
-          await this.prisma.revenueRecord.update({
-            where: { nftId },
-            data: updates,
-          });
-        }
-      }
+      // Removed RevenueRecord creation - revenue is calculated from NftRecord and Batch
+      // Revenue can be calculated by: NftRecord.minterAddress -> Batch.mintPrice
 
       // 2. Generate referral reward record
+      // Use direct invite code ID from NftRecord
       try {
+        const nftRecord = existingNftRecord || await this.prisma.nftRecord.findUnique({
+          where: { nftId },
+        });
+        const directInviteCodeId = nftRecord?.inviteCodeId || null;
+        
         await this.calculateAndCreateReferralReward(
           nftId,
           normalizedMinterAddress,
           finalBatchId,
           mintTxHash,
+          directInviteCodeId, // Direct invite code ID used at mint time
+          undefined, // mintedAt not available in callback
         );
         referralRewardCreated = true;
         console.log(`✅ Created ReferralRewardRecord for NFT ${nftId}`);
@@ -1015,14 +1468,45 @@ export class RevenueService {
         }
       }
 
-      // 3. Activate invite code
+      // 3. Activate invite code or auto-create if doesn't exist
       try {
         await this.inviteCodesService.activateInviteCodeForApplicant(normalizedMinterAddress);
         inviteCodeActivated = true;
         console.log(`✅ Activated invite code for ${normalizedMinterAddress}`);
       } catch (error: any) {
-        // If no pending invite code, that's okay
-        console.log(`ℹ️ No pending invite code to activate for ${normalizedMinterAddress}`);
+        // If no pending invite code, try to auto-create one
+        if (error.message?.includes('No pending invite code') || error.message?.includes('not found')) {
+          try {
+            // Check if user already has an invite code
+            const existingCode = await this.inviteCodesService.getUserInviteCodes(normalizedMinterAddress);
+            
+            // If user doesn't have an invite code, auto-create one
+            if (existingCode.inviteCodeStatus === 'none' || (existingCode.ownedInviteCodes.length === 0 && existingCode.pendingInviteCodes.length === 0)) {
+              console.log(`🔄 Auto-creating invite code for ${normalizedMinterAddress}...`);
+              
+              // Create invite code request and auto-approve it
+              const request = await this.inviteCodesService.createRequest(normalizedMinterAddress);
+              
+              // Auto-approve the request (system-generated)
+              if (request.status === 'pending') {
+                await this.inviteCodesService.approveRequest(request.id, null);
+              }
+              
+              // Activate the invite code
+              await this.inviteCodesService.activateInviteCodeForApplicant(normalizedMinterAddress);
+              inviteCodeActivated = true;
+              console.log(`✅ Auto-created and activated invite code for ${normalizedMinterAddress}`);
+            } else {
+              console.log(`ℹ️ User already has invite code(s) for ${normalizedMinterAddress}`);
+            }
+          } catch (autoCreateError: any) {
+            // If auto-create fails, log but don't fail the mint callback
+            console.error(`⚠️ Failed to auto-create invite code for ${normalizedMinterAddress}:`, autoCreateError.message);
+          }
+        } else {
+          // Other errors, just log
+          console.log(`ℹ️ No pending invite code to activate for ${normalizedMinterAddress}`);
+        }
       }
 
       // 记录 metrics
@@ -1037,7 +1521,6 @@ export class RevenueService {
       return {
         success: true,
         nftRecordCreated,
-        revenueRecordCreated,
         referralRewardCreated,
         inviteCodeActivated,
       };
@@ -1129,6 +1612,136 @@ export class RevenueService {
       distributedRewardsWei: distributedWei.toString(),
       distributableRewards: (Number(distributableWei) / 1e18).toFixed(2),
       distributableRewardsWei: distributableWei.toString(),
+    };
+  }
+
+  /**
+   * Sync "total allocated" referral rewards to RewardVault (on-chain).
+   *
+   * - Uses "direct invite" concept: ReferralRewardRecord.rootReferrerAddress is the direct referrer.
+   * - Excludes self-referral rewards: minterAddress === rootReferrerAddress
+   * - Only updates on-chain totals when the newly computed total is greater than current on-chain total.
+   *
+   * This is safe & idempotent because the contract enforces "only increase".
+   */
+  async syncReferralRewardsToVault(options?: {
+    readChunkSize?: number;
+    writeChunkSize?: number;
+    confirmations?: number;
+  }): Promise<{
+    processedUsers: number;
+    updatedUsers: number;
+    skippedUsers: number;
+    txCount: number;
+    updatedDetails: Array<{ user: string; oldTotalWei: string; newTotalWei: string }>;
+    skippedDetails: Array<{ user: string; oldTotalWei: string; newTotalWei: string; reason: 'equal' | 'decreased' }>;
+  }> {
+    const readChunkSize = options?.readChunkSize ?? 200;
+    const writeChunkSize = options?.writeChunkSize ?? 50;
+    const confirmations = options?.confirmations ?? 1;
+
+    // 1) Aggregate totals in DB (fast): group by direct referrer, exclude self-referral.
+    // Note: referralRewardWei is stored as varchar; cast to numeric for safe summation.
+    // IMPORTANT: force SUM result to text to avoid scientific notation / precision loss (e.g. "2.1e+21").
+    // We need an exact integer string to safely convert to BigInt.
+    const rows = await this.prisma.$queryRawUnsafe<
+      Array<{ address: string; totalWei: string }>
+    >(
+      `
+      SELECT
+        lower("rootReferrerAddress") as "address",
+        (SUM(("referralRewardWei")::numeric))::text as "totalWei"
+      FROM "referral_reward_records"
+      WHERE lower("minterAddress") <> lower("rootReferrerAddress")
+      GROUP BY lower("rootReferrerAddress")
+      `
+    );
+
+    const entitledMap = new Map<string, bigint>();
+    for (const r of rows) {
+      const addr = (r.address || '').toLowerCase();
+      if (!/^0x[a-f0-9]{40}$/.test(addr)) continue;
+      const totalWeiStr = (r.totalWei ?? '0').toString();
+      // numeric might theoretically include decimals; we only expect integer strings here.
+      const integerPart = totalWeiStr.includes('.') ? totalWeiStr.split('.')[0] : totalWeiStr;
+      entitledMap.set(addr, BigInt(integerPart || '0'));
+    }
+
+    const allUsers = Array.from(entitledMap.keys());
+    if (allUsers.length === 0) {
+      return {
+        processedUsers: 0,
+        updatedUsers: 0,
+        skippedUsers: 0,
+        txCount: 0,
+        updatedDetails: [],
+        skippedDetails: [],
+      };
+    }
+
+    // Debug: show which addresses are being processed (helps validate DB aggregation scope)
+    console.log(`📊 RewardVault sync candidates (direct referrers) count=${allUsers.length}`);
+    if (allUsers.length <= 50) {
+      console.log(`📊 Candidates: ${allUsers.join(', ')}`);
+    }
+
+    // 2) Batch read on-chain totals and build update list (only increases).
+    const usersToUpdate: string[] = [];
+    const totalsToUpdate: string[] = [];
+    const updatedDetails: Array<{ user: string; oldTotalWei: string; newTotalWei: string }> = [];
+    const skippedDetails: Array<{ user: string; oldTotalWei: string; newTotalWei: string; reason: 'equal' | 'decreased' }> = [];
+
+    let processedUsers = 0;
+    let skippedUsers = 0;
+
+    for (let i = 0; i < allUsers.length; i += readChunkSize) {
+      const chunkUsers = allUsers.slice(i, i + readChunkSize);
+      const onchainTotals = await this.contractService.getRewardVaultTotalAllocatedBatch(chunkUsers);
+
+      for (let j = 0; j < chunkUsers.length; j++) {
+        const user = chunkUsers[j];
+        processedUsers++;
+
+        const newTotal = entitledMap.get(user) ?? BigInt(0);
+        const oldTotal = BigInt(onchainTotals[j] || '0');
+
+        if (newTotal > oldTotal) {
+          usersToUpdate.push(user);
+          totalsToUpdate.push(newTotal.toString());
+          updatedDetails.push({
+            user,
+            oldTotalWei: oldTotal.toString(),
+            newTotalWei: newTotal.toString(),
+          });
+        } else {
+          skippedUsers++;
+          skippedDetails.push({
+            user,
+            oldTotalWei: oldTotal.toString(),
+            newTotalWei: newTotal.toString(),
+            reason: newTotal === oldTotal ? 'equal' : 'decreased',
+          });
+        }
+      }
+    }
+
+    // 3) Batch write updates (chunked) + wait confirmations.
+    let txCount = 0;
+    for (let i = 0; i < usersToUpdate.length; i += writeChunkSize) {
+      const u = usersToUpdate.slice(i, i + writeChunkSize);
+      const t = totalsToUpdate.slice(i, i + writeChunkSize);
+      const txHash = await this.contractService.batchSetRewardVaultTotalAllocated(u, t);
+      txCount++;
+      await this.contractService.waitForTransaction(txHash, confirmations);
+    }
+
+    return {
+      processedUsers,
+      updatedUsers: usersToUpdate.length,
+      skippedUsers,
+      txCount,
+      updatedDetails,
+      skippedDetails,
     };
   }
 

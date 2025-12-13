@@ -35,6 +35,94 @@ export class InviteCodesService {
   ) {}
 
   /**
+   * Get referrer invite code ID from InviteCodeUsage table
+   * This replaces the redundant referrerInviteCodeId field in InviteCodeRequest
+   */
+  private async getReferrerInviteCodeId(applicantAddress: string): Promise<number | null> {
+    const usage = await this.prisma.inviteCodeUsage.findFirst({
+      where: {
+        userAddress: applicantAddress.toLowerCase(),
+      },
+      include: {
+        inviteCode: true,
+      },
+      orderBy: {
+        createdAt: 'asc', // Get the first one (earliest usage)
+      },
+    });
+
+    return usage?.inviteCode?.id || null;
+  }
+
+  /**
+   * Calculate level, rootInviteCodeId, and rootApplicantAddress from parentInviteCodeId
+   * This replaces the redundant fields in InviteCode table
+   */
+  private async calculateInviteCodeHierarchy(
+    parentInviteCodeId: number | null
+  ): Promise<{
+    level: number;
+    rootInviteCodeId: number | null;
+    rootApplicantAddress: string | null;
+  }> {
+    if (!parentInviteCodeId) {
+      return {
+        level: 1,
+        rootInviteCodeId: null,
+        rootApplicantAddress: null,
+      };
+    }
+
+    // Recursively find root invite code
+    let currentInviteCodeId = parentInviteCodeId;
+    let level = 2; // Start from level 2 (child of level 1)
+    let rootInviteCodeId: number | null = null;
+    let rootApplicantAddress: string | null = null;
+
+    while (currentInviteCodeId) {
+      const currentCode = await this.prisma.inviteCode.findUnique({
+        where: { id: currentInviteCodeId },
+        select: {
+          id: true,
+          parentInviteCodeId: true,
+          applicantAddress: true,
+        },
+      });
+
+      if (!currentCode) {
+        break;
+      }
+
+      if (!currentCode.parentInviteCodeId) {
+        // This is the root
+        rootInviteCodeId = currentCode.id;
+        rootApplicantAddress = currentCode.applicantAddress;
+        break;
+      }
+
+      // Move up to parent
+      currentInviteCodeId = currentCode.parentInviteCodeId;
+      level++;
+    }
+
+    // If we didn't find a root (shouldn't happen), use parent as root
+    if (!rootInviteCodeId) {
+      const parentCode = await this.prisma.inviteCode.findUnique({
+        where: { id: parentInviteCodeId },
+        select: { id: true, applicantAddress: true },
+      });
+      rootInviteCodeId = parentCode?.id || null;
+      rootApplicantAddress = parentCode?.applicantAddress || null;
+    }
+
+    return {
+      level,
+      rootInviteCodeId,
+      rootApplicantAddress,
+    };
+  }
+
+  /**
    * Generate invite code from address (last 3 bytes, Base32 encoded)
    * @param address Ethereum address
    * @returns Base32 encoded invite code
@@ -53,17 +141,19 @@ export class InviteCodesService {
 
   /**
    * Create invite code request (user applies)
+   * - Top-level requests (no referrer) require manual review
+   * - Non-top-level requests (with referrer) are auto-approved
    * @param applicantAddress Address that applies for invite code
    * @param referrerInviteCodeId Optional referrer invite code ID
    * @param note Optional note/remark from applicant for admin review
-   * @returns Created request
+   * @returns Created request (pending for top-level, auto-approved for non-top-level)
    */
   async createRequest(applicantAddress: string, referrerInviteCodeId?: number, note?: string) {
-    // Check if address already has a pending or approved request
+    // Check if address already has a pending, auto_approved, or approved request
     const existing = await this.prisma.inviteCodeRequest.findFirst({
       where: {
         applicantAddress: applicantAddress.toLowerCase(),
-        status: { in: ['pending', 'approved'] },
+        status: { in: ['pending', 'auto_approved', 'approved'] },
       },
     });
 
@@ -71,21 +161,70 @@ export class InviteCodesService {
       throw new BadRequestException('Request already exists for this address');
     }
 
-    // Check if user has minted NFT (for subsequent-level auto-approval)
-    const hasMintedNFT = await this.checkHasMintedNFT(applicantAddress);
-    const shouldAutoApprove = !!(hasMintedNFT && referrerInviteCodeId);
+    // Check if address already has an invite code (active or pending)
+    const existingCode = await this.prisma.inviteCode.findFirst({
+      where: {
+        applicantAddress: applicantAddress.toLowerCase(),
+        status: { in: ['pending', 'active'] },
+      },
+    });
 
+    if (existingCode) {
+      throw new BadRequestException('User already has an invite code');
+    }
+
+    // Auto-detect referrer invite code if not provided
+    // Get from InviteCodeUsage table (no longer stored in request)
+    // 如果用户已经使用了邀请码，应该自动审核通过
+    let finalReferrerInviteCodeId = referrerInviteCodeId;
+    
+    if (!finalReferrerInviteCodeId) {
+      finalReferrerInviteCodeId = await this.getReferrerInviteCodeId(applicantAddress);
+      if (finalReferrerInviteCodeId) {
+        console.log(`✅ Auto-detected referrer invite code ${finalReferrerInviteCodeId} for user ${applicantAddress}`);
+      }
+    }
+
+    // Validate referrer invite code if provided or auto-detected
+    let isValidReferrer = false;
+    if (finalReferrerInviteCodeId) {
+      const referrerCode = await this.prisma.inviteCode.findUnique({
+        where: { id: finalReferrerInviteCodeId },
+      });
+
+      if (!referrerCode) {
+        console.warn(`⚠️ Referrer invite code ${finalReferrerInviteCodeId} not found, treating as top-level request`);
+        finalReferrerInviteCodeId = null; // Reset to null if not found
+      } else {
+        // Check if referrer code is active (pending or active status)
+        if (referrerCode.status === 'active' || referrerCode.status === 'pending') {
+          isValidReferrer = true;
+          console.log(`✅ Referrer invite code ${referrerCode.code} is valid (status: ${referrerCode.status}), will auto-approve`);
+        } else {
+          console.warn(`⚠️ Referrer invite code ${referrerCode.code} is not active (status: ${referrerCode.status}), will require manual approval`);
+          // Don't throw error, just don't auto-approve
+          finalReferrerInviteCodeId = null; // Reset to null so it requires manual approval
+        }
+      }
+    }
+
+    // Determine if this is a top-level request (no referrer) or non-top-level (with referrer)
+    // 只有有效的推荐人邀请码才会自动审核
+    const isTopLevel = !finalReferrerInviteCodeId || !isValidReferrer;
+    const shouldAutoApprove = !isTopLevel && isValidReferrer; // Auto-approve only if has valid referrer
+
+    // Create request (no longer store referrerInviteCodeId - get from InviteCodeUsage when needed)
     const request = await this.prisma.inviteCodeRequest.create({
       data: {
         applicantAddress: applicantAddress.toLowerCase(),
-        referrerInviteCodeId,
+        referrerInviteCodeId: null, // No longer stored - get from InviteCodeUsage dynamically
         note: note?.trim() || null, // Store note if provided, otherwise null
         status: shouldAutoApprove ? 'auto_approved' : 'pending',
         autoApproved: shouldAutoApprove,
       },
     });
 
-    // If auto-approve, generate invite code immediately
+    // Auto-approve immediately if has referrer (non-top-level)
     if (shouldAutoApprove) {
       await this.approveRequest(request.id, null);
     }
@@ -112,6 +251,20 @@ export class InviteCodesService {
       throw new BadRequestException('Request already processed');
     }
 
+    // Check if address already has an invite code
+    const existingCode = await this.prisma.inviteCode.findFirst({
+      where: {
+        applicantAddress: request.applicantAddress.toLowerCase(),
+        status: { in: ['pending', 'active'] },
+      },
+    });
+
+    if (existingCode) {
+      // If code exists, we update the request to rejected (duplicate) or just fail
+      // To be safe, we just throw error
+      throw new BadRequestException('User already has an invite code');
+    }
+
     // Generate invite code
     const code = this.generateInviteCode(request.applicantAddress);
     
@@ -123,34 +276,44 @@ export class InviteCodesService {
       counter++;
     }
 
-    // Get parent invite code info if exists
+    // Get referrer invite code from InviteCodeUsage (no longer stored in request)
+    const referrerInviteCodeId = await this.getReferrerInviteCodeId(request.applicantAddress);
+    
     let parentInviteCode = null;
-    let level = 1;
-    let rootInviteCodeId = null;
-    let rootApplicantAddress = null;
+    let parentInviteCodeId = null;
 
-    if (request.referrerInviteCodeId) {
+    if (referrerInviteCodeId) {
       parentInviteCode = await this.prisma.inviteCode.findUnique({
-        where: { id: request.referrerInviteCodeId },
+        where: { id: referrerInviteCodeId },
       });
       
       if (parentInviteCode) {
-        level = parentInviteCode.level + 1;
-        rootInviteCodeId = parentInviteCode.rootInviteCodeId || parentInviteCode.id;
-        rootApplicantAddress = parentInviteCode.rootApplicantAddress || parentInviteCode.applicantAddress;
+        // Validate parent invite code is still active
+        if (parentInviteCode.status !== 'active' && parentInviteCode.status !== 'pending') {
+          throw new BadRequestException('Referrer invite code is not active');
+        }
+        
+        parentInviteCodeId = parentInviteCode.id;
+      } else {
+        console.warn(`Referrer invite code ${referrerInviteCodeId} not found, creating invite code without parent`);
       }
     }
 
-    // Create invite code
+    // Calculate hierarchy dynamically (no longer stored)
+    const hierarchy = await this.calculateInviteCodeHierarchy(parentInviteCodeId);
+
+    // Create invite code with parent relationship (only store parentInviteCodeId, calculate others dynamically)
+    // Note: level, rootInviteCodeId, rootApplicantAddress are calculated but still stored for backward compatibility
+    // They can be removed in a future migration after all code is updated
     const inviteCode = await this.prisma.inviteCode.create({
       data: {
         code: uniqueCode,
         applicantAddress: request.applicantAddress.toLowerCase(),
-        parentInviteCodeId: request.referrerInviteCodeId,
+        parentInviteCodeId: parentInviteCodeId, // Only store parent relationship
         creator: adminAddress || 'system',
-        level,
-        rootInviteCodeId: rootInviteCodeId,
-        rootApplicantAddress: rootApplicantAddress,
+        level: hierarchy.level, // Calculated dynamically, stored for backward compatibility
+        rootInviteCodeId: hierarchy.rootInviteCodeId, // Calculated dynamically, stored for backward compatibility
+        rootApplicantAddress: hierarchy.rootApplicantAddress, // Calculated dynamically, stored for backward compatibility
         status: 'pending', // Will be activated when applicant mints NFT
       },
     });
@@ -251,6 +414,33 @@ export class InviteCodesService {
       data: { usageCount: { increment: 1 } },
     });
 
+    // 重要：如果用户已经创建了自己的邀请码，但 parentInviteCodeId 未设置，现在应该更新
+    // 因为用户刚刚使用了邀请码，说明这个邀请码应该是用户创建的邀请码的父级
+    const userOwnInviteCode = await this.prisma.inviteCode.findFirst({
+      where: {
+        applicantAddress: userAddress.toLowerCase(),
+        status: { in: ['pending', 'active'] },
+      },
+    });
+
+    if (userOwnInviteCode && !userOwnInviteCode.parentInviteCodeId) {
+      // 用户创建了自己的邀请码，但 parentInviteCodeId 未设置
+      // 现在用户使用了邀请码，应该将这个邀请码设置为父级
+      console.log(`🔄 更新邀请码 ${userOwnInviteCode.code} 的 parentInviteCodeId 为 ${inviteCode.code} (ID: ${inviteCode.id})`);
+      
+      const hierarchy = await this.calculateInviteCodeHierarchy(inviteCode.id);
+      
+      await this.prisma.inviteCode.update({
+        where: { id: userOwnInviteCode.id },
+        data: {
+          parentInviteCodeId: inviteCode.id,
+          level: hierarchy.level + 1, // 更新层级
+          rootInviteCodeId: hierarchy.rootInviteCodeId || inviteCode.id, // 更新根邀请码
+          rootApplicantAddress: hierarchy.rootApplicantAddress || inviteCode.applicantAddress, // 更新根申请人地址
+        },
+      });
+    }
+
     return {
       success: true,
       txHash,
@@ -287,11 +477,36 @@ export class InviteCodesService {
         maxUses: true,
         usageCount: true,
         createdAt: true,
+        parentInviteCodeId: true,
+        parentInviteCode: {
+          select: {
+            id: true,
+            code: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    // Auto-activation check: If user has pending codes, check on-chain if they have minted NFTs
+    if (pendingInviteCodes.length > 0) {
+      try {
+        // We check on-chain data because the database might not be synced yet (if callback failed)
+        const nftIds = await this.contractService.getUserNFTs(normalizedAddress);
+        
+        if (nftIds.length > 0) {
+          console.log(`Found ${nftIds.length} NFTs on-chain for ${normalizedAddress}. Activating pending invite code...`);
+          await this.activateInviteCodeForApplicant(normalizedAddress);
+          
+          // Clear pending list as they are now active and will be picked up by the following activeInviteCodes query
+          pendingInviteCodes.length = 0;
+        }
+      } catch (error) {
+        console.error(`Error checking on-chain NFTs for user ${normalizedAddress}:`, error);
+      }
+    }
 
     // Get active invite codes owned by the user (where applicantAddress matches and status is active)
     const activeInviteCodes = await this.prisma.inviteCode.findMany({
@@ -306,6 +521,13 @@ export class InviteCodesService {
         maxUses: true,
         usageCount: true,
         createdAt: true,
+        parentInviteCodeId: true,
+        parentInviteCode: {
+          select: {
+            id: true,
+            code: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -361,6 +583,10 @@ export class InviteCodesService {
         maxUses: ic.maxUses ?? null, // Use null instead of undefined for JSON serialization
         usageCount: ic.usageCount,
         createdAt: ic.createdAt.toISOString(),
+        parentInviteCodeId: ic.parentInviteCodeId ?? null,
+        parentInviteCode: ic.parentInviteCode
+          ? { id: ic.parentInviteCode.id, code: ic.parentInviteCode.code }
+          : null,
       })),
       pendingInviteCodes: pendingInviteCodes.map((ic) => ({
         id: ic.id,
@@ -369,38 +595,43 @@ export class InviteCodesService {
         maxUses: ic.maxUses ?? null,
         usageCount: ic.usageCount,
         createdAt: ic.createdAt.toISOString(),
+        parentInviteCodeId: ic.parentInviteCodeId ?? null,
+        parentInviteCode: ic.parentInviteCode
+          ? { id: ic.parentInviteCode.id, code: ic.parentInviteCode.code }
+          : null,
       })),
     };
   }
 
   /**
-   * Activate invite code when applicant mints NFT
+   * Activate all pending invite codes for applicant when they mint NFT
    * @param applicantAddress Applicant address
    */
   async activateInviteCodeForApplicant(applicantAddress: string) {
-    const inviteCode = await this.prisma.inviteCode.findFirst({
+    // Update ALL pending invite codes for this user to active
+    // This handles cases where duplicates might have been created
+    const result = await this.prisma.inviteCode.updateMany({
       where: {
         applicantAddress: applicantAddress.toLowerCase(),
         status: 'pending',
       },
+      data: {
+        status: 'active',
+        activatedAt: new Date(),
+      },
     });
-
-    if (inviteCode) {
-      await this.prisma.inviteCode.update({
-        where: { id: inviteCode.id },
-        data: {
-          status: 'active',
-          activatedAt: new Date(),
-        },
-      });
+    
+    if (result.count > 0) {
+      console.log(`Activated ${result.count} invite codes for ${applicantAddress}`);
     }
   }
 
   /**
    * Get invite code by ID
+   * Note: level, rootInviteCodeId, rootApplicantAddress are now dynamically calculated
    */
   async findOne(id: number) {
-    return this.prisma.inviteCode.findUnique({
+    const code = await this.prisma.inviteCode.findUnique({
       where: { id },
       include: {
         parentInviteCode: true,
@@ -408,10 +639,25 @@ export class InviteCodesService {
         usage: true,
       },
     });
+
+    if (!code) {
+      return null;
+    }
+
+    // Dynamically calculate hierarchy
+    const hierarchy = await this.calculateInviteCodeHierarchy(code.parentInviteCodeId);
+
+    return {
+      ...code,
+      level: hierarchy.level,
+      rootInviteCodeId: hierarchy.rootInviteCodeId,
+      rootApplicantAddress: hierarchy.rootApplicantAddress,
+    };
   }
 
   /**
    * Get invite code list with pagination
+   * Note: level, rootInviteCodeId, rootApplicantAddress are now dynamically calculated
    */
   async findAll(page: number = 1, limit: number = 20, status?: string) {
     const skip = (page - 1) * limit;
@@ -436,14 +682,23 @@ export class InviteCodesService {
       this.prisma.inviteCode.count({ where }),
     ]);
 
-    // Transform dates to ISO strings for JSON serialization
-    const transformedData = data.map((code) => ({
-      ...code,
-      createdAt: code.createdAt.toISOString(),
-      updatedAt: code.createdAt.toISOString(), // Use createdAt if updatedAt not available
-      activatedAt: code.activatedAt ? code.activatedAt.toISOString() : null,
-      expiresAt: code.expiresAt ? code.expiresAt.toISOString() : null,
-    }));
+    // Dynamically calculate hierarchy for each invite code
+    const transformedData = await Promise.all(
+      data.map(async (code) => {
+        const hierarchy = await this.calculateInviteCodeHierarchy(code.parentInviteCodeId);
+        
+        return {
+          ...code,
+          level: hierarchy.level, // Dynamically calculated
+          rootInviteCodeId: hierarchy.rootInviteCodeId, // Dynamically calculated
+          rootApplicantAddress: hierarchy.rootApplicantAddress, // Dynamically calculated
+          createdAt: code.createdAt.toISOString(),
+          updatedAt: code.createdAt.toISOString(), // Use createdAt if updatedAt not available
+          activatedAt: code.activatedAt ? code.activatedAt.toISOString() : null,
+          expiresAt: code.expiresAt ? code.expiresAt.toISOString() : null,
+        };
+      })
+    );
 
     return {
       data: transformedData,
@@ -484,7 +739,292 @@ export class InviteCodesService {
   }
 
   /**
+   * Get all invite code relationships as a tree structure
+   * Returns root invite codes (those without parent) with their full descendant trees
+   */
+  async getInviteRelationsTree(): Promise<any[]> {
+    // Get all invite codes with their parent relationships
+    const allCodes = await this.prisma.inviteCode.findMany({
+      include: {
+        parentInviteCode: {
+          select: {
+            id: true,
+            code: true,
+            applicantAddress: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    // Get all invite code IDs for batch querying NFT counts
+    const inviteCodeIds = allCodes.map(code => code.id);
+    const applicantAddresses = allCodes.map(code => code.applicantAddress.toLowerCase());
+
+    // Get all applicant addresses set (for filtering users with own invite codes)
+    const applicantAddressesSet = new Set(applicantAddresses);
+
+    // Batch query: count NFTs minted by each applicant address (自身铸造数量)
+    // 优化：使用 groupBy 一次性查询所有地址的NFT数量，而不是逐个查询
+    const selfMintedRecords = await this.prisma.nftRecord.groupBy({
+      by: ['minterAddress'],
+      where: {
+        minterAddress: { in: applicantAddresses },
+      },
+      _count: {
+        nftId: true,
+      },
+    });
+    const selfMintedMap = new Map<string, number>();
+    applicantAddresses.forEach(address => {
+      const record = selfMintedRecords.find(r => r.minterAddress.toLowerCase() === address.toLowerCase());
+      selfMintedMap.set(address, record?._count.nftId || 0);
+    });
+
+    // Batch query: count NFTs minted using each invite code (使用邀请码铸造数量)
+    // 只统计没有自己邀请码的用户铸造的NFT（纯用户节点）
+    // 这样可以避免重复计算：如果用户有自己的邀请码，他们的NFT会显示在邀请码节点中
+    // 优化：先批量获取所有邀请码使用记录，然后批量统计，减少数据库查询次数
+    const allUsages = await this.prisma.inviteCodeUsage.findMany({
+      where: {
+        inviteCodeId: { in: inviteCodeIds },
+      },
+    });
+    
+    // 按邀请码ID分组，并过滤出纯用户（没有自己邀请码的用户）
+    const pureUsersByInviteCode = new Map<number, string[]>();
+    for (const usage of allUsages) {
+      const normalizedAddr = usage.userAddress.toLowerCase().trim();
+      const hasOwnCode = applicantAddressesSet.has(normalizedAddr);
+      if (!hasOwnCode) {
+        if (!pureUsersByInviteCode.has(usage.inviteCodeId)) {
+          pureUsersByInviteCode.set(usage.inviteCodeId, []);
+        }
+        pureUsersByInviteCode.get(usage.inviteCodeId)!.push(normalizedAddr);
+      }
+    }
+    
+    // 批量统计每个邀请码的NFT数量（只统计纯用户）
+    // 优化：先收集所有需要查询的邀请码和地址组合，然后批量查询
+    const allPureUserAddresses = Array.from(new Set(
+      Array.from(pureUsersByInviteCode.values()).flat()
+    ));
+    
+    // 批量查询所有纯用户的NFT记录（按邀请码和地址分组）
+    const nftCountsByInviteCodeAndMinter = allPureUserAddresses.length > 0
+      ? await this.prisma.nftRecord.groupBy({
+          by: ['inviteCodeId', 'minterAddress'],
+          where: {
+            inviteCodeId: { in: inviteCodeIds },
+            minterAddress: { in: allPureUserAddresses },
+          },
+          _count: {
+            nftId: true,
+          },
+        })
+      : [];
+    
+    // 按邀请码ID汇总统计
+    const inviteCodeMintedMap = new Map<number, number>();
+    inviteCodeIds.forEach(id => inviteCodeMintedMap.set(id, 0));
+    
+    nftCountsByInviteCodeAndMinter.forEach(record => {
+      if (record.inviteCodeId) {
+        const currentCount = inviteCodeMintedMap.get(record.inviteCodeId) || 0;
+        inviteCodeMintedMap.set(record.inviteCodeId, currentCount + (record._count.nftId || 0));
+      }
+    });
+
+    // Batch query: calculate total referral rewards for each invite code (返佣总量)
+    const referralRewardTotals = await Promise.all(
+      inviteCodeIds.map(async (inviteCodeId) => {
+        const records = await this.prisma.referralRewardRecord.findMany({
+          where: {
+            rootInviteCodeId: inviteCodeId,
+          },
+          select: {
+            referralReward: true, // USDT format (string)
+          },
+        });
+        // Sum up all referral rewards (convert string to number, then sum)
+        const total = records.reduce((sum, record) => {
+          const reward = parseFloat(record.referralReward) || 0;
+          return sum + reward;
+        }, 0);
+        return { inviteCodeId, total };
+      })
+    );
+    const referralRewardMap = new Map<number, number>();
+    referralRewardTotals.forEach(({ inviteCodeId, total }) => {
+      referralRewardMap.set(inviteCodeId, total);
+    });
+
+    // Get users who used each invite code (使用邀请码的用户)
+    // Note: applicantAddressesSet was already created above for filtering pure users
+    const inviteCodeUsages = await this.prisma.inviteCodeUsage.findMany({
+      where: {
+        inviteCodeId: { in: inviteCodeIds },
+      },
+      include: {
+        inviteCode: {
+          select: {
+            id: true,
+            code: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    // Debug: Log the set size and some sample addresses
+    console.log(`[getInviteRelationsTree] Total invite codes: ${allCodes.length}`);
+    console.log(`[getInviteRelationsTree] Applicant addresses set size: ${applicantAddressesSet.size}`);
+    console.log(`[getInviteRelationsTree] Total invite code usages: ${inviteCodeUsages.length}`);
+
+    // Count NFTs minted by each user using each invite code
+    // Only include users who don't have their own invite code (纯用户，没有申请邀请码)
+    // This prevents duplicate display: if a user has their own invite code, they should only appear as an invite code node, not as a user node
+    const normalizedUsages = inviteCodeUsages.map(usage => ({
+      ...usage,
+      normalizedUserAddress: usage.userAddress.toLowerCase().trim(),
+    }));
+
+    // Filter out users who have their own invite codes
+    const filteredUsages = normalizedUsages.filter(usage => {
+      const hasOwnInviteCode = applicantAddressesSet.has(usage.normalizedUserAddress);
+      if (hasOwnInviteCode) {
+        // User has their own invite code, skip showing as user node
+        console.log(`[getInviteRelationsTree] Filtering out user ${usage.normalizedUserAddress} (has own invite code)`);
+        return false;
+      }
+      return true;
+    });
+
+    console.log(`[getInviteRelationsTree] Filtered usages: ${filteredUsages.length} (removed ${normalizedUsages.length - filteredUsages.length})`);
+
+    const userMintedCounts = await Promise.all(
+      filteredUsages.map(async (usage) => {
+        const count = await this.prisma.nftRecord.count({
+          where: {
+            inviteCodeId: usage.inviteCodeId,
+            minterAddress: usage.normalizedUserAddress,
+          },
+        });
+        return {
+          inviteCodeId: usage.inviteCodeId,
+          userAddress: usage.normalizedUserAddress,
+          mintedCount: count,
+          usedAt: usage.createdAt.toISOString(),
+        };
+      })
+    );
+
+    // Group users by invite code
+    const usersByInviteCode = new Map<number, any[]>();
+    userMintedCounts.forEach((userInfo) => {
+      if (!usersByInviteCode.has(userInfo.inviteCodeId)) {
+        usersByInviteCode.set(userInfo.inviteCodeId, []);
+      }
+      usersByInviteCode.get(userInfo.inviteCodeId)!.push(userInfo);
+    });
+
+    // Build a map for quick lookup
+    const codeMap = new Map<number, any>();
+    allCodes.forEach((code) => {
+      const applicantAddressLower = code.applicantAddress.toLowerCase();
+      const userNodes = (usersByInviteCode.get(code.id) || []).map((userInfo) => ({
+        type: 'user',
+        id: `user-${code.id}-${userInfo.userAddress}`,
+        userAddress: userInfo.userAddress,
+        mintedCount: userInfo.mintedCount,
+        usedAt: userInfo.usedAt,
+        parentInviteCodeId: code.id,
+        children: [],
+      }));
+
+      codeMap.set(code.id, {
+        type: 'inviteCode',
+        id: code.id,
+        code: code.code,
+        applicantAddress: code.applicantAddress,
+        status: code.status,
+        usageCount: code.usageCount,
+        maxUses: code.maxUses,
+        createdAt: code.createdAt.toISOString(),
+        parentInviteCodeId: code.parentInviteCodeId,
+        parentInviteCode: code.parentInviteCode
+          ? {
+              id: code.parentInviteCode.id,
+              code: code.parentInviteCode.code,
+              applicantAddress: code.parentInviteCode.applicantAddress,
+            }
+          : null,
+        selfMintedCount: selfMintedMap.get(applicantAddressLower) || 0,
+        inviteCodeMintedCount: inviteCodeMintedMap.get(code.id) || 0,
+        totalReferralReward: referralRewardMap.get(code.id) || 0, // 返佣总量 (USDT)
+        children: userNodes, // Add user nodes as children
+      });
+    });
+
+    // Build tree structure (only for invite codes, users are already added as children)
+    const roots: any[] = [];
+    codeMap.forEach((code) => {
+      if (code.parentInviteCodeId) {
+        const parent = codeMap.get(code.parentInviteCodeId);
+        if (parent) {
+          parent.children.push(code);
+        } else {
+          // Parent not found, treat as root
+          roots.push(code);
+        }
+      } else {
+        // No parent, this is a root
+        roots.push(code);
+      }
+    });
+
+    // Recursively calculate level and add hierarchy info
+    const addHierarchyInfo = (node: any, level: number = 1): any => {
+      if (node.type === 'user') {
+        // User nodes don't have children or descendants
+        return {
+          ...node,
+          level,
+          descendantCount: 0,
+        };
+      }
+
+      // Invite code nodes
+      const inviteCodeChildren = node.children.filter((child: any) => child.type === 'inviteCode');
+      const userChildren = node.children.filter((child: any) => child.type === 'user');
+
+      return {
+        ...node,
+        level,
+        descendantCount: inviteCodeChildren.reduce(
+          (count: number, child: any) => {
+            const childWithInfo = addHierarchyInfo(child, level + 1);
+            return count + 1 + (childWithInfo.descendantCount || 0);
+          },
+          0,
+        ),
+        children: [
+          ...inviteCodeChildren.map((child: any) => addHierarchyInfo(child, level + 1)),
+          ...userChildren.map((child: any) => addHierarchyInfo(child, level + 1)),
+        ],
+      };
+    };
+
+    return roots.map((root) => addHierarchyInfo(root));
+  }
+
+  /**
    * Get invite code requests list with pagination
+   * Note: referrerInviteCodeId is now dynamically retrieved from InviteCodeUsage
    */
   async findAllRequests(page: number = 1, limit: number = 20, status?: string) {
     const skip = (page - 1) * limit;
@@ -500,21 +1040,33 @@ export class InviteCodesService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          referrerInviteCode: {
-            select: { id: true, code: true },
-          },
-        },
       }),
       this.prisma.inviteCodeRequest.count({ where }),
     ]);
 
-    // Transform dates to ISO strings for JSON serialization
-    const transformedData = data.map((request) => ({
-      ...request,
-      createdAt: request.createdAt.toISOString(),
-      reviewedAt: request.reviewedAt ? request.reviewedAt.toISOString() : null,
-    }));
+    // Dynamically get referrer invite code from InviteCodeUsage for each request
+    const transformedData = await Promise.all(
+      data.map(async (request) => {
+        const referrerInviteCodeId = await this.getReferrerInviteCodeId(request.applicantAddress);
+        let referrerInviteCode = null;
+        
+        if (referrerInviteCodeId) {
+          const code = await this.prisma.inviteCode.findUnique({
+            where: { id: referrerInviteCodeId },
+            select: { id: true, code: true },
+          });
+          referrerInviteCode = code;
+        }
+
+        return {
+          ...request,
+          referrerInviteCodeId, // Dynamically retrieved
+          referrerInviteCode, // Dynamically retrieved
+          createdAt: request.createdAt.toISOString(),
+          reviewedAt: request.reviewedAt ? request.reviewedAt.toISOString() : null,
+        };
+      })
+    );
 
     return {
       data: transformedData,

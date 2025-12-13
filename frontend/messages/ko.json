@@ -20,6 +20,8 @@
     "viewDetails": "상세 보기",
     "collapse": "접기",
     "refreshData": "데이터 새로고침",
+    "dataRefreshed": "데이터가 새로고침되었습니다",
+    "refreshFailed": "새로고침에 실패했습니다. 나중에 다시 시도해주세요",
     "selectLanguage": "언어 선택",
     "tabs": "탭"
   },
@@ -27,7 +29,8 @@
     "home": "홈",
     "mint": "민팅",
     "myNfts": "내 NFT",
-    "marketplace": "마켓플레이스"
+    "marketplace": "마켓플레이스",
+    "myRewards": "내 리워드"
   },
   "home": {
     "hero": {
@@ -53,7 +56,7 @@
       "subtitle": "간단하고 투명하며 수익성이 높습니다. Enclave의 탈중앙화 프라이버시 네트워크의 일부가 되세요.",
       "step1": {
         "title": "NFT 민팅",
-        "description": "USDT를 지불하여 노드 NFT를 민팅하고 동시에 추가 $E 획득"
+        "description": "NFT를 민팅하여 영지식 증명 네트워크에 참여하고, 마이닝 $E 생산 및 수수료 보상을 획득"
       },
       "step2": {
         "title": "수수료 분배",
@@ -121,14 +124,16 @@
       "connectWalletFirst": "먼저 지갑을 연결해주세요",
       "noActiveBatchMint": "현재 활성 배치가 없습니다. NFT를 민팅할 수 없습니다",
       "batchSoldOutMint": "현재 배치가 매진되었습니다. NFT를 민팅할 수 없습니다",
-      "waitForNextBatch": "다음 배치가 민팅을 시작할 때까지 기다려주세요"
+      "waitForNextBatch": "다음 배치가 민팅을 시작할 때까지 기다려주세요",
+      "availableToMint": "이 배치에서 민팅 가능한 수량"
     },
     "mint": {
       "whitelistRequired": "NFT를 민팅하려면 먼저 화이트리스트에 참여해야 합니다",
       "insufficientUsdt": "USDT 잔액이 부족합니다. {amount}가 필요합니다",
       "mintSuccess": "NFT 민팅 성공!",
       "minting": "민팅 중...",
-      "mintNFT": "NFT 민팅"
+      "mintNFT": "NFT 민팅",
+      "mintQuantity": "{quantity}개 민팅"
     }
   },
   "mint": {
@@ -373,7 +378,8 @@
     "insufficientBalance": "잔액 부족",
     "transactionFailed": "트랜잭션 실패",
     "tryAgain": "다시 시도해주세요",
-    "wrongNetwork": "네트워크 오류"
+    "wrongNetwork": "네트워크 오류",
+    "userRejected": "사용자가 요청을 거부했습니다"
   },
   "whitelist": {
     "title": "화이트리스트 관리",
@@ -402,7 +408,11 @@
     "registerFailed": "등록에 실패했습니다",
     "applicationSubmitted": "초대 코드 신청이 제출되었습니다. 검토를 기다려주세요",
     "applicationFailed": "신청에 실패했습니다",
-    "copyInviteCode": "초대 코드 복사"
+    "copyInviteCode": "초대 코드 복사",
+    "requestAlreadyExists": "이 주소에 대한 신청 기록이 이미 존재합니다",
+    "userAlreadyHasInviteCode": "이 주소는 이미 초대 코드를 보유하고 있습니다",
+    "referrerInviteCodeNotFound": "추천인 초대 코드를 찾을 수 없습니다",
+    "referrerInviteCodeNotActive": "추천인 초대 코드가 활성화되지 않았습니다"
   },
   "mintStatus": {
     "applyWhitelistFirst": "먼저",

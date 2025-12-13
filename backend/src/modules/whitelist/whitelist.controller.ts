@@ -40,6 +40,7 @@ export class WhitelistController {
 }
 
 @Controller('whitelist')
+@UseGuards(JwtAuthGuard)
 export class PublicWhitelistController {
   constructor(private readonly whitelistService: WhitelistService) {}
 

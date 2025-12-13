@@ -126,6 +126,45 @@ export async function getInviteCodeDescendants(id: number): Promise<InviteCode[]
 }
 
 /**
+ * Invite code relation tree node (can be invite code or user)
+ */
+export interface InviteCodeRelationNode {
+  type: 'inviteCode' | 'user';
+  id: number | string;
+  // Invite code fields
+  code?: string;
+  applicantAddress?: string;
+  status?: string;
+  usageCount?: number;
+  maxUses?: number | null;
+  createdAt?: string;
+  parentInviteCodeId?: number | null;
+  parentInviteCode?: {
+    id: number;
+    code: string;
+    applicantAddress: string;
+  } | null;
+  selfMintedCount?: number;
+  inviteCodeMintedCount?: number;
+  totalReferralReward?: number; // 返佣总量 (USDT)
+  // User fields
+  userAddress?: string;
+  mintedCount?: number;
+  usedAt?: string;
+  // Common fields
+  level: number;
+  descendantCount: number;
+  children: InviteCodeRelationNode[];
+}
+
+/**
+ * Get all invite code relationships as a tree structure (admin)
+ */
+export async function getInviteRelationsTree(): Promise<InviteCodeRelationNode[]> {
+  return apiGet<InviteCodeRelationNode[]>(`/admin/invite-codes/relations/tree`);
+}
+
+/**
  * Get all invite code requests (admin)
  */
 export async function getInviteCodeRequests(
@@ -226,6 +265,8 @@ export interface UserInviteCodesResponse {
     maxUses?: number;
     usageCount: number;
     createdAt: string;
+    parentInviteCodeId?: number | null;
+    parentInviteCode?: { id: number; code: string } | null;
   }>;
   pendingInviteCodes?: Array<{
     id: number;
@@ -234,6 +275,8 @@ export interface UserInviteCodesResponse {
     maxUses?: number;
     usageCount: number;
     createdAt: string;
+    parentInviteCodeId?: number | null;
+    parentInviteCode?: { id: number; code: string } | null;
   }>;
 }
 

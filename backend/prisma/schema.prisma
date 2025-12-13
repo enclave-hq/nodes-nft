@@ -8,6 +8,9 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // Connection pool settings
+  // These can also be set in DATABASE_URL query string:
+  // ?connection_limit=20&pool_timeout=30
 }
 
 // Admin table
@@ -28,7 +31,7 @@ model Admin {
 model InviteCodeRequest {
   id                    Int      @id @default(autoincrement())
   applicantAddress      String   @db.VarChar(42)
-  referrerInviteCodeId  Int?
+  referrerInviteCodeId  Int?     // DEPRECATED: Redundant field - get from InviteCodeUsage table dynamically
   referrerInviteCode    InviteCode? @relation("ReferrerInviteCode", fields: [referrerInviteCodeId], references: [id])
   status                String   @default("pending") @db.VarChar(20) // pending, approved, rejected, auto_approved
   adminAddress          String?  @db.VarChar(42)
@@ -57,11 +60,11 @@ model InviteCode {
   createdAt             DateTime @default(now())
   activatedAt           DateTime?
   expiresAt             DateTime?
-  level                 Int      @default(1) // Hierarchy depth (1 for top-level)
-  rootInviteCodeId      Int? // Top-level invite code ID (for fast tracing)
+  level                 Int      @default(1) // DEPRECATED: Redundant - calculate from parentInviteCodeId recursively
+  rootInviteCodeId      Int? // DEPRECATED: Redundant - calculate from parentInviteCodeId recursively
   rootInviteCode        InviteCode? @relation("RootInviteCode", fields: [rootInviteCodeId], references: [id])
   rootInviteCodes       InviteCode[] @relation("RootInviteCode")
-  rootApplicantAddress  String?  @db.VarChar(42) // Top-level applicant address (for fast tracing)
+  rootApplicantAddress  String?  @db.VarChar(42) // DEPRECATED: Redundant - calculate from parentInviteCodeId recursively
   
   // Relations
   usage                 InviteCodeUsage[]
@@ -92,6 +95,7 @@ model NftRecord {
   nftId                 Int      @unique // NFT ID
   ownerAddress          String   @db.VarChar(42) // Current owner address (may change on transfer)
   minterAddress         String   @db.VarChar(42) // Original minter address (never changes)
+  batchId               BigInt?  // Batch ID from NFTMinted event (for calculating revenue and referral rewards)
   mintedAt              DateTime @default(now())
   mintTxHash            String?  @db.VarChar(66) // Mint transaction hash
   inviteCodeId          Int? // Invite code ID used by user
@@ -170,14 +174,17 @@ model RevenueRecord {
   @@map("revenue_records")
 }
 
-// Referral reward record table (records referral rewards for root referrers)
+// Referral reward record table (records referral rewards for direct referrers)
+// 注意：虽然字段名是 rootReferrerAddress，但实际存储的是"直接邀请者"（direct referrer）地址
+// 直接邀请者：用户使用的邀请码的申请人地址（不是根邀请者）
+// 这是历史遗留命名问题，为了向后兼容暂时保留字段名
 model ReferralRewardRecord {
   id                Int      @id @default(autoincrement())
   nftId             Int      @unique // NFT ID (one-to-one with NFT)
   batchId           BigInt   // Batch ID
   minterAddress     String   @db.VarChar(42) // Address that minted the NFT
-  rootReferrerAddress String @db.VarChar(42) // Root referrer address (traced from invite chain)
-  rootInviteCodeId  Int? // Root invite code ID
+  rootReferrerAddress String @db.VarChar(42) // 直接邀请者地址（direct referrer address）- 注意：字段名是 rootReferrerAddress，但实际存储的是直接邀请者，不是根邀请者
+  rootInviteCodeId  Int? // 直接邀请码ID（direct invite code ID）- 注意：字段名是 rootInviteCodeId，但实际存储的是直接邀请码ID
   rootInviteCode    InviteCode? @relation("RootReferralReward", fields: [rootInviteCodeId], references: [id])
   referralReward    String   @db.VarChar(50) // Referral reward in USDT (human-readable)
   referralRewardWei String  @db.VarChar(50) // Referral reward in wei (stored as string)

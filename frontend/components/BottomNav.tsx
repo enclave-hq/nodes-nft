@@ -77,9 +77,10 @@ export function BottomNav() {
     { href: "/", label: t('home'), icon: HomeIcon },
     { href: "/marketplace", label: t('marketplace'), icon: MarketIcon },
     { href: "/my-nfts", label: t('myNfts'), icon: MyNFTsIcon },
+    { href: "/my-rewards", label: t('myRewards'), icon: MarketIcon },
   ];
 
-  // 计算当前激活按钮的位置和宽度
+  // 计算当前激活按钮的位置（圆形背景）
   const updateSliderPosition = () => {
     const activeIndex = navItems.findIndex(
       (item) => pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href))
@@ -92,9 +93,15 @@ export function BottomNav() {
       const buttonRect = activeButton.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
       
+      // 计算按钮中心位置
+      const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
+      
+      // 圆形尺寸（固定大小）
+      const circleSize = 48;
+      
       setSliderStyle({
-        left: buttonRect.left - containerRect.left,
-        width: buttonRect.width,
+        left: buttonCenterX - circleSize / 2, // 居中
+        width: circleSize,
       });
     }
   };
@@ -124,14 +131,16 @@ export function BottomNav() {
         )}
         style={{ height: '64.524px', borderRadius: '25919828px' }}
       >
-        {/* Sliding Background */}
+        {/* Sliding Background - Circular */}
         <div
           className="absolute bg-[#CEF248] transition-all duration-300 ease-in-out"
           style={{
             left: `${sliderStyle.left}px`,
             width: `${sliderStyle.width}px`,
-            height: '64.524px',
-            borderRadius: '25919828px',
+            height: `${sliderStyle.width}px`, // 使用相同的宽度和高度形成圆形
+            borderRadius: '50%', // 完全圆形
+            top: '50%',
+            transform: 'translateY(-50%)', // 垂直居中
             zIndex: 0,
           }}
         />

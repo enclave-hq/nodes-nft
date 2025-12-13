@@ -12,22 +12,21 @@ import {
   transferReferralReward,
   transferRevenue,
   refreshNftRecords,
-  getNftsWithoutReferralRewards,
-  createReferralRewardForNft,
-  batchCreateReferralRewards,
   getDistributableReferralRewards,
   getRevenueStatistics,
   getReferralRewardStatistics,
+  getSyncStatus,
   type TotalRevenueResponse,
+  type SyncStatusResponse,
   type RevenueDetailsResponse,
   type TotalReferralRewardsResponse,
   type ReferralRewardDetailsResponse,
   type TreasuryBalanceResponse,
-  type NftsWithoutReferralRewardsResponse,
   type DistributableReferralRewardsResponse,
   type RevenueStatisticsResponse,
   type ReferralRewardStatisticsResponse,
 } from '@/lib/api/revenue';
+import { NETWORK_CONFIG } from '@/lib/contracts/config';
 
 export default function AdminRevenuePage() {
   const [activeTab, setActiveTab] = useState<'revenue' | 'referral' | 'transfer'>('revenue');
@@ -46,10 +45,6 @@ export default function AdminRevenuePage() {
   const [referralLoading, setReferralLoading] = useState(false);
   
   // NFTs without referral rewards state
-  const [nftsWithoutRewards, setNftsWithoutRewards] = useState<NftsWithoutReferralRewardsResponse | null>(null);
-  const [nftsWithoutRewardsPage, setNftsWithoutRewardsPage] = useState(1);
-  const [nftsWithoutRewardsLoading, setNftsWithoutRewardsLoading] = useState(false);
-  
   // Distributable rewards state
   const [distributableRewards, setDistributableRewards] = useState<DistributableReferralRewardsResponse | null>(null);
   const [distributableRewardsLoading, setDistributableRewardsLoading] = useState(false);
@@ -72,6 +67,10 @@ export default function AdminRevenuePage() {
   const [revenueStatistics, setRevenueStatistics] = useState<RevenueStatisticsResponse | null>(null);
   const [referralRewardStatistics, setReferralRewardStatistics] = useState<ReferralRewardStatisticsResponse | null>(null);
   const [statisticsLoading, setStatisticsLoading] = useState(false);
+
+  // Sync state
+  const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
 
   // Fetch total revenue
   const fetchTotalRevenue = async () => {
@@ -240,57 +239,102 @@ export default function AdminRevenuePage() {
     }
   };
 
-  // Fetch NFTs without referral rewards
-  const fetchNftsWithoutRewards = async (page: number = 1) => {
-    setNftsWithoutRewardsLoading(true);
+  // Fetch sync status and update countdown
+  const fetchSyncStatus = async () => {
     try {
-      const data = await getNftsWithoutReferralRewards(page, 20);
-      setNftsWithoutRewards(data);
-      setNftsWithoutRewardsPage(page);
+      const status = await getSyncStatus();
+      console.log('✅ Sync status fetched:', status);
+      setSyncStatus(status);
     } catch (error: any) {
-      console.error('Failed to fetch NFTs without referral rewards:', error);
-      toast.error(error.message || '获取未返佣NFT列表失败');
-    } finally {
-      setNftsWithoutRewardsLoading(false);
+      console.error('❌ Failed to fetch sync status:', error);
+      // Fallback: calculate based on current time
+      const now = Date.now();
+      const secondsSinceEpoch = Math.floor(now / 1000);
+      const secondsUntilNextSync = 120 - (secondsSinceEpoch % 120);
+      const fallbackStatus = {
+        lastSyncTime: null,
+        lastSyncResult: null,
+        nextSyncInSeconds: secondsUntilNextSync,
+      };
+      console.log('⚠️ Using fallback sync status:', fallbackStatus);
+      setSyncStatus(fallbackStatus);
     }
   };
 
-  // Create referral reward for a specific NFT
-  const handleCreateReferralReward = async (nftId: number) => {
-    try {
-      await createReferralRewardForNft(nftId);
-      toast.success(`已为 NFT ${nftId} 创建返佣记录`);
-      // Refresh lists
-      await fetchNftsWithoutRewards(nftsWithoutRewardsPage);
-      await fetchTotalReferralRewards();
-      await fetchReferralRewardDetails(referralPage);
-      await fetchDistributableRewards();
-    } catch (error: any) {
-      console.error('Failed to create referral reward:', error);
-      toast.error(error.message || '创建返佣记录失败');
+  // Update countdown timer
+  useEffect(() => {
+    if (activeTab === 'referral') {
+      // Fetch sync status immediately
+      fetchSyncStatus();
+
+      // Update countdown every second
+      const interval = setInterval(() => {
+        setSyncStatus(prev => {
+          if (!prev) {
+            // Fallback: calculate based on current time
+            const now = Date.now();
+            const secondsSinceEpoch = Math.floor(now / 1000);
+            const secondsUntilNextSync = 120 - (secondsSinceEpoch % 120);
+            return {
+              lastSyncTime: null,
+              lastSyncResult: null,
+              nextSyncInSeconds: secondsUntilNextSync,
+            };
+          }
+
+          if (prev.nextSyncInSeconds !== null && prev.nextSyncInSeconds !== undefined) {
+            const next = prev.nextSyncInSeconds - 1;
+            if (next <= 0) {
+              // Refresh sync status when countdown reaches 0
+              fetchSyncStatus();
+              return { ...prev, nextSyncInSeconds: 120 };
+            }
+            return { ...prev, nextSyncInSeconds: next };
+          }
+
+          return prev;
+        });
+      }, 1000);
+
+      // Refresh sync status every 30 seconds to get accurate data
+      const statusInterval = setInterval(fetchSyncStatus, 30000);
+
+      return () => {
+        clearInterval(interval);
+        clearInterval(statusInterval);
+      };
     }
+  }, [activeTab]);
+
+  const formatCountdown = (seconds: number | null | undefined) => {
+    // If no seconds provided, calculate fallback countdown
+    if (seconds === null || seconds === undefined) {
+      const now = Date.now();
+      const secondsSinceEpoch = Math.floor(now / 1000);
+      const fallbackSeconds = 120 - (secondsSinceEpoch % 120);
+      const mins = Math.floor(fallbackSeconds / 60);
+      const secs = fallbackSeconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Batch create referral rewards
-  const handleBatchCreateReferralRewards = async () => {
-    if (!confirm('确定要批量创建所有未返佣NFT的返佣记录吗？')) {
-      return;
-    }
+  const formatLastSyncTime = (time: string | null) => {
+    if (!time) return '尚未同步';
+    const date = new Date(time);
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
     
-    try {
-      const result = await batchCreateReferralRewards();
-      toast.success(
-        `批量创建完成！处理 ${result.processed} 个，创建 ${result.created} 个，跳过 ${result.skipped} 个，错误 ${result.errors} 个`
-      );
-      // Refresh lists
-      await fetchNftsWithoutRewards(nftsWithoutRewardsPage);
-      await fetchTotalReferralRewards();
-      await fetchReferralRewardDetails(referralPage);
-      await fetchDistributableRewards();
-    } catch (error: any) {
-      console.error('Failed to batch create referral rewards:', error);
-      toast.error(error.message || '批量创建返佣记录失败');
-    }
+    if (diffSeconds < 60) return `${diffSeconds}秒前`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}分钟前`;
+    return date.toLocaleString('zh-CN', { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
   };
 
   // Fetch distributable rewards
@@ -315,7 +359,6 @@ export default function AdminRevenuePage() {
     } else if (activeTab === 'referral') {
       fetchTotalReferralRewards();
       fetchReferralRewardDetails(1);
-      fetchNftsWithoutRewards(1);
       fetchDistributableRewards();
     } else if (activeTab === 'transfer') {
       fetchTreasuryBalance();
@@ -434,7 +477,7 @@ export default function AdminRevenuePage() {
                           <td className="px-6 py-4 whitespace-nowrap font-mono text-xs">
                             {record.mintTxHash ? (
                               <a
-                                href={`https://testnet.bscscan.com/tx/${record.mintTxHash}`}
+                                href={`${NETWORK_CONFIG.blockExplorer}/tx/${record.mintTxHash}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -488,6 +531,40 @@ export default function AdminRevenuePage() {
       {/* Referral Tab */}
       {activeTab === 'referral' && (
         <div>
+          {/* Sync Status */}
+          <div className="bg-white rounded-xl shadow-lg p-4 mb-6 border border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-1">数据同步</h3>
+                <p className="text-sm text-gray-500">
+                  系统每2分钟自动从 The Graph 子图同步NFT信息并更新返佣数据（幂等性保证）
+                </p>
+              </div>
+              <div className="flex items-center gap-6">
+                {syncStatus?.lastSyncTime && (
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">上次同步</div>
+                    <div className="text-sm font-medium text-gray-800">
+                      {formatLastSyncTime(syncStatus.lastSyncTime)}
+                    </div>
+                    {syncStatus.lastSyncResult && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        同步 {syncStatus.lastSyncResult.synced} 条，新增 {syncStatus.lastSyncResult.created} 条
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">下次同步倒计时</div>
+                  <div className="text-2xl font-bold text-blue-600 font-mono">
+                    {formatCountdown(syncStatus?.nextSyncInSeconds)}
+                  </div>
+                </div>
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" title="自动同步已启用"></div>
+              </div>
+            </div>
+          </div>
+
           {/* Total Referral Rewards Card */}
           {totalReferralRewards && (
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 mb-6 border border-blue-100">
@@ -518,7 +595,7 @@ export default function AdminRevenuePage() {
                   <table className="w-full border-collapse">
                     <thead>
                       <tr className="bg-white">
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">根推荐者地址</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">直接邀请者地址</th>
                         <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">总返佣 (USDT)</th>
                         <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">已发放 (USDT)</th>
                         <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">可发放 (USDT)</th>
@@ -544,85 +621,6 @@ export default function AdminRevenuePage() {
             </div>
           )}
 
-          {/* NFTs Without Referral Rewards */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-800">未返佣NFT列表</h2>
-              <button
-                onClick={handleBatchCreateReferralRewards}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-              >
-                批量创建返佣记录
-              </button>
-            </div>
-            {nftsWithoutRewardsLoading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="mt-4 text-gray-500">加载中...</p>
-              </div>
-            ) : nftsWithoutRewards && nftsWithoutRewards.records.length > 0 ? (
-              <>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">NFT ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">批次 ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">铸造者地址</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">铸造价格 (USDT)</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">操作</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {nftsWithoutRewards.records.map((record, index) => (
-                        <tr key={record.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="px-6 py-4 whitespace-nowrap font-mono text-sm text-gray-900">{record.nftId}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.batchId}</td>
-                          <td className="px-6 py-4 whitespace-nowrap font-mono text-xs text-gray-600">{record.minterAddress}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">{parseFloat(record.mintPrice).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <button
-                              onClick={() => handleCreateReferralReward(record.nftId)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                            >
-                              创建返佣
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Pagination */}
-                {nftsWithoutRewards.pagination.totalPages > 1 && (
-                  <div className="p-4 border-t border-gray-200 flex justify-between items-center">
-                    <span className="text-sm text-gray-500">
-                      第 {nftsWithoutRewards.pagination.page} / {nftsWithoutRewards.pagination.totalPages} 页，共 {nftsWithoutRewards.pagination.total} 条记录
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => fetchNftsWithoutRewards(nftsWithoutRewardsPage - 1)}
-                        disabled={nftsWithoutRewardsPage <= 1}
-                        className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
-                      >
-                        上一页
-                      </button>
-                      <button
-                        onClick={() => fetchNftsWithoutRewards(nftsWithoutRewardsPage + 1)}
-                        disabled={nftsWithoutRewardsPage >= nftsWithoutRewards.pagination.totalPages}
-                        className="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
-                      >
-                        下一页
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="p-8 text-center text-gray-500">暂无未返佣NFT</div>
-            )}
-          </div>
-
           {/* Referral Reward Details Table */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
@@ -642,8 +640,8 @@ export default function AdminRevenuePage() {
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">NFT ID</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">批次 ID</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">铸造者地址</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">根推荐者地址</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">根邀请码</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">直接邀请者地址</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">邀请码</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">返佣金额 (USDT)</th>
                         <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">创建时间</th>
                       </tr>
@@ -822,7 +820,7 @@ export default function AdminRevenuePage() {
               {transferType === 'referral' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                    根推荐者地址 <span className="text-red-500">*</span>
+                    直接邀请者地址 <span className="text-red-500">*</span>
                   </label>
                   {distributableRewards && distributableRewards.rewards.length > 0 ? (
                     <>
@@ -840,7 +838,7 @@ export default function AdminRevenuePage() {
                         }}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
                       >
-                        <option value="">请选择根推荐者地址</option>
+                        <option value="">请选择直接邀请者地址</option>
                         {distributableRewards.rewards.map((reward) => (
                           <option key={reward.rootAddress} value={reward.rootAddress}>
                             {reward.rootAddress} (可发放: {parseFloat(reward.distributableRewards).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT)
@@ -879,7 +877,7 @@ export default function AdminRevenuePage() {
                         placeholder="0x..."
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-                      <p className="mt-1 text-xs text-gray-500">暂无可发放返佣，请手动输入根推荐者地址</p>
+                      <p className="mt-1 text-xs text-gray-500">暂无可发放返佣，请手动输入直接邀请者地址</p>
                     </>
                   )}
                 </div>

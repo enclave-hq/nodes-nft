@@ -221,6 +221,26 @@ export async function getDistributableReferralRewards(): Promise<DistributableRe
   return apiGet<DistributableReferralRewardsResponse>('/admin/revenue/distributable-referral-rewards');
 }
 
+export interface SyncReferralRewardsRequest {
+  fullSync?: boolean;
+}
+
+export interface SyncReferralRewardsResponse {
+  success: boolean;
+  message: string;
+  totalNfts: number;
+  processed: number;
+  created: number;
+  updated: number;
+  correct: number;
+  skipped: number;
+  errors: number;
+}
+
+export async function syncReferralRewardsFromChain(fullSync: boolean = false): Promise<SyncReferralRewardsResponse> {
+  return apiPost<SyncReferralRewardsResponse>('/admin/revenue/sync-referral-rewards-from-chain', { fullSync });
+}
+
 export interface NftMintCallbackRequest {
   nftId: number;
   minterAddress: string;
@@ -238,5 +258,21 @@ export interface NftMintCallbackResponse {
 
 export async function handleNftMintCallback(data: NftMintCallbackRequest): Promise<NftMintCallbackResponse> {
   return apiPost<NftMintCallbackResponse>('/admin/revenue/nft-mint-callback', data);
+}
+
+export interface SyncStatusResponse {
+  lastSyncTime: string | null;
+  lastSyncResult: {
+    totalEvents: number;
+    synced: number;
+    created: number;
+    updated: number;
+    errors: number;
+  } | null;
+  nextSyncInSeconds: number | null;
+}
+
+export async function getSyncStatus(): Promise<SyncStatusResponse> {
+  return apiGet<SyncStatusResponse>('/admin/nfts/sync/status');
 }
 

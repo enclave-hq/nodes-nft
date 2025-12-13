@@ -32,9 +32,9 @@ NEXT_PUBLIC_NETWORK=mainnet
 - **RPC URL**: https://data-seed-prebsc-1-s1.binance.org:8545
 - **区块浏览器**: https://testnet.bscscan.com
 - **合约地址**:
-  - EnclaveToken: `0xCd0Ff5Fd00BD622563011A23091af30De24E7262`
-  - NodeNFT: `0x92301C0acA7586d9F0B1968af2502616009Abf69`
-  - NFTManager: `0xF87F9296955439C323ac79769959bEe087f6D06E`
+  - EnclaveToken: `0x2E18cAE3f9e011802e15b4E9c5c79485Af5AB09F`
+  - NodeNFT: `0x7c49bF1BE9992De7bd458d045bbBfe75233ddfFe`
+  - NFTManager: `0xCD59C34ac5a9962C2F00f2d107159bdAD8001d67` (Diamond Pattern)
   - USDT: `0x4ae1f43dD636Eb028F5a321361Ca41e1C3cCfA34`
 
 ### 主网配置 (BSC Mainnet)

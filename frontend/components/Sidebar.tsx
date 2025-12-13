@@ -74,6 +74,7 @@ export function Sidebar() {
     { href: "/", label: t('home'), icon: HomeIcon },
     { href: "/marketplace", label: t('marketplace'), icon: MarketIcon },
     { href: "/my-nfts", label: t('myNfts'), icon: MyNFTsIcon },
+    { href: "/my-rewards", label: t('myRewards'), icon: MarketIcon },
   ];
 
   return (

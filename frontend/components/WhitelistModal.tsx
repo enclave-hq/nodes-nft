@@ -71,10 +71,40 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
       }
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error(error.message || t('registerFailed'));
+      const errorMessage = error?.message || '';
+      // Map common backend error messages to i18n keys
+      if (errorMessage.includes('Request already exists for this address')) {
+        toast.error(t('requestAlreadyExists'));
+      } else if (errorMessage.includes('User already has an invite code')) {
+        toast.error(t('userAlreadyHasInviteCode'));
+      } else {
+        toast.error(errorMessage || t('registerFailed'));
+      }
     } finally {
       setIsRegistering(false);
     }
+  };
+
+  // Map backend error messages to i18n keys
+  const getErrorMessage = (error: any): string => {
+    const errorMessage = error?.message || '';
+    
+    // Map common backend error messages to i18n keys
+    if (errorMessage.includes('Request already exists for this address')) {
+      return t('requestAlreadyExists');
+    }
+    if (errorMessage.includes('User already has an invite code')) {
+      return t('userAlreadyHasInviteCode');
+    }
+    if (errorMessage.includes('Referrer invite code not found')) {
+      return t('referrerInviteCodeNotFound');
+    }
+    if (errorMessage.includes('Referrer invite code is not active')) {
+      return t('referrerInviteCodeNotActive');
+    }
+    
+    // Return original message or default fallback
+    return errorMessage || t('applicationFailed');
   };
 
   const handleRequestInviteCode = async () => {
@@ -91,7 +121,7 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
       await web3Data.fetchInviteCodes();
     } catch (error: any) {
       console.error('Request invite code error:', error);
-      toast.error(error.message || t('applicationFailed'));
+      toast.error(getErrorMessage(error));
     } finally {
       setIsRequesting(false);
     }
@@ -204,6 +234,11 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
               <Gift className="h-4 w-4 text-gray-600" />
               <h3 className="text-sm font-semibold text-black">{t('myInviteCodes')}</h3>
             </div>
+
+            {/* 父邀请码（用户加入白名单时使用的邀请码） */}
+            <div className="text-xs text-gray-600">
+              父邀请码：{inviteCodes?.usedInviteCode?.code || '-'}
+            </div>
             
             {loadingInviteData ? (
               <div className="flex items-center justify-center py-3">
@@ -262,6 +297,9 @@ export function WhitelistModal({ isOpen, onClose }: WhitelistModalProps) {
                           <div className="flex-1">
                             <p className="text-sm font-mono font-semibold text-black">
                               {code.code}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              父邀请码：{code.parentInviteCode?.code || '-'}
                             </p>
                             <p className="text-xs text-yellow-700 mt-1">{t('pendingActivationDescription')}</p>
                           </div>

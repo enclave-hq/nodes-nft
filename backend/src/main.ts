@@ -7,13 +7,20 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   // Enable CORS
-  // Support multiple frontend origins (development)
+  // Support multiple frontend origins (development and production)
+  const defaultOrigins = [
+    'http://localhost:3000', 
+    'http://localhost:3001',
+    'https://nodes.enclave-hq.com' // Production frontend domain
+  ];
+  
   const allowedOrigins = process.env.FRONTEND_URL 
     ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-    : ['http://localhost:3000', 'http://localhost:3001'];
+    : defaultOrigins;
   
   console.log('🌐 CORS allowed origins:', allowedOrigins);
   
+  // Enable CORS - this applies to ALL routes uniformly
   app.enableCors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -28,16 +35,25 @@ async function bootstrap() {
         callback(null, true);
       } else {
         console.log('❌ CORS blocked for origin:', origin);
+        console.log('   Allowed origins:', allowedOrigins);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
-    exposedHeaders: ['Content-Length', 'Content-Type'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type', 
+      'Authorization', 
+      'Accept', 
+      'X-Requested-With',
+      'Origin',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers'
+    ],
+    exposedHeaders: ['Content-Length', 'Content-Type', 'Authorization'],
     maxAge: 86400, // 24 hours
     preflightContinue: false,
-    optionsSuccessStatus: 204,
+    optionsSuccessStatus: 200, // Use 200 for better compatibility with some clients
   });
 
   // Global validation pipe

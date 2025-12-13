@@ -36,7 +36,10 @@ export default function AdminStatsPage() {
       setInviteCodeStats(inviteCodes);
     } catch (error: any) {
       console.error('Failed to fetch stats:', error);
-      toast.error(error.message || '获取统计数据失败');
+      // 如果是 401 错误，已经在 client.ts 中处理了跳转，不需要显示错误提示
+      if (error.statusCode !== 401) {
+        toast.error(error.message || '获取统计数据失败');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -61,5 +61,53 @@ library RewardCalculator {
         nftAmount = (totalAmount * 80) / 100;
         multisigAmount = totalAmount - nftAmount; // Ensures exact split
     }
+    
+    /**
+     * @notice Calculate distribution split with configurable multisig ratio
+     * @param totalAmount Total amount to distribute
+     * @param multisigBps Multisig reward in basis points (10000 = 100%)
+     * @return nftAmount Amount for NFTs
+     * @return multisigAmount Amount for multisig
+     */
+    function calculateDistributionSplitWithBps(
+        uint256 totalAmount,
+        uint256 multisigBps
+    ) internal pure returns (uint256 nftAmount, uint256 multisigAmount) {
+        require(multisigBps <= 10000, "Invalid multisig BPS");
+        multisigAmount = (totalAmount * multisigBps) / 10000;
+        nftAmount = totalAmount - multisigAmount; // Ensures exact split
+    }
+    
+    /**
+     * @notice Calculate required Oracle amount based on rewardPerNFT and active NFTs
+     * @param rewardPerNFT Reward per NFT (calculated based on MAX_SUPPLY for fairness)
+     * @param totalActiveNFTs Number of active NFTs
+     * @param multisigBps Multisig reward in basis points (10000 = 100%)
+     * @return requiredAmount Total amount Oracle needs to deposit
+     * @return nftAmount Amount for active NFTs
+     * @return multisigAmount Amount for multisig
+     */
+    function calculateRequiredOracleAmount(
+        uint256 rewardPerNFT,
+        uint256 totalActiveNFTs,
+        uint256 multisigBps
+    ) internal pure returns (uint256 requiredAmount, uint256 nftAmount, uint256 multisigAmount) {
+        require(totalActiveNFTs > 0, "No active NFTs");
+        require(multisigBps <= 10000, "Invalid multisig BPS");
+        
+        // Calculate NFT amount for active NFTs only
+        nftAmount = rewardPerNFT * totalActiveNFTs;
+        
+        // Calculate multisig amount based on NFT amount
+        // multisigAmount = nftAmount * multisigBps / (10000 - multisigBps)
+        // This ensures: nftAmount / (nftAmount + multisigAmount) = (10000 - multisigBps) / 10000
+        if (multisigBps > 0) {
+            multisigAmount = (nftAmount * multisigBps) / (10000 - multisigBps);
+        } else {
+            multisigAmount = 0;
+        }
+        
+        requiredAmount = nftAmount + multisigAmount;
+    }
 }
 
