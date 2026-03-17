@@ -47,3 +47,25 @@ npm run deploy
 部署后，在 The Graph Studio 中等待子图同步完成，然后就可以使用 GraphQL API 查询数据了。
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

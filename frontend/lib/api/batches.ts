@@ -66,9 +66,6 @@ export interface SyncBatchesResponse {
   synced: number;
   chainBatches: number;
   dbBatches: number;
-}
-
-export async function syncBatches(): Promise<SyncBatchesResponse> {
+}export async function syncBatches(): Promise<SyncBatchesResponse> {
   return apiPost<SyncBatchesResponse>('/admin/batches/sync', {});
 }
-

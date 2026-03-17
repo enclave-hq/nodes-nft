@@ -1644,6 +1644,10 @@ export class RevenueService {
     // Note: referralRewardWei is stored as varchar; cast to numeric for safe summation.
     // IMPORTANT: force SUM result to text to avoid scientific notation / precision loss (e.g. "2.1e+21").
     // We need an exact integer string to safely convert to BigInt.
+    // 
+    // Filter conditions (must match getDistributableReferralRewards logic):
+    // - Exclude self-referral: minterAddress <> rootReferrerAddress
+    // - Exclude NULL/empty rootReferrerAddress: rootReferrerAddress IS NOT NULL AND rootReferrerAddress != ''
     const rows = await this.prisma.$queryRawUnsafe<
       Array<{ address: string; totalWei: string }>
     >(
@@ -1652,7 +1656,9 @@ export class RevenueService {
         lower("rootReferrerAddress") as "address",
         (SUM(("referralRewardWei")::numeric))::text as "totalWei"
       FROM "referral_reward_records"
-      WHERE lower("minterAddress") <> lower("rootReferrerAddress")
+      WHERE "rootReferrerAddress" IS NOT NULL
+        AND "rootReferrerAddress" != ''
+        AND lower("minterAddress") <> lower("rootReferrerAddress")
       GROUP BY lower("rootReferrerAddress")
       `
     );

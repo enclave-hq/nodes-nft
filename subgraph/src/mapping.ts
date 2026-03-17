@@ -23,3 +23,25 @@ export function handleNFTMinted(event: NFTMinted): void {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

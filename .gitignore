@@ -10,10 +10,23 @@ out/
 artifacts/
 cache/
 
-# Environment variables
+# Environment variables - ignore ALL .env files and variants
 .env
+.env.*
 .env.local
 .env.production
+.env.testnet
+.env.prod
+.env.bak
+.env.back
+.env.backup
+*.env.bak
+*.env.back
+*.env.backup
+# But keep example files
+!.env.example
+!env.example
+!env.*.example
 
 # IDE
 .vscode/

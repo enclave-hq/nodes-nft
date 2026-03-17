@@ -19,3 +19,25 @@ SELECT 'Database "node-nft" created successfully' AS result;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

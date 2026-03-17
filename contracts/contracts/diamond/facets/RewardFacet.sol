@@ -25,7 +25,12 @@ contract RewardFacet is ReentrancyGuard {
     
     modifier onlyMaster() {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
-        require(msg.sender == s.master || msg.sender == LibNFTManager.contractOwner(), "Only master or owner");
+        require(
+            msg.sender == s.master || 
+            msg.sender == LibNFTManager.contractOwner() || 
+            msg.sender == s.multisigner,
+            "Only master, owner, or multisigner"
+        );
         _;
     }
 
@@ -190,6 +195,124 @@ contract RewardFacet is ReentrancyGuard {
         emit RewardDistributed(token, requiredAmount, nftAmount, multisigAmount, s.globalState.accRewardPerNFT[token], block.timestamp);
     }
 
+    /**
+     * @notice Same as distributeReward but without actual token transfer.
+     *         Oracle must separately send tokens to this contract.
+     *         claimReward will revert if contract balance is insufficient (first-come-first-served).
+     * @param token Token address
+     * @param rewardPerNFT Reward amount per NFT
+     */
+    function distributeRewardV2(address token, uint256 rewardPerNFT) external onlyOracle nonReentrant {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        require(rewardPerNFT > 0, "Reward per NFT must be positive");
+        require(s.isRewardToken[token], "Token not supported");
+        require(s.multisigNode != address(0), "Multisig node not set");
+        
+        uint256 totalActiveNFTs = s.globalState.totalActiveNFTs;
+        require(totalActiveNFTs > 0, "No active NFTs");
+        
+        uint256 multisigBps = s.multisigRewardBps > 0 ? s.multisigRewardBps : 2000;
+        
+        (uint256 requiredAmount, uint256 nftAmount, uint256 multisigAmount) = 
+            RewardCalculator.calculateRequiredOracleAmount(rewardPerNFT, totalActiveNFTs, multisigBps);
+        
+        // ✅ 与 distributeReward 唯一的区别：不做 safeTransferFrom
+        // IERC20(token).safeTransferFrom(msg.sender, address(this), requiredAmount);
+        
+        s.multisigRewardDistributed[token] += multisigAmount;
+        
+        s.globalState.accRewardPerNFT[token] += rewardPerNFT;
+        s.globalState.lastUpdateTime = block.timestamp;
+        
+        emit RewardDistributed(token, requiredAmount, nftAmount, multisigAmount, s.globalState.accRewardPerNFT[token], block.timestamp);
+    }
+
+    /**
+     * @notice Set reward amount per node and pull token from Oracle in one tx
+     * @param token Reward token (must be added via addRewardToken)
+     * @param nftIds Array of NFT IDs to allocate reward to
+     * @param amounts Array of amounts (same length as nftIds); sum will be transferFrom(oracle)
+     * @dev Oracle must approve this contract for sum(amounts) before calling. Each node owner can then withdraw via withdrawAllocatedReward().
+     * @dev If contract balance is insufficient at withdraw time, withdraw fails until more U is deposited.
+     */
+    function setNodeRewards(
+        address token,
+        uint256[] calldata nftIds,
+        uint256[] calldata amounts
+    ) external onlyOracle nonReentrant {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        require(s.isRewardToken[token], "Token not supported");
+        require(nftIds.length == amounts.length, "Length mismatch");
+
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            totalAmount += amounts[i];
+            s.allocatedReward[token][nftIds[i]] += amounts[i];
+        }
+        require(totalAmount > 0, "Total amount must be positive");
+
+        IERC20(token).safeTransferFrom(msg.sender, address(this), totalAmount);
+
+        emit NodeRewardsSet(token, totalAmount);
+    }
+
+    /**
+     * @notice Withdraw the reward amount that was allocated to this node (via setNodeRewards)
+     * @param nftId NFT ID (caller must be owner)
+     * @param token Reward token address
+     * @dev Fails if contract has insufficient token balance (user can retry later when U is deposited)
+     */
+    function withdrawAllocatedReward(uint256 nftId, address token) external nonReentrant returns (uint256) {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        require(s.nftContract.ownerOf(nftId) == msg.sender, "Not NFT owner");
+        require(s.isRewardToken[token], "Token not supported");
+
+        uint256 amount = s.allocatedReward[token][nftId];
+        require(amount > 0, "No allocated reward");
+
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        require(balance >= amount, "Insufficient contract balance");
+
+        s.allocatedReward[token][nftId] = 0;
+        IERC20(token).safeTransfer(msg.sender, amount);
+
+        emit AllocatedRewardWithdrawn(nftId, msg.sender, token, amount);
+        return amount;
+    }
+
+    /**
+     * @notice Credit reward allocations without pulling tokens from Oracle.
+     *         Oracle must separately transfer tokens to this contract.
+     *         Users call withdrawAllocatedReward(); if contract balance is
+     *         insufficient at that time the withdraw reverts (first-come-first-served).
+     */
+    function setNodeRewardsCredit(
+        address token,
+        uint256[] calldata nftIds,
+        uint256[] calldata amounts
+    ) external onlyOracle nonReentrant {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        require(s.isRewardToken[token], "Token not supported");
+        require(nftIds.length == amounts.length, "Length mismatch");
+
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < nftIds.length; i++) {
+            totalAmount += amounts[i];
+            s.allocatedReward[token][nftIds[i]] += amounts[i];
+        }
+        require(totalAmount > 0, "Total amount must be positive");
+
+        emit NodeRewardsCredited(token, totalAmount, nftIds.length);
+    }
+
+    /**
+     * @notice View: get allocated reward amount for a node (for direct withdrawal)
+     */
+    function getAllocatedReward(uint256 nftId, address token) external view returns (uint256) {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        return s.allocatedReward[token][nftId];
+    }
+
     /* ========== CONFIG FUNCTIONS ========== */
     
     function setMultisigNode(address multisigNode_) external onlyMaster {
@@ -279,14 +402,14 @@ contract RewardFacet is ReentrancyGuard {
     ) external view returns (uint256 requiredAmount, uint256 nftAmount, uint256 multisigAmount) {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
         require(s.isRewardToken[token], "Token not supported");
-        
+
         uint256 totalActiveNFTs = s.globalState.totalActiveNFTs;
         if (totalActiveNFTs == 0) {
             return (0, 0, 0);
         }
-        
+
         uint256 multisigBps = s.multisigRewardBps > 0 ? s.multisigRewardBps : 2000;
-        (requiredAmount, nftAmount, multisigAmount) = 
+        (requiredAmount, nftAmount, multisigAmount) =
             RewardCalculator.calculateRequiredOracleAmount(rewardPerNFT, totalActiveNFTs, multisigBps);
     }
 
@@ -430,5 +553,8 @@ contract RewardFacet is ReentrancyGuard {
     event MultisigRewardClaimed(address indexed token, uint256 amount, uint256 timestamp);
     event TokensBurnedFromSwap(uint256 amount, string reason);
     event MultisigRewardBpsSet(uint256 bps);
+    event NodeRewardsSet(address indexed token, uint256 totalAmount);
+    event NodeRewardsCredited(address indexed token, uint256 totalAmount, uint256 nftCount);
+    event AllocatedRewardWithdrawn(uint256 indexed nftId, address indexed user, address indexed token, uint256 amount);
 }
 

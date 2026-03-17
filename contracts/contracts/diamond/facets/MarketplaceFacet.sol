@@ -19,7 +19,12 @@ contract MarketplaceFacet is ReentrancyGuard {
     
     modifier onlyMaster() {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
-        require(msg.sender == s.master || msg.sender == LibNFTManager.contractOwner(), "Only master or owner");
+        require(
+            msg.sender == s.master || 
+            msg.sender == LibNFTManager.contractOwner() || 
+            msg.sender == s.multisigner,
+            "Only master, owner, or multisigner"
+        );
         _;
     }
     

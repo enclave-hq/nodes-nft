@@ -1,10 +1,38 @@
 # Contract Deployment Results
 
-**Last Updated:** 2025-11-14  
+**Last Updated:** 2025-02-27  
 **Documentation:** This file tracks deployments across different networks
 
 > **Note:** This document contains deployment information for multiple networks.  
 > Each network has its own section below.
+
+---
+
+## 🟢 当前生产环境地址（Current Production）
+
+**Updated:** 2025-02-27  
+以下为当前链上实际使用的合约与角色地址，发奖励、脚本、backend 请以此为准。
+
+| 变量 | 地址 |
+|------|------|
+| **NFT_MANAGER_ADDRESS** | `0xD9eA9F4B8F24872262568fB2C6133117EC02C774` |
+| **NODE_NFT_ADDRESS** | `0x6F0f5fE4B9FA05CA5C2690d4106F46Bf5e06629b` |
+| **ECLV_ADDRESS** | `0xDA8cB40036ACA4994B95c0Ae7D41f8944f0B5011` |
+| **USDT_ADDRESS** | `0x55d398326f99059fF775485246999027B3197955` |
+| **ORACLE_ADDRESS** | `0x4561a736B9663948E06371d19541AA1dC5107e1a` |
+| **TREASURY_ADDRESS** | `0x6f3995e2e40ca58adcbd47a2edad192e43d98638` |
+
+> **Oracle 已按链上查询更新：** `adminFacet.oracle()` 返回 `0x4561a736B9663948E06371d19541AA1dC5107e1a`
+
+**contracts/.env 示例：**
+```bash
+NFT_MANAGER_ADDRESS=0xD9eA9F4B8F24872262568fB2C6133117EC02C774
+NODE_NFT_ADDRESS=0x6F0f5fE4B9FA05CA5C2690d4106F46Bf5e06629b
+ECLV_ADDRESS=0xDA8cB40036ACA4994B95c0Ae7D41f8944f0B5011
+USDT_ADDRESS=0x55d398326f99059fF775485246999027B3197955
+ORACLE_ADDRESS=0x4561a736B9663948E06371d19541AA1dC5107e1a
+TREASURY_ADDRESS=0x6f3995e2e40ca58adcbd47a2edad192e43d98638
+```
 
 ---
 

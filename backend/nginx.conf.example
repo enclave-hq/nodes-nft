@@ -32,9 +32,10 @@ server {
     # add_header 'Access-Control-Allow-Credentials' 'true' always;
     # add_header 'Access-Control-Expose-Headers' 'Content-Length, Content-Type, Authorization' always;
 
-    # Handle OPTIONS preflight requests
+    # API location - handle all /api/* requests
     location /api {
-        # CORS headers - allow from frontend domain
+        # CORS headers - MUST use 'always' to include headers in error responses (502, 503, etc.)
+        # This ensures CORS headers are present even when backend is down
         add_header 'Access-Control-Allow-Origin' 'https://nodes.enclave-hq.com' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD' always;
         add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Cache-Control, Accept' always;
@@ -42,15 +43,16 @@ server {
         add_header 'Access-Control-Expose-Headers' 'Content-Length, Content-Type, Authorization' always;
         add_header 'Access-Control-Max-Age' '86400' always;
 
-        # Handle preflight requests
+        # Handle OPTIONS preflight requests FIRST
+        # This must come before proxy_pass to handle preflight without hitting backend
         if ($request_method = 'OPTIONS') {
             add_header 'Access-Control-Allow-Origin' 'https://nodes.enclave-hq.com' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD' always;
             add_header 'Access-Control-Allow-Headers' 'Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Cache-Control, Accept' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
             add_header 'Access-Control-Max-Age' '86400' always;
-            add_header 'Content-Type' 'text/plain; charset=utf-8';
-            add_header 'Content-Length' 0;
+            add_header 'Content-Type' 'text/plain; charset=utf-8' always;
+            add_header 'Content-Length' 0 always;
             return 204;
         }
 
@@ -67,14 +69,18 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Origin $http_origin;
 
         # Timeouts (important for long-running requests)
         proxy_connect_timeout 60s;
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
 
+        # Don't intercept errors - let nginx handle 502/503 with CORS headers via 'always'
+        proxy_intercept_errors off;
+        
         # Don't hide backend CORS headers - let backend handle CORS
-        # But we also add our own for redundancy
+        # But we also add our own for redundancy (especially for error cases)
         # proxy_hide_header Access-Control-Allow-Origin;
     }
 

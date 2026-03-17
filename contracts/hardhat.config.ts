@@ -18,7 +18,7 @@ const config: HardhatUserConfig = {
           }
         }
       },
-      viaIR: true, // Enable IR-based code generation for better optimization
+      viaIR: false, // Disabled: viaIR causes storage slot mismatch in Diamond proxy facets
       metadata: {
         bytecodeHash: "none" // Reduce bytecode size
       },

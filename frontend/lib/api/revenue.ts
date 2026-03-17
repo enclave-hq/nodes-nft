@@ -270,9 +270,6 @@ export interface SyncStatusResponse {
     errors: number;
   } | null;
   nextSyncInSeconds: number | null;
-}
-
-export async function getSyncStatus(): Promise<SyncStatusResponse> {
+}export async function getSyncStatus(): Promise<SyncStatusResponse> {
   return apiGet<SyncStatusResponse>('/admin/nfts/sync/status');
 }
-

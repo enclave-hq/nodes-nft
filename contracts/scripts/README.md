@@ -19,7 +19,9 @@ All scripts for deploying and upgrading the Enclave Node NFT system.
 
 | Script | Purpose | Prerequisites | Runtime |
 |--------|---------|---------------|---------|
-| `upgrade-nftmanager.ts` | Upgrade NFTManager contract | MANAGER_ADDRESS in .env | ~2 min |
+| `upgrade-nftmanager-facet.ts` | Upgrade NFTManagerFacet (Diamond) | NFT_MANAGER_ADDRESS in .env | ~2 min |
+| `upgrade-reward-facet.ts` | Upgrade RewardFacet with optimized distribution | NFT_MANAGER_ADDRESS in .env | ~2 min |
+| `rollback-reward-facet.ts` | Rollback RewardFacet to previous version | OLD_REWARD_FACET_ADDRESS | ~2 min |
 | `migrate-minter-addresses.ts` | Set minter addresses for existing NFTs | Upgraded contract, Owner key | ~5-10 min |
 
 ---
@@ -57,13 +59,51 @@ npx hardhat run scripts/deploy-mainnet.ts --network bscMainnet
 
 ### Step 4: Upgrade Contract
 
-After upgrading the NFTManager contract to include the `minter` field, you need to migrate minter addresses for existing NFTs:
+#### Upgrade NFTManagerFacet
 
 ```bash
-# 1. Upgrade the contract first
-npx hardhat run scripts/upgrade-nftmanager.ts --network bscTestnet
+npx hardhat run scripts/upgrade-nftmanager-facet.ts --network bscTestnet
+```
 
-# 2. Migrate minter addresses for existing NFTs
+#### Upgrade RewardFacet (Optimized Distribution)
+
+This upgrade optimizes reward distribution so Oracle only needs to deposit funds for active NFTs:
+
+```bash
+# Testnet
+npx hardhat run scripts/upgrade-reward-facet.ts --network bscTestnet
+
+# Mainnet
+npx hardhat run scripts/upgrade-reward-facet.ts --network bscMainnet
+```
+
+**Key improvements:**
+- Oracle only deposits for active NFTs (not all 5000)
+- Configurable multisig reward ratio (default 20%)
+- Maintains fairness: rewardPerNFT still calculated based on MAX_SUPPLY (5000)
+
+**After upgrade:**
+- Function signatures changed: `distributeReward(token, rewardPerNFT)` instead of `(token, amount)`
+- Update backend/Oracle code to use new signatures
+- See `REWARD_FACET_UPGRADE_GUIDE.md` for details
+
+#### Rollback RewardFacet (if needed)
+
+If the upgrade causes issues, you can rollback to the previous version:
+
+```bash
+# 1. Set OLD_REWARD_FACET_ADDRESS in .env or env file
+# 2. Run rollback script
+npx hardhat run scripts/rollback-reward-facet.ts --network bscTestnet
+```
+
+**Note:** Rollback is safe because storage layout is compatible (new variables added at the end).
+
+#### Migrate Minter Addresses
+
+After upgrading the NFTManager contract to include the `minter` field:
+
+```bash
 npx hardhat run scripts/migrate-minter-addresses.ts --network bscTestnet
 ```
 
@@ -170,34 +210,119 @@ npx hardhat run scripts/deploy-vesting.ts --network <network>
 
 ---
 
-### upgrade-nftmanager.ts
+### upgrade-nftmanager-facet.ts
 
-**Purpose:** Upgrade the NFTManager proxy contract to a new implementation.
+**Purpose:** Upgrade the NFTManagerFacet in Diamond Pattern.
 
 **What it does:**
-1. Reads MANAGER_ADDRESS from .env
-2. Deploys new NFTManager implementation
-3. Upgrades the proxy to new implementation
-4. Verifies upgrade and tests basic functions
+1. Reads NFT_MANAGER_ADDRESS from env file or .env
+2. Deploys new NFTManagerFacet implementation
+3. Uses Diamond Cut to replace existing functions
+4. Verifies upgrade and tests new functions
 
 **Requirements:**
-- `MANAGER_ADDRESS` set in .env
-- Deployer must be proxy owner
+- `NFT_MANAGER_ADDRESS` set in env file or .env
+- Deployer must be contract owner
 - Sufficient gas balance
 
 **Usage:**
 ```bash
-npx hardhat run scripts/upgrade-nftmanager.ts --network bscTestnet
+npx hardhat run scripts/upgrade-nftmanager-facet.ts --network bscTestnet
 ```
 
 **Output:**
 ```
-✅ New implementation deployed: 0x...
-✅ Proxy upgraded successfully!
-✅ Upgrade verified successfully!
+✅ New NFTManagerFacet deployed to: 0x...
+✅ Facet upgrade completed
+✅ Upgrade verified: Facet address updated
 ```
 
-**Next step:** Verify new implementation on BSCScan.
+**Next step:** Verify new Facet on BSCScan.
+
+---
+
+### upgrade-reward-facet.ts
+
+**Purpose:** Upgrade RewardFacet with optimized reward distribution.
+
+**What it does:**
+1. Deploys new RewardFacet with optimized distribution logic
+2. Replaces existing functions and adds new ones
+3. Oracle only needs to deposit for active NFTs (not all 5000)
+4. Adds configurable multisig reward ratio
+
+**Key changes:**
+- `distributeReward(token, rewardPerNFT)` - new signature
+- `distributeProduced(rewardPerNFT)` - new signature
+- `setMultisigRewardBps(bps)` - new function
+- `getMultisigRewardBps()` - new function
+- `calculateRequiredAmountForDistribution(token, rewardPerNFT)` - new function
+
+**Requirements:**
+- `NFT_MANAGER_ADDRESS` set in env file or .env
+- Deployer must be contract owner
+- Sufficient gas balance
+
+**Usage:**
+```bash
+# Testnet
+npx hardhat run scripts/upgrade-reward-facet.ts --network bscTestnet
+
+# Mainnet
+npx hardhat run scripts/upgrade-reward-facet.ts --network bscMainnet
+```
+
+**Output:**
+```
+✅ New RewardFacet deployed to: 0x...
+✅ Prepared to replace X existing functions
+✅ Prepared to add Y new functions
+✅ RewardFacet upgrade completed
+```
+
+**After upgrade:**
+- Update backend/Oracle code to use new function signatures
+- See `REWARD_FACET_UPGRADE_GUIDE.md` for migration guide
+- See `UPGRADE_CHECKLIST.md` for upgrade checklist
+
+---
+
+### rollback-reward-facet.ts
+
+**Purpose:** Rollback RewardFacet to previous version if upgrade causes issues.
+
+**What it does:**
+1. Reads OLD_REWARD_FACET_ADDRESS from upgrade history or .env
+2. Uses Diamond Cut to replace current Facet with old version
+3. Verifies rollback and tests functions
+
+**Requirements:**
+- `OLD_REWARD_FACET_ADDRESS` set (from upgrade history or .env)
+- `NFT_MANAGER_ADDRESS` set in env file or .env
+- Deployer must be contract owner
+- Sufficient gas balance
+
+**Usage:**
+```bash
+# Set OLD_REWARD_FACET_ADDRESS in .env or env file
+# Then run:
+npx hardhat run scripts/rollback-reward-facet.ts --network bscTestnet
+```
+
+**Output:**
+```
+✅ Current RewardFacet address: 0x...
+✅ Old Facet address has code
+✅ Rollback completed
+✅ Rollback verified: RewardFacet address updated to old version
+```
+
+**Safety:**
+- Storage layout is compatible (new variables added at the end)
+- All data is preserved
+- Old Facet will ignore new storage variables (safe)
+
+**See:** `ROLLBACK_GUIDE.md` for detailed rollback guide.
 
 ---
 
@@ -221,6 +346,59 @@ npx hardhat run scripts/migrate-minter-addresses.ts --network bscTestnet
 ```
 
 **Note:** This script should be run after upgrading the contract to include the `minter` field.
+
+---
+
+## 📊 Reward Distribution Scripts
+
+### 发放 NFT 奖励命令
+
+**详细指南**：请查看 [DISTRIBUTE_REWARD_GUIDE.md](./DISTRIBUTE_REWARD_GUIDE.md)
+
+#### 快速命令（使用 Hardhat Console）
+
+```bash
+cd /Users/qizhongzhu/enclave/node-nft/contracts
+npx hardhat console --network bscTestnet
+```
+
+在 Console 中：
+
+```javascript
+// 1. 获取合约实例
+const NFTManager = await ethers.getContractAt("RewardFacet", "NFT_MANAGER_ADDRESS");
+const USDT = await ethers.getContractAt("IERC20", "USDT_ADDRESS");
+
+// 2. 计算 rewardPerNFT（按 5000 计算）
+const rewardPerNFT = ethers.parseUnits("2", 18); // 2 USDT per NFT
+
+// 3. 查询需要打入的金额
+const [requiredAmount] = await NFTManager.calculateRequiredAmountForDistribution(
+  USDT.address, 
+  rewardPerNFT
+);
+
+// 4. Oracle approve 和分发
+const oracle = new ethers.Wallet(process.env.ORACLE_PRIVATE_KEY, ethers.provider);
+await USDT.connect(oracle).approve(NFTManager.target, requiredAmount);
+await NFTManager.connect(oracle).distributeReward(USDT.address, rewardPerNFT);
+```
+
+#### 分发 ECLV 代币
+
+```javascript
+const rewardPerNFT = ethers.parseUnits("100", 18); // 100 ECLV per NFT
+await NFTManager.connect(oracle).distributeProduced(rewardPerNFT);
+```
+
+**函数签名（升级后）：**
+- `distributeReward(address token, uint256 rewardPerNFT)` - 分发代币奖励
+- `distributeProduced(uint256 rewardPerNFT)` - 分发 ECLV 奖励
+
+**重要：**
+- `rewardPerNFT` 是按 MAX_SUPPLY (5000) 计算的每个 NFT 奖励
+- Oracle 只需要打入 Active NFT 对应的资金
+- 使用 `calculateRequiredAmountForDistribution` 查询需要打入的金额
 
 ---
 
@@ -283,6 +461,17 @@ Reference values (actual may vary):
 3. **Test incrementally** - Run one script at a time and verify results
 4. **Monitor BSCScan** - Watch transactions in real-time
 5. **Verify contracts** - Always verify contracts on BSCScan after deployment
+6. **Backup before upgrade** - Always record old Facet addresses before upgrading
+7. **Test on testnet first** - Always test upgrades on testnet before mainnet
+
+---
+
+## 📚 Related Documentation
+
+- [RewardFacet Upgrade Guide](../REWARD_FACET_UPGRADE_GUIDE.md) - Detailed upgrade guide
+- [Upgrade Checklist](../UPGRADE_CHECKLIST.md) - Pre-upgrade checklist
+- [Rollback Guide](../ROLLBACK_GUIDE.md) - How to rollback if needed
+- [Reward Distribution Optimization](../REWARD_DISTRIBUTION_OPTIMIZATION.md) - Optimization details
 
 ---
 

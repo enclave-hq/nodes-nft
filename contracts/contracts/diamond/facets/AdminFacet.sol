@@ -21,7 +21,12 @@ contract AdminFacet {
     
     modifier onlyMaster() {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
-        require(msg.sender == s.master || msg.sender == LibNFTManager.contractOwner(), "Only master or owner");
+        require(
+            msg.sender == s.master || 
+            msg.sender == LibNFTManager.contractOwner() || 
+            msg.sender == s.multisigner,
+            "Only master, owner, or multisigner"
+        );
         _;
     }
 
@@ -66,6 +71,12 @@ contract AdminFacet {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
         s.operator = operator_;
         emit OperatorSet(operator_);
+    }
+    
+    function setMultisigner(address multisigner_) external onlyMaster {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        s.multisigner = multisigner_;
+        emit MultisignerSet(multisigner_);
     }
 
     /* ========== CONFIG FUNCTIONS ========== */
@@ -349,6 +360,11 @@ contract AdminFacet {
         return s.master;
     }
     
+    function multisigner() external view returns (address) {
+        LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
+        return s.multisigner;
+    }
+    
     function tgeTime() external view returns (uint256) {
         LibNFTManagerStorage.NFTManagerStorage storage s = LibNFTManagerStorage.getStorage();
         // Read TGE time from EnclaveToken (single source of truth)
@@ -443,6 +459,7 @@ contract AdminFacet {
     event MultisigNodeSet(address indexed multisigNode);
     event OracleMultisigSet(address indexed oracleMultisig);
     event OperatorSet(address indexed operator);
+    event MultisignerSet(address indexed multisigner);
     event TransfersEnabled(bool enabled);
     // TgeTimeSet event removed - TGE is now managed by EnclaveToken
     event NodeNFTSet(address indexed nodeNFT);

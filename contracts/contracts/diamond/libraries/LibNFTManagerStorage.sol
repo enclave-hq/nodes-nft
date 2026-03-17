@@ -134,6 +134,19 @@ library LibNFTManagerStorage {
          * @dev 0 means use default (2000)
          */
         uint256 multisigRewardBps;
+
+        /**
+         * @notice Allocated reward per (token, nftId) for direct withdrawal
+         * @dev Oracle sets via setNodeRewards(); user withdraws via withdrawAllocatedReward()
+         * @dev If contract balance < amount, withdraw fails (user gets nothing until U is sufficient)
+         */
+        mapping(address => mapping(uint256 => uint256)) allocatedReward;
+
+        /**
+         * @notice Multisigner contract address for permission checks
+         * @dev Added at END to preserve storage layout (must NOT be inserted in middle)
+         */
+        address multisigner;
     }
 
     function getStorage() internal pure returns (NFTManagerStorage storage ds) {

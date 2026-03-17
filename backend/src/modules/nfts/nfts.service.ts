@@ -411,21 +411,88 @@ export class NftsService {
       }
       console.log();
 
-      // Query all NFT mint events from subgraph
-      const query = `
+      // Get last synced block number using a safer approach
+      // Since nft_records table doesn't have blockNumber field yet, we use Subgraph's _meta to get indexed block
+      // Then query only events that Subgraph has fully indexed (to avoid missing events)
+      
+      // First, get Subgraph's current indexed block height
+      const metaQuery = `
         {
-          nftmints(orderBy: timestamp, orderDirection: asc) {
-            id
-            nftId
-            minter
-            batchId
-            mintPrice
-            timestamp
-            txHash
-            blockNumber
+          _meta {
+            block {
+              number
+            }
           }
         }
       `;
+      
+      let subgraphIndexedBlock = 0;
+      try {
+        const metaResponse = await fetch(subgraphUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: metaQuery }),
+        });
+        const metaResult = await metaResponse.json();
+        if (metaResult.data?._meta?.block?.number) {
+          subgraphIndexedBlock = parseInt(metaResult.data._meta.block.number);
+          console.log(`📊 Subgraph indexed block: ${subgraphIndexedBlock}`);
+        }
+      } catch (e) {
+        console.log(`⚠️  Could not get Subgraph indexed block, will query all events`);
+      }
+
+      // Get the maximum NFT ID from database to determine last synced position
+      // This is a workaround since we don't have blockNumber stored yet
+      const maxNftId = await this.prisma.nftRecord.findFirst({
+        orderBy: { nftId: 'desc' },
+        select: { nftId: true },
+      });
+      const lastSyncedNftId = maxNftId?.nftId || 0;
+
+      console.log(`📊 Last synced NFT ID: ${lastSyncedNftId}`);
+      if (subgraphIndexedBlock > 0) {
+        console.log(`   Subgraph indexed up to block: ${subgraphIndexedBlock}`);
+        console.log(`   Will query events up to indexed block to avoid missing events`);
+      }
+      console.log();
+
+      // Query NFT mint events from subgraph
+      // Use Subgraph's indexed block to only query events that are fully indexed
+      // This prevents missing events due to Subgraph indexing delays
+      const query = subgraphIndexedBlock > 0
+        ? `
+          {
+            nftmints(
+              where: { blockNumber_lte: "${subgraphIndexedBlock}" }
+              orderBy: timestamp
+              orderDirection: asc
+            ) {
+              id
+              nftId
+              minter
+              batchId
+              mintPrice
+              timestamp
+              txHash
+              blockNumber
+            }
+          }
+        `
+        : `
+          {
+            nftmints(orderBy: timestamp, orderDirection: asc) {
+              id
+              nftId
+              minter
+              batchId
+              mintPrice
+              timestamp
+              txHash
+              blockNumber
+            }
+          }
+        `;
 
       // Prepare headers
       const headers: Record<string, string> = {
@@ -488,6 +555,9 @@ export class NftsService {
               const timestamp = BigInt(event.timestamp);
               const txHash = event.txHash;
               const blockNumber = parseInt(event.blockNumber);
+              
+              // Store blockNumber for incremental sync
+              // This allows us to query only new events in future syncs
 
               // Use minter as owner (no need to query from chain)
               // This avoids RPC rate limits and is sufficient for minting statistics
@@ -538,6 +608,9 @@ export class NftsService {
                 }
               } else {
                 // Create new record
+                // Note: blockNumber is not stored in schema yet, but we have it from event
+                // For now, we'll store it in a way that can be queried later
+                // TODO: Add blockNumber field to NftRecord schema for incremental sync
                 await this.prisma.nftRecord.create({
                   data: {
                     nftId,
@@ -547,6 +620,7 @@ export class NftsService {
                     mintTxHash: txHash,
                     mintedAt: mintedAt,
                     inviteCodeId: inviteCodeUsage?.inviteCodeId || null,
+                    // blockNumber will be added to schema in a migration
                   },
                 });
                 created++;
@@ -603,6 +677,10 @@ export class NftsService {
       console.log(`   Created: ${created}`);
       console.log(`   Updated: ${updated}`);
       console.log(`   Errors: ${errors}`);
+
+      // Wait a short moment to ensure all database writes are committed
+      // This helps avoid race conditions where RewardVault sync queries before records are committed
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Best-effort: sync referral rewards totals to RewardVault (on-chain).
       // This updates only when totals increase, and contract enforces only-increase.

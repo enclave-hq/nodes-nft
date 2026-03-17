@@ -94,7 +94,7 @@ async function main() {
   }
   
   console.log(`✅ Found ${selectors.length} function selectors`);
-  console.log(`   Key functions: distributeProduced, distributeReward, setMultisigRewardBps, calculateRequiredAmountForDistribution`);
+  console.log(`   Key functions: distributeProduced, distributeReward, setNodeRewardsCredit, setMultisigRewardBps, calculateRequiredAmountForDistribution`);
 
   // Step 3: Get current RewardFacet address
   console.log("\n3️⃣  Getting current RewardFacet address...");
@@ -171,7 +171,7 @@ async function main() {
       functionSelectors: newSelectors,
     });
     console.log(`✅ Prepared to add ${newSelectors.length} new functions`);
-    console.log(`   New functions: setMultisigRewardBps, getMultisigRewardBps, calculateRequiredAmountForDistribution`);
+    console.log(`   New functions include: setNodeRewardsCredit, etc.`);
   }
 
   if (cuts.length === 0) {
@@ -256,11 +256,10 @@ async function main() {
   console.log(`Transaction: ${tx.hash}`);
   console.log(`Block: ${receipt?.blockNumber}`);
   console.log("\n📝 Key Changes:");
-  console.log("   - distributeProduced(uint256 rewardPerNFT) - optimized");
-  console.log("   - distributeReward(address token, uint256 rewardPerNFT) - optimized");
-  console.log("   - setMultisigRewardBps(uint256 bps) - new function");
-  console.log("   - getMultisigRewardBps() - new function");
-  console.log("   - calculateRequiredAmountForDistribution() - new function");
+  console.log("   - setNodeRewardsCredit(token, nftIds, amounts) - new: credit allocations without transfer");
+  console.log("   - distributeProduced / distributeReward - existing");
+  console.log("   - setMultisigRewardBps / getMultisigRewardBps - existing");
+  console.log("   - calculateRequiredAmountForDistribution - existing");
   console.log("\n💡 Next steps:");
   console.log("   1. Verify the contract on BSCScan");
   console.log("   2. Update backend code to use new function signatures");
