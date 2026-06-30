@@ -1,6 +1,6 @@
 # Frontend Dockerfile for Next.js
 # Build context should be the enclave/ directory to access both node-nft/ and wallet-sdk/
-FROM node:20-alpine AS base
+FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS base
 
 # Install dependencies only when needed
 FROM base AS deps
